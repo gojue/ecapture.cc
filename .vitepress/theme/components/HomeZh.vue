@@ -1,21 +1,20 @@
 <script setup lang="ts">
-import VueMasteryModal from './VueMasteryModal.vue';
+import VueMasteryModalZh from './VueMasteryModalZh.vue';
 </script>
 
 <template>
   <section id="hero">
     <h1 class="tagline">
-      Capture
-      <span class="accent">SSL/TLS text content without CA certificate</span>
-      <br />Using eBPF
+      当局者迷<br /><span class="accent">旁观者清</span>
+      <br />一切尽收眼底
     </h1>
     <p class="description">
-      Supports Linux x86_64/Aarch64, Android(GKI) Aarch64.
+      eCapture：无CA证书抓包HTTPS/TLS数据包<br />eBPF技术强力驱动，无依赖，体积小，即装即用<br />支持 Linux x86_64/Aarch64, Android Aarch64系统
     </p>
     <p class="actions">
-      <vue-mastery-modal />
+      <vue-mastery-modal-zh />
       <a class="get-started" href="/guide/introduction.html">
-        Get Started
+        快速上手
         <svg
           class="icon"
           xmlns="http://www.w3.org/2000/svg"
@@ -28,7 +27,7 @@ import VueMasteryModal from './VueMasteryModal.vue';
           />
         </svg>
       </a>
-      <a class="setup" href="/guide/quick-start.html">Install</a>
+      <a class="setup" href="/guide/quick-start.html">安装</a>
     </p>
   </section>
 
@@ -55,6 +54,7 @@ section {
 
 html:not(.dark) .accent,
 .dark .tagline {
+  font-size: 200px;
   background: -webkit-linear-gradient(315deg, #42d392 25%, #647eff);
   background-clip: text;
   -webkit-background-clip: text;
