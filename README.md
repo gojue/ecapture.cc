@@ -10,9 +10,9 @@ Detailed changes for each release are documented in the [CHANGELOG](CHANGELOG.md
 Please make sure to read the Contributing Guide before making a pull request.
 
 # Contributors
-- @CFC4N
-- @Marandi269
-- @liushengxue
+- [@CFC4N](https://github.com/CFC4N)
+- [@Marandi269](https://github.com/Marandi269)
+- [@liushengxue](https://github.com/liushengxue)
 
 # License
 MIT
