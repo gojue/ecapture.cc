@@ -6,14 +6,12 @@ import {
   preferSFC,
   filterHeadersByPreference
 } from './components/preferences'
+import NavTitleBar from './components/NavTitleBar.vue';
 
 export default Object.assign({}, VPTheme, {
   Layout: () => {
-    // @ts-ignore
     return h(VPTheme.Layout, null, {
-      // 'sidebar-top': () => h(PreferenceSwitch),
-      // 'aside-mid': () => h(SponsorsAside),
-      // 'aside-bottom': () => h(VueJobs)
+      'navbar-title': ()=>h(NavTitleBar),
     })
   },
   enhanceApp({ app }: { app: App }) {
