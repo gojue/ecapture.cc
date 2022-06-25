@@ -7,11 +7,12 @@ import { headerPlugin } from './headerMdPlugin'
 
 const nav = [
   { text: 'Guide', link: '/guide/introduction' },
-  {
-    text: 'API',
-    activeMatch: `^/api/`,
-    link: '/api/'
-  },
+  //  TODO: dead link
+  // {
+  //   text: 'API',
+  //   activeMatch: `^/api/`,
+  //   link: '/api/'
+  // },
 ]
 
 export const sidebar = {
@@ -26,9 +27,9 @@ export const sidebar = {
         }
       ]
     },
-   
+
   ],
- 
+
 }
 
 export default defineConfigWithTheme<ThemeConfig>({
@@ -71,7 +72,8 @@ export default defineConfigWithTheme<ThemeConfig>({
     // },
 
     socialLinks: [
-      { icon: 'languages', link: '/translations/' },
+      //  TODO: dead link
+      // { icon: 'languages', link: '/translations/' },
       { icon: 'github', link: 'https://github.com/ehids/ecapture' },
       // { icon: 'twitter', link: 'https://twitter.com/vuejs' },
       // { icon: 'discord', link: 'https://discord.com/invite/HBherRA' }

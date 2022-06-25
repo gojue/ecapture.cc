@@ -15,7 +15,8 @@ footer: false
 
 ## Still Got Questions?
 
-Check out our [FAQ](/about/faq).
+[comment]: <> TODO: dead link
+[comment]: <> (Check out our [FAQ]&#40;/about/faq&#41;.)
 
 ## Pick Your Learning Path
 
