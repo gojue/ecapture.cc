@@ -72,7 +72,7 @@ watch(
                 rel="sponsored noopener"
                 title="CFC4N's BLOG"
               >
-                CFC4N's BLOG .</a>
+                CFC4N </a> .
             </p>
           </div>
         </div>

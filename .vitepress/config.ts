@@ -80,8 +80,8 @@ export default defineConfigWithTheme<ThemeConfig>({
     ],
 
     editLink: {
-      repo: 'ehids/ecapture.cc',
-      text: 'Edit this page on GitHub'
+      repo: 'ehids/ecapture.cc#master',
+      text: 'Edit this page on GitHub',
     },
 
     footer: {
@@ -89,7 +89,7 @@ export default defineConfigWithTheme<ThemeConfig>({
         text: 'MIT License',
         link: 'https://opensource.org/licenses/MIT'
       },
-      copyright: `Copyright © 2014-${new Date().getFullYear()} CFC4N`,
+      copyright: `Copyright © 2014-${new Date().getFullYear()} CFC4N, Powered by Vue.js`,
     }
   },
 
