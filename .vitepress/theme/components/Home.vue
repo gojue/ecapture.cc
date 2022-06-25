@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import VueMasteryModal from './VueMasteryModal.vue';
 </script>
 
 <template>
@@ -9,9 +10,10 @@
       <br />using eBPF
     </h1>
     <p class="description">
-      supports Linux x86_64/Aarch64, Android(GKI) Aarch64.
+      Supports Linux x86_64/Aarch64, Android(GKI) Aarch64.
     </p>
     <p class="actions">
+      <vue-mastery-modal />
       <a class="get-started" href="/guide/introduction.html">
         Get Started
         <svg
