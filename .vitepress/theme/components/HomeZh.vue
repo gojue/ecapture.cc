@@ -9,7 +9,7 @@ import VueMasteryModalZh from './VueMasteryModalZh.vue';
       <br />一切尽收眼底
     </h1>
     <p class="description">
-      eCapture：无CA证书抓包HTTPS/TLS数据包<br />eBPF技术强力驱动，无依赖，体积小，即装即用<br />支持 Linux x86_64/Aarch64, Android Aarch64系统
+      eCapture：无CA证书抓包HTTPS/TLS数据包<br />eBPF技术强力驱动，体积小，即装即用<br />支持Linux/Android x86_64/Aarch64
     </p>
     <p class="actions">
       <vue-mastery-modal-zh />

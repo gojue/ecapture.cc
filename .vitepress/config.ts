@@ -6,13 +6,30 @@ import baseConfig from '@vue/theme/config'
 import { headerPlugin } from './headerMdPlugin'
 
 const nav = [
-  { text: 'Guide', link: '/guide/introduction' },
+
   //  TODO: dead link
   // {
   //   text: 'API',
   //   activeMatch: `^/api/`,
   //   link: '/api/'
   // },
+  {
+    text: 'English',
+    link: '/'
+  },
+  {
+    text: '中文',
+    link: '/zh/'
+  },
+  { text: 'Guide', link: '/guide/introduction' },
+  {
+    text: 'Projects',
+    items: [
+      { text: 'eBPFManager', link: 'https://github.com/ehids/ebpfmanager'},
+      { text: 'eBPFSlide', link: 'https://github.com/ehids/ebpf-slide'},
+      { text: 'eHIDSAgent', link: 'https://github.com/ehids/ehids-agent'}
+    ]
+  },
 ]
 
 export const sidebar = {
@@ -27,9 +44,31 @@ export const sidebar = {
         }
       ]
     },
-
+    {
+      text: 'How eCapture Works',
+      items: [
+        {
+          text: 'How eCapture Works',
+          link :'how-it-works'
+        }
+      ]
+    },
   ],
-
+  '/develop/': [
+    {
+      text: 'Develop',
+      items: [
+        { text: 'Environment', link: '/develop/environment' },
+        {
+          text: 'Kernel Space',
+          link: '/develop/kernel_space'
+        },{
+          text: 'User Space',
+          link: '/develop/user_space'
+        },
+      ]
+    },
+  ],
 }
 
 export default defineConfigWithTheme<ThemeConfig>({
