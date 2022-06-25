@@ -30,6 +30,10 @@ const nav = [
       { text: 'eHIDSAgent', link: 'https://github.com/ehids/ehids-agent'}
     ]
   },
+  {
+    text: 'BLOG博客',
+    link: 'https://www.cnxct.com'
+  },
 ]
 
 export const sidebar = {
@@ -49,7 +53,7 @@ export const sidebar = {
       items: [
         {
           text: 'How eCapture Works',
-          link :'how-it-works'
+          link :'/guide/how-it-works'
         }
       ]
     },
