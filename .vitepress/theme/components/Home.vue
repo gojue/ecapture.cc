@@ -10,7 +10,7 @@ import VueMasteryModal from './VueMasteryModal.vue';
       <br />Using eBPF
     </h1>
     <p class="description">
-      Supports Linux x86_64/Aarch64, Android(GKI) Aarch64.
+      Supports Linux/Android (x86_64/Aarch64).
     </p>
     <p class="actions">
       <vue-mastery-modal />
