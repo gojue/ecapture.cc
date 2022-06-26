@@ -94,6 +94,15 @@ export default defineConfigWithTheme<ThemeConfig>({
         'utf-8'
       )
     ],
+    // ['link', { rel: "apple-touch-icon", sizes: "180x180", href: path.resolve(__dirname, "./public/apple-touch-icon.png")}],
+    // ['link', { rel: "icon", type: "image/png", sizes: "32x32", href: path.resolve(__dirname, "./public/favicon-32x32.png")}],
+    // ['link', { rel: "icon", type: "image/png", sizes: "16x16", href: path.resolve(__dirname, "./public/favicon-16x16.png")}],
+    // ['link', { rel: "manifest", href: path.resolve(__dirname, "./public/site.webmanifest")}],
+    // ['link', { rel: "mask-icon", href: path.resolve(__dirname, "./public/safari-pinned-tab.svg"), color: "#3a0839"}],
+    // ['link', { rel: "shortcut icon", href: path.resolve(__dirname, "./public/favicon.ico")}],
+    // ['meta', { name: "msapplication-TileColor", content: "#3a0839"}],
+    // ['meta', { name: "msapplication-config", content: path.resolve(__dirname, "./public/browserconfig.xml")}],
+    // ['meta', { name: "theme-color", content: "#ffffff"}],
   ],
 
   themeConfig: {
