@@ -1,6 +1,6 @@
 ---
 page: true
-title: eCapture - eBPF技术强力驱动，无需CA证书即可捕获HTTPS/TLS明文数据包。
+title: 旁观者 - eBPF技术强力驱动，无需CA证书即可捕获HTTPS/TLS明文数据包。
 ---
 
 <script setup>

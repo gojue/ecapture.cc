@@ -89,7 +89,7 @@ watch(
   transition: background-color 0.5s, color 0.5s;
   position: relative;
   font-weight: 600;
-  background-color: var(--vt-c-green);
+  background-color: var(--vt-c-yellow);
   color: #fff;
   margin-right: 18px;
   padding: 8px 1em 8px 3em;

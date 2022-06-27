@@ -31,7 +31,7 @@ const nav = [
     ]
   },
   {
-    text: 'BLOG博客',
+    text: 'BLOG',
     link: 'https://www.cnxct.com'
   },
 ]
