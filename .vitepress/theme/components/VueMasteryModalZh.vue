@@ -28,12 +28,12 @@ watch(
       viewBox="0 0 100 125"
       fill="#FFFFFF"
     >
-      <title id="simpleicons-play-icon" lang="en">Play icon</title>
+      <title id="simpleicons-play-icon" lang="en">观看eCapture旁观者使用演示</title>
       <path
         d="M50,3.8C24.5,3.8,3.8,24.5,3.8,50S24.5,96.2,50,96.2S96.2,75.5,96.2,50S75.5,3.8,50,3.8z M71.2,53.3l-30.8,18  c-0.6,0.4-1.3,0.5-1.9,0.5c-0.6,0-1.3-0.1-1.9-0.5c-1.2-0.6-1.9-1.9-1.9-3.3V32c0-1.4,0.8-2.7,1.9-3.3c1.2-0.6,2.7-0.6,3.8,0  l30.8,18c1.2,0.6,1.9,1.9,1.9,3.3S72.3,52.7,71.2,53.3z"
       ></path>
     </svg>
-    User Manual
+    演示视频
   </a>
   <Teleport v-if="showWhyVue" to="body">
     <div
@@ -65,11 +65,11 @@ watch(
 
           <div class="vuemastery-modal-footer">
             <p class="vuemastery-modal-footer-text">
-              Video by
+              视频作者
               <a
                 href="https://www.cnxct.com"
                 target="_blank"
-                rel="sponsored noopener"
+                rel=""
                 title="CFC4N's BLOG"
               >
                 CFC4N </a> .

@@ -6,14 +6,14 @@ import VueMasteryModalZh from './VueMasteryModalZh.vue';
   <section id="hero">
     <h1 class="tagline">
       当局者迷<br /><span class="accent">旁观者清</span>
-      <br />一切尽收眼底
+      <br />尽收眼底
     </h1>
     <p class="description">
-      eCapture：无CA证书抓包HTTPS/TLS数据包<br />eBPF技术强力驱动，支持Linux/Android（x86_64/Aarch64）
+      无CA证书HTTPS/TLS数据抓包<br />eBPF技术驱动，支持Linux/Android（x86_64/Aarch64）
     </p>
     <p class="actions">
       <vue-mastery-modal-zh />
-      <a class="get-started" href="/guide/introduction.html">
+      <a class="get-started" href="/zh/guide/introduction.html">
         快速上手
         <svg
           class="icon"
@@ -27,7 +27,7 @@ import VueMasteryModalZh from './VueMasteryModalZh.vue';
           />
         </svg>
       </a>
-      <a class="setup" href="/guide/quick-start.html">安装</a>
+      <a class="setup" href="/zh/guide/quick-start.html">安装</a>
     </p>
   </section>
 
@@ -52,10 +52,14 @@ section {
   margin: 0px auto;
 }
 
+.accent {
+  font-size: 200px;
+}
+
 html:not(.dark) .accent,
 .dark .tagline {
-  font-size: 200px;
-  background: -webkit-linear-gradient(315deg, #42d392 25%, #647eff);
+  /*background: -webkit-linear-gradient(315deg, #42d392 25%, #647eff);*/
+  background: -webkit-linear-gradient(267.19deg, #ffe600 4.02%, #fd6a00 73.58%);
   background-clip: text;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
