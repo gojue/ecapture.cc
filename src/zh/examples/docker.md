@@ -13,3 +13,5 @@ footer: false
 
 ecapture in netshoot pod to capture other container traffic
 https://youtu.be/3trlo_eJVlk
+
+捕获主机Golang app 加密请求的网络包: https://youtu.be/KX8-hsM1tg4
