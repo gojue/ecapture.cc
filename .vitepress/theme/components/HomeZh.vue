@@ -14,7 +14,7 @@ import VueMasteryModalZh from './VueMasteryModalZh.vue';
     <p class="actions">
       <vue-mastery-modal-zh />
       <a class="get-started" href="/zh/guide/introduction.html">
-        快速上手
+        直接使用
         <svg
           class="icon"
           xmlns="http://www.w3.org/2000/svg"
@@ -27,7 +27,7 @@ import VueMasteryModalZh from './VueMasteryModalZh.vue';
           />
         </svg>
       </a>
-      <a class="setup" href="/zh/guide/quick-start.html">安装</a>
+      <a class="setup" href="/zh/develop/index.html">开发编译</a>
     </p>
   </section>
 

@@ -16,7 +16,7 @@ footer: false
 
 ## 项目结构
 
-[项目结构文档](./archtecture.md)
+[项目结构文档](./architecture.md)
 
 ## 内核空间代码
 
