@@ -41,7 +41,10 @@ export const sidebar = {
     {
       text: 'Getting Started',
       items: [
-        { text: 'Introduction', link: '/guide/introduction' },
+        {
+          text: 'Introduction',
+          link: '/guide/introduction'
+        },
         {
           text: 'Quick Start',
           link: '/guide/quick-start'
@@ -60,6 +63,7 @@ export const sidebar = {
   ],
   '/develop/': [
     {
+      activeMatch: `^/guide/`,
       text: 'Develop',
       items: [
         { text: 'Environment', link: '/develop/environment' },
@@ -72,6 +76,58 @@ export const sidebar = {
         },
       ]
     },
+  ],
+  '/zh/develop':[
+    {
+      activeMatch: `^/zh/`,
+      text: '自助开发',
+      items:[
+        {
+          text: '目录',
+          link:'/zh/develop/index'
+        },
+        {
+          text: '项目结构',
+          link:'/zh/develop/architecture'
+        },
+        {
+          text: 'kern目录',
+          link:'/zh/develop/kern'
+        },
+        {
+          text: 'user目录',
+          link:'/zh/develop/user'
+        },
+        {
+          text: '操作系统',
+          link:'/zh/develop/os'
+        },
+        {
+          text: '工具链',
+          link:'/zh/develop/toolchain'
+        },
+      ]
+    }
+  ],
+  '/zh/examples':[
+    {
+      text: '使用案例',
+      activeMatch: `^/zh/`,
+      items:[
+        {
+          text: '安卓12 知乎APP抓包',
+          link:'/zh/examples/android'
+        },
+        {
+          text: '容器环境里抓包',
+          link:'/zh/examples/docker'
+        },
+        {
+          text: 'Linux环境里抓包',
+          link:'/zh/examples/index'
+        },
+      ]
+    }
   ],
 }
 
