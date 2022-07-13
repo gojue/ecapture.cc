@@ -17,11 +17,20 @@ const nav = [
     text: 'English',
     link: '/'
   },
+  { text: 'Guide', link: '/guide/introduction' },
   {
     text: '中文',
-    link: '/zh/'
+    link: '/zh/',
   },
-  { text: 'Guide', link: '/guide/introduction' },
+  {
+    text: '使用指南',
+    items: [
+      {text:'快速上手', link:'/zh/guide/'},
+      {text:'参数详解', link:'/zh/usage/'},
+      {text:'自助开发', link:'/zh/develop/'},
+      {text:'使用案例', link:'/zh/examples/'},
+    ],
+  },
   {
     text: 'Projects',
     items: [
