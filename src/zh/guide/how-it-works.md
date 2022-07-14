@@ -1,6 +1,6 @@
 # eCapture 工作原理
 
-![](./images/how-ecapture-works.png)
+![运行原理](/assets/how-ecapture-works.png)
 
 # eCapture 系统架构
-![](./images/ecapture-architecture.png)
+![系统架构图](/assets/ecapture-architecture.png)
