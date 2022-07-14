@@ -86,7 +86,7 @@ export const sidebar = {
       ]
     },
   ],
-  '/zh/develop':[
+  '/zh/develop/':[
     {
       activeMatch: `^/zh/`,
       text: '自助开发',
@@ -118,7 +118,7 @@ export const sidebar = {
       ]
     }
   ],
-  '/zh/examples':[
+  '/zh/examples/':[
     {
       text: '使用案例',
       activeMatch: `^/zh/`,
@@ -135,6 +135,19 @@ export const sidebar = {
           text: 'Linux环境里抓包',
           link:'/zh/examples/index'
         },
+      ]
+    }
+  ],
+
+  '/zh/guide/' :[
+    {
+      text: '快速上手',
+      activeMatch: `^/zh/`,
+      items : [
+        {text: '目录', link:'/zh/guide/index'},
+        {text: '功能介绍', link:'/zh/guide/introduction'},
+        {text: '运行原理', link:'/zh/guide/how-it-works'},
+        {text: '直接使用', link:'/zh/guide/quick-start'},
       ]
     }
   ],
