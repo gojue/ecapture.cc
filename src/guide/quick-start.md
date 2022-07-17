@@ -4,6 +4,7 @@ footer: false
 
 # Getting started
 
+## Download
 :::tip Use ELF binary file
 
 Download ELF zip file [release](https://github.com/ehids/ecapture/releases) 
@@ -38,9 +39,9 @@ curl https://github.com
 If you skipped the [Introduction](/guide/introduction), we strongly recommend reading it before moving on to the rest of the documentation.
 
 <div class="vt-box-container next-steps">
-  <a class="vt-box" href="/guide/essentials/application.html">
-    <p class="next-steps-link">Continue the Guide</p>
-    <p class="next-steps-caption">The guide walks you through every aspect of the framework in full details.</p>
+  <a class="vt-box" href="/examples/docker.html">
+    <p class="next-steps-link">eCapture in netshoot</p>
+    <p class="next-steps-caption">ecapture in netshoot pod to capture other container traffic.</p>
   </a>
   <a class="vt-box" href="/tutorial/">
     <p class="next-steps-link">Try the Tutorial</p>
