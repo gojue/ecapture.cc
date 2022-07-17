@@ -2,23 +2,36 @@
 footer: false
 ---
 
-# Quick Start
+# Getting started
 
-Depending on your use case and preference, you can use Vue with or without a build step.
+:::tip Use ELF binary file
 
-## With Build Tools
-
-
-### Online
-
-
-### Local
-
-:::tip Pre-requisites
-
-- Familiarity with the command line
-- Install [Clang](https://clang.org/)
+Download ELF zip file [release](https://github.com/ehids/ecapture/releases) 
+unzip ,exec command `./ecapture --help`
   :::
+
+* Linux kernel version >= 4.15 is required.
+* Enable BTF [BPF Type Format (BTF)](https://www.kernel.org/doc/html/latest/bpf/btf.html)  (Optional, 2022-04-17)
+
+### check your server BTF config：
+```shell
+cfc4n@vm-server:~$# uname -r
+4.18.0-305.3.1.el8.x86_64
+cfc4n@vm-server:~$# cat /boot/config-`uname -r` | grep CONFIG_DEBUG_INFO_BTF
+CONFIG_DEBUG_INFO_BTF=y
+```
+
+### tls command
+capture tls text context.
+Step 1:
+```shell
+./ecapture tls --hex
+```
+
+Step 2:
+```shell
+curl https://github.com
+```
 
 ## Next Steps
 
