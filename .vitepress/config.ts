@@ -196,16 +196,11 @@ export default defineConfigWithTheme<ThemeConfig>({
     //   }
     // },
 
-    // carbonAds: {
-    //   code: 'CEBDT27Y',
-    //   placement: 'vuejsorg'
-    // },
-
     socialLinks: [
       //  TODO: dead link
-      // { icon: 'languages', link: '/translations/' },
+      { icon: 'languages', link: '/zh/' },
       { icon: 'github', link: 'https://github.com/ehids/ecapture' },
-      // { icon: 'twitter', link: 'https://twitter.com/vuejs' },
+      { icon: 'twitter', link: 'https://twitter.com/cfc4n' },
       // { icon: 'discord', link: 'https://discord.com/invite/HBherRA' }
     ],
 
