@@ -14,7 +14,7 @@ import VueMasteryModal from './VueMasteryModal.vue';
     </p>
     <p class="actions">
       <vue-mastery-modal />
-      <a class="get-started" href="/guide/introduction.html">
+      <a class="get-started" href="/guide/quick-start.html">
         Get Started
         <svg
           class="icon"
@@ -28,7 +28,7 @@ import VueMasteryModal from './VueMasteryModal.vue';
           />
         </svg>
       </a>
-      <a class="setup" href="/guide/quick-start.html">Install</a>
+      <a class="setup" href="/guide/introduction.html">Introduction</a>
     </p>
   </section>
 
