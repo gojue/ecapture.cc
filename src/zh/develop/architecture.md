@@ -23,8 +23,11 @@ footer: false
     > kernel    (内核版本相关函数)
 > user          (用户态代码)
   > bytecode    (ebpf .o 文件)
-  config_*.go   (config 文件)
-  event_*.go    (用户态数据解析程序)
-  probe_*.go    (基于 ebpfmanager 的 probe 级别管理)
+  > config        (config目录，用于模块的配置读取、设定)
+    config_*.go   (config 文件)
+  > event         (内核空间传出事件)
+    event_*.go    (用户态数据解析程序)
+  > module        (ebpf的功能模块目录)
+    probe_*.go    (基于 ebpfmanager 的 probe 级别管理)
   ...
 ```
