@@ -14,7 +14,7 @@ import VueMasteryModalZh from './VueMasteryModalZh.vue';
     <p class="actions">
       <vue-mastery-modal-zh />
       <a class="get-started" href="/zh/guide/introduction.html">
-        直接使用
+        使用方法
         <svg
           class="icon"
           xmlns="http://www.w3.org/2000/svg"
