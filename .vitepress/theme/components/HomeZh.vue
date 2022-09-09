@@ -27,7 +27,7 @@ import VueMasteryModalZh from './VueMasteryModalZh.vue';
           />
         </svg>
       </a>
-      <a class="setup" href="/zh/develop/index.html">开发编译</a>
+      <a class="setup" href="https://github.com/ehids/ecapture/releases" target="_blank">下载</a>
     </p>
   </section>
 

@@ -28,7 +28,7 @@ import VueMasteryModal from './VueMasteryModal.vue';
           />
         </svg>
       </a>
-      <a class="setup" href="/guide/introduction.html">Introduction</a>
+      <a class="setup" href="https://github.com/ehids/ecapture/releases" target="_blank">Download</a>
     </p>
   </section>
 
