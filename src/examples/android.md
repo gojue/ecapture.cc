@@ -243,8 +243,28 @@ Access-Control-Allow-Origin: *
 2. 对于非https的socket或者其它包，乱码。
 3. 如果app使用了自己的ssl请求库，或者静态链接程序，是不会有显示的，表示这种情况无法直接抓包。
    需要自己找到请求库SSL_read,SSL_write的二进制offset地址，手动指定。
-   
-   
 
+## 编译
+### ARM Linux 编译
+公有云厂商大部分都提供了ARM64 CPU服务器，笔者选择了腾讯云的。在`广州六区`中，名字叫`标准型SR1`(SR1即ARM 64CPU)，最低配的`SR1.MEDIUM2` 2核2G即满足编译环境。可以按照`按量计费`方式购买，随时释放，比较划算。
 
+操作系统选择`ubuntu 20.04 arm64`。
 
+```shell
+ubuntu@VM-0-5-ubuntu:~$sudo apt-get update
+ubuntu@VM-0-5-ubuntu:~$sudo apt-get install --yes wget git golang build-essential pkgconf libelf-dev llvm-12 clang-12  linux-tools-generic linux-tools-common
+ubuntu@VM-0-5-ubuntu:~$wget https://golang.google.cn/dl/go1.18.linux-arm64.tar.gz
+ubuntu@VM-0-5-ubuntu:~$sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf go1.18.linux-arm64.tar.gz
+ubuntu@VM-0-5-ubuntu:~$for tool in "clang" "llc" "llvm-strip"
+do
+sudo rm -f /usr/bin/$tool
+sudo ln -s /usr/bin/$tool-12 /usr/bin/$tool
+done
+ubuntu@VM-0-5-ubuntu:~$export GOPROXY=https://goproxy.cn
+ubuntu@VM-0-5-ubuntu:~$export PATH=$PATH:/usr/local/go/bin
+```
+
+### 编译方法
+
+1. `ANDROID=1 make` 命令编译支持core版本的二进制程序。
+2. `ANDROID=1 make nocore`命令编译仅支持当前内核版本的二进制程序。
