@@ -115,6 +115,10 @@ export const sidebar = {
           text: '工具链',
           link:'/zh/develop/toolchain'
         },
+        {
+          text: '编译方法',
+          link:'/zh/develop/compile'
+        },
       ]
     }
   ],
