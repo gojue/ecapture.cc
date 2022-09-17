@@ -243,8 +243,10 @@ Access-Control-Allow-Origin: *
 2. 对于非https的socket或者其它包，乱码。
 3. 如果app使用了自己的ssl请求库，或者静态链接程序，是不会有显示的，表示这种情况无法直接抓包。
    需要自己找到请求库SSL_read,SSL_write的二进制offset地址，手动指定。
-   
-   
+
+## 演示视频
+
+<iframe src="//player.bilibili.com/player.html?aid=900387088&bvid=BV1xP4y1Z7HB&cid=831143179&page=1" scrolling="no" border="0" frameborder="no" framespacing="0" allowfullscreen="true" width="100%" height="500"> </iframe>   
 
 
 
