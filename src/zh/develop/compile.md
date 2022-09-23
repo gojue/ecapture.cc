@@ -8,6 +8,7 @@ ubuntu@VM-0-5-ubuntu:~$sudo apt-get update
 ubuntu@VM-0-5-ubuntu:~$sudo apt-get install --yes wget git golang build-essential pkgconf libelf-dev llvm-12 clang-12  linux-tools-generic linux-tools-common
 ubuntu@VM-0-5-ubuntu:~$wget https://golang.google.cn/dl/go1.18.linux-amd64.tar.gz
 ubuntu@VM-0-5-ubuntu:~$sudo rm -rf /usr/local/go && sudo tar -C /usr/local -xzf go1.18.linux-amd64.tar.gz
+ubuntu@VM-0-5-ubuntu:~$sudo rm -f /usr/bin/go && sudo ln /usr/local/go/bin/go /usr/bin/go
 ubuntu@VM-0-5-ubuntu:~$for tool in "clang" "llc" "llvm-strip"
 do
 sudo rm -f /usr/bin/$tool
