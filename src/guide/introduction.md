@@ -22,10 +22,10 @@ It supports TLS encryption libraries such as openssl/gnutls/nspr etc. The usersp
 
 open `https://github.com/ehids/ecapture/releases` , and choose your version.
 
-* Android version ,Kernel > `4.15` , `CO-RE` **Disabled** :ecapture-v0.2.2-android-aarch64-4.15-5.4.tar.gz
-* Android version ,Kernel > `4.15` , `CO-RE` **Enabled** :ecapture-v0.2.2-android-aarch64.tar.gz
-* Linux Kernel > 4.15 , ARM64-aarch64 : ecapture-v0.2.2-linux-aarch64.tar.gz
-* Linux Kernel > 4.15 , X86_64 : ecapture-v0.2.2-linux-x86_64.tar.gz
+* Android version ,Kernel > `4.18` , `CO-RE` **Disabled** :ecapture-v0.2.2-android-aarch64-4.18-5.4.tar.gz
+* Android version ,Kernel > `4.18` , `CO-RE` **Enabled** :ecapture-v0.2.2-android-aarch64.tar.gz
+* Linux Kernel > 4.18 , ARM64-aarch64 : ecapture-v0.2.2-linux-aarch64.tar.gz
+* Linux Kernel > 4.18 , X86_64 : ecapture-v0.2.2-linux-x86_64.tar.gz
 
 #### Run
 
