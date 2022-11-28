@@ -203,13 +203,13 @@ export default defineConfigWithTheme<ThemeConfig>({
     socialLinks: [
       //  TODO: dead link
       { icon: 'languages', link: '/zh/' },
-      { icon: 'github', link: 'https://github.com/ehids/ecapture' },
+      { icon: 'github', link: 'https://github.com/gojue/ecapture' },
       { icon: 'twitter', link: 'https://twitter.com/cfc4n' },
       // { icon: 'discord', link: 'https://discord.com/invite/HBherRA' }
     ],
 
     editLink: {
-      repo: 'ehids/ecapture.cc#master',
+      repo: 'gojue/ecapture.cc#master',
       text: 'Edit this page on GitHub',
     },
 

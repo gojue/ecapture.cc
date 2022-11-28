@@ -8,8 +8,8 @@ footer: false
 
 ## Home Page
 
-1. Source code: [https://github.com/ehids/ecapture](https://github.com/ehids/ecapture)
-2. Documents: [https://github.com/ehids/ecapture.cc](https://github.com/ehids/ecapture.cc)
+1. Source code: [https://github.com/gojue/ecapture](https://github.com/gojue/ecapture)
+2. Documents: [https://github.com/gojue/ecapture.cc](https://github.com/gojue/ecapture.cc)
 3. Library: [https://github.com/ehids/ebpfmanager](https://github.com/ehids/ebpfmanager)
 
 
@@ -20,7 +20,7 @@ It supports TLS encryption libraries such as openssl/gnutls/nspr etc. The usersp
 
 #### Download
 
-open `https://github.com/ehids/ecapture/releases` , and choose your version.
+open `https://github.com/gojue/ecapture/releases` , and choose your version.
 
 * Android version ,Kernel > `4.18` , `CO-RE` **Disabled** :ecapture-v0.2.2-android-aarch64-4.18-5.4.tar.gz
 * Android version ,Kernel > `4.18` , `CO-RE` **Enabled** :ecapture-v0.2.2-android-aarch64.tar.gz
@@ -58,7 +58,7 @@ DESCRIPTION:
 	It can also capture bash commands, which is suitable for
 	security auditing scenarios, such as database auditing of mysqld, etc (disabled on Android).
 
-	Repository: https://github.com/ehids/ecapture
+	Repository: https://github.com/gojue/ecapture
 
 OPTIONS:
   -d, --debug[=false]		enable debug logging

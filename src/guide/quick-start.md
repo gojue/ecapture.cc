@@ -7,7 +7,7 @@ footer: false
 ## Download
 :::tip Use ELF binary file
 
-Download ELF zip file [release](https://github.com/ehids/ecapture/releases) 
+Download ELF zip file [release](https://github.com/gojue/ecapture/releases) 
 unzip ,exec command `./ecapture --help`
   :::
 

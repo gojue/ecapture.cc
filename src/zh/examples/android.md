@@ -26,7 +26,7 @@ footer: false
 
 5. 如何进行低版本内核修改，可以参考```https://github.com/feicong/android_ebpf``` ，目前仓库正在更新中。
 
-如果满足使用的条件，到 https://github.com/ehids/ecapture/releases 下载最新版本的ecapture，解压后执行下面命令完成安装：
+如果满足使用的条件，到 https://github.com/gojue/ecapture/releases 下载最新版本的ecapture，解压后执行下面命令完成安装：
 
 ```
 adb push ecapture /data/local/tmp/
