@@ -48,3 +48,7 @@ ubuntu@VM-0-5-ubuntu:~$export PATH=$PATH:/usr/local/go/bin
 
 1. `ANDROID=1 make` 命令编译支持core版本的二进制程序。
 2. `ANDROID=1 make nocore`命令编译仅支持当前内核版本的二进制程序。
+
+### 其他编译经验分享
+
+1. [[原创]自己编译解决eCapture在x86_64模拟器运行错误（基于eBPF技术实现TLS加密的明文捕获，无需CA证书）](https://bbs.pediy.com/thread-275179.htm)

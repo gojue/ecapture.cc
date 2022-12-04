@@ -8,6 +8,8 @@ footer: false
 
 ## eCapture旁观者是什么?
 eBPF HOOK uprobe实现的各种用户态进程的数据捕获，无需改动原程序。
+也可以导出为pcap-NG格式的数据包，使用wireshark打开。
+支持 Linux/Android 两种操作系统，支持x86_64、aarch64两种CPU架构。
 
 * SSL/HTTPS数据导出功能，针对HTTPS的数据包抓取，不需要导入CA证书。
 * bash的命令捕获，HIDS的bash命令监控解决方案。
@@ -15,7 +17,7 @@ eBPF HOOK uprobe实现的各种用户态进程的数据捕获，无需改动原�
 
 
 ### 为什么选择eCapture?
-相比Wireshark、tcpdump，优缺点...TODO
+Wireshark、tcpdump等工具，只能抓到加密后的流量，无法捕获TLS的明文。eCapture只需要root权限，即可捕获明文的HTTPS通信包明文。
 
 ## 还有问题？?
 
