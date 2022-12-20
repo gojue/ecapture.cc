@@ -19,3 +19,6 @@ UBNUTU 20.04 or newer：
 ```shell
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/gojue/ecapture/master/builder/gen_android_nocore.sh)"
 ```
+
+Other Linux
+see `https://github.com/gojue/ecapture/master/builder/gen_android_nocore.sh` for more information.

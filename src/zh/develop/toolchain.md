@@ -14,8 +14,11 @@ footer: false
 
 ## 开发环境初始化
 
-UBNUTU 20.04为例：
+### UBNUTU 20.04或更新版本：
 
 ```shell
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/gojue/ecapture/master/builder/gen_android_nocore.sh)"
 ```
+
+### 其他Linux发行版
+参考`https://github.com/gojue/ecapture/master/builder/gen_android_nocore.sh` 脚本内容，自行安装。
