@@ -2,19 +2,19 @@
 footer: false
 ---
 
-# 工具链
+# toolchain
 
-## 工具及对应版本
+## tools version
 
-|  名称   |   版本    |
-| :-----: |:-------:|
+|  name   | version |
+|:-------:|:-------:|
 |  llvm   |  >= 9   |
 | golang  | >= 1.17 |
 | bpftool |    -    |
 
-## 开发环境初始化
+## development environment initialization
 
-UBNUTU 20.04为例：
+UBNUTU 20.04 or newer：
 
 ```shell
 /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/gojue/ecapture/master/builder/gen_android_nocore.sh)"
