@@ -22,10 +22,8 @@ It supports TLS encryption libraries such as openssl/gnutls/nspr etc. The usersp
 
 open `https://github.com/gojue/ecapture/releases` , and choose your version.
 
-* Android version ,Kernel > `4.18` , `CO-RE` **Disabled** :ecapture-v0.2.2-android-aarch64-4.18-5.4.tar.gz
-* Android version ,Kernel > `4.18` , `CO-RE` **Enabled** :ecapture-v0.2.2-android-aarch64.tar.gz
-* Linux Kernel > 4.18 , ARM64-aarch64 : ecapture-v0.2.2-linux-aarch64.tar.gz
-* Linux Kernel > 4.18 , X86_64 : ecapture-v0.2.2-linux-x86_64.tar.gz
+* Linux/Android Kernel >= 5.5 , ARM64-aarch64 : ecapture-v0.4.1-linux/android-aarch64.tar.gz
+* Linux/Android Kernel >= 4.18 , X86_64 : ecapture-v0.4.1-linux/android-x86_64.tar.gz
 
 #### Run
 
@@ -37,38 +35,43 @@ open `https://github.com/gojue/ecapture/releases` , and choose your version.
 ```shell
 cfc4n@vm-server:~/project/ssldump$ bin/ecapture -h
 NAME:
-	eCapture - capture text SSL content without CA cert by ebpf hook.
+	ecapture - capture text SSL content without CA cert by ebpf hook.
 
 USAGE:
-	eCapture [flags]
+	ecapture [flags]
 
 VERSION:
-	linux_x86_64:0.2.1-20220705-544c54d:[CORE]
+	linux_x86_64:0.4.11-20230205-09197fd:5.4.0-131-generic
 
 COMMANDS:
 	bash		capture bash command
 	help		Help about any command
 	mysqld		capture sql queries from mysqld 5.6/5.7/8.0 .
 	postgres	capture sql queries from postgres 10+.
-	tls		alias name:openssl , use to capture tls/ssl text content without CA cert.
+	tls		use to capture tls/ssl text content without CA cert. (Support Linux(Android)  X86_64 4.18/aarch64 5.5 or newer).
 
 DESCRIPTION:
 	eCapture(旁观者) is a tool that can capture plaintext packets
 	such as HTTPS and TLS without installing a CA certificate.
 	It can also capture bash commands, which is suitable for
 	security auditing scenarios, such as database auditing of mysqld, etc (disabled on Android).
-
+	
 	Repository: https://github.com/gojue/ecapture
+	HomePage: https://ecapture.cc
+	
+	Usage:
+	  ecapture tls -h
+	  ecapture bash -h
 
 OPTIONS:
   -d, --debug[=false]		enable debug logging
-  -h, --help[=false]		help for eCapture
+  -h, --help[=false]		help for ecapture
       --hex[=false]		print byte strings as hex encoded strings
+  -l, --log-file=""		-l save the packets to file
       --nosearch[=false]	no lib search
   -p, --pid=0			if pid is 0 then we target all pids
   -u, --uid=0			if uid is 0 then we target all users
-  -v, --version[=false]		version for eCapture
-  -w, --write-file=""		-w file Write the packets to file
+  -v, --version[=false]		version for ecapture
 ```
 
 

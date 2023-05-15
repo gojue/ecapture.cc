@@ -19,6 +19,62 @@ eBPF HOOK uprobe实现的各种用户态进程的数据捕获，无需改动原�
 ### 为什么选择eCapture?
 Wireshark、tcpdump等工具，只能抓到加密后的流量，无法捕获TLS的明文。eCapture只需要root权限，即可捕获明文的HTTPS通信包明文。
 
+### 如何使用
+#### 下载
+
+open `https://github.com/gojue/ecapture/releases` , and choose your version.
+
+* Linux、Android ARM64-aarch64 CPU架构，内核版本 >= 5.5 ,  ecapture-v0.4.1-linux/android-aarch64.tar.gz
+* Linux/Android X86_64 CPU架构，内核版本 >= 4.18 , ecapture-v0.4.1-linux/android-x86_64.tar.gz
+
+#### 运行
+
+```shell
+./ecapture 
+```
+
+#### 参数
+```shell
+NAME:
+	ecapture - capture text SSL content without CA cert by ebpf hook.
+
+USAGE:
+	ecapture [flags]
+
+VERSION:
+	linux_x86_64:0.4.11-20230205-09197fd:5.4.0-131-generic
+
+COMMANDS:
+	bash		capture bash command
+	help		Help about any command
+	mysqld		capture sql queries from mysqld 5.6/5.7/8.0 .
+	postgres	capture sql queries from postgres 10+.
+	tls		use to capture tls/ssl text content without CA cert. (Support Linux(Android)  X86_64 4.18/aarch64 5.5 or newer).
+
+DESCRIPTION:
+	eCapture(旁观者) is a tool that can capture plaintext packets
+	such as HTTPS and TLS without installing a CA certificate.
+	It can also capture bash commands, which is suitable for
+	security auditing scenarios, such as database auditing of mysqld, etc (disabled on Android).
+	
+	Repository: https://github.com/gojue/ecapture
+	HomePage: https://ecapture.cc
+	
+	Usage:
+	  ecapture tls -h
+	  ecapture bash -h
+
+OPTIONS:
+  -d, --debug[=false]		enable debug logging
+  -h, --help[=false]		help for ecapture
+      --hex[=false]		print byte strings as hex encoded strings
+  -l, --log-file=""		-l save the packets to file
+      --nosearch[=false]	no lib search
+  -p, --pid=0			if pid is 0 then we target all pids
+  -u, --uid=0			if uid is 0 then we target all users
+  -v, --version[=false]		version for ecapture
+```
+
 ## 还有问题？?
 
 [comment]: <> TODO: dead link
