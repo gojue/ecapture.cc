@@ -10,7 +10,7 @@ footer: false
 
 1. Source code: [https://github.com/gojue/ecapture](https://github.com/gojue/ecapture)
 2. Documents: [https://github.com/gojue/ecapture.cc](https://github.com/gojue/ecapture.cc)
-3. Library: [https://github.com/ehids/ebpfmanager](https://github.com/ehids/ebpfmanager)
+3. Library: [https://github.com/gojue/ebpfmanager](https://github.com/gojue/ebpfmanager)
 
 
 ## What is eCapture?

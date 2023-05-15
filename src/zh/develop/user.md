@@ -4,7 +4,7 @@ footer: false
 
 # 用户空间代码
 
-> 用户空间代码基于 `ehids/ebpfmanager` 用于 probe 管理，`cilium/ebpf` 做 `bpf map` 对接管理
+> 用户空间代码基于 `gojue/ebpfmanager` 用于 probe 管理，`cilium/ebpf` 做 `bpf map` 对接管理
 
 ## 自定义开发
 

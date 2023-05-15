@@ -34,8 +34,8 @@ const nav = [
   {
     text: 'Projects',
     items: [
-      { text: 'eBPFManager', link: 'https://github.com/ehids/ebpfmanager'},
-      { text: 'eBPFSlide', link: 'https://github.com/ehids/ebpf-slide'},
+      { text: 'eBPFManager', link: 'https://github.com/gojue/ebpfmanager'},
+      { text: 'eBPFSlide', link: 'https://github.com/gojue/ebpf-slide'},
       { text: 'eHIDSAgent', link: 'https://github.com/ehids/ehids-agent'}
     ]
   },
