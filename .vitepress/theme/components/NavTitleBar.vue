@@ -1,5 +1,5 @@
 <template>
-  <img class="logo" src="../../public/logo-300X300.png" />
+  <img class="logo" src="../../public/logo-300x300-new.jpg" />
   <span class="text">eCapture(旁观者)</span>
 </template>
 
