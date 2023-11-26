@@ -9,7 +9,7 @@ footer: false
 |  name   | version |
 |:-------:|:-------:|
 |  llvm   |  >= 9   |
-| golang  | >= 1.17 |
+| golang  | >= 1.21 |
 | bpftool |    -    |
 
 ## development environment initialization

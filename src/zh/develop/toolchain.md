@@ -9,7 +9,7 @@ footer: false
 |  名称   |   版本    |
 | :-----: |:-------:|
 |  llvm   |  >= 9   |
-| golang  | >= 1.17 |
+| golang  | >= 1.21 |
 | bpftool |    -    |
 
 ## 开发环境初始化
