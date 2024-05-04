@@ -176,7 +176,7 @@ export default defineConfigWithTheme<ThemeConfig>({
         'utf-8'
       )
     ],
-    ['link', { rel: 'icon', href: path.resolve(__dirname, "./public/logo-300x300-v2.svg") }],
+    ['link', { rel: 'shortcut icon', href: path.resolve(__dirname, "./public/favicon.ico") }],
     // ['link', { rel: "apple-touch-icon", sizes: "180x180", href: path.resolve(__dirname, "./public/apple-touch-icon.png")}],
     // ['link', { rel: "icon", type: "image/png", sizes: "32x32", href: path.resolve(__dirname, "./public/favicon-32x32.png")}],
     // ['link', { rel: "icon", type: "image/png", sizes: "16x16", href: path.resolve(__dirname, "./public/favicon-16x16.png")}],
