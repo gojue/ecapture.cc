@@ -176,6 +176,7 @@ export default defineConfigWithTheme<ThemeConfig>({
         'utf-8'
       )
     ],
+    ['link', { rel: 'icon', href: path.resolve(__dirname, "./public/logo-300x300-v2.svg") }],
     // ['link', { rel: "apple-touch-icon", sizes: "180x180", href: path.resolve(__dirname, "./public/apple-touch-icon.png")}],
     // ['link', { rel: "icon", type: "image/png", sizes: "32x32", href: path.resolve(__dirname, "./public/favicon-32x32.png")}],
     // ['link', { rel: "icon", type: "image/png", sizes: "16x16", href: path.resolve(__dirname, "./public/favicon-16x16.png")}],
@@ -205,7 +206,6 @@ export default defineConfigWithTheme<ThemeConfig>({
       { icon: 'languages', link: '/zh/' },
       { icon: 'github', link: 'https://github.com/gojue/ecapture' },
       { icon: 'twitter', link: 'https://twitter.com/cfc4n' },
-      // { icon: 'discord', link: 'https://discord.com/invite/HBherRA' }
     ],
 
     editLink: {
