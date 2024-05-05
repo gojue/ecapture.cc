@@ -14,7 +14,7 @@ footer: false
 
 ## Kernel Space Code
 
-[Kernel Space Code](./kern_space.md)
+[Kernel Space Code](./kernel_space.md)
 
 ## User Space Code
 
