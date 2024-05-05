@@ -22,8 +22,8 @@ It supports TLS encryption libraries such as openssl/gnutls/nspr etc. The usersp
 
 open [https://github.com/gojue/ecapture/releases](https://github.com/gojue/ecapture/releases) , and choose your version.
 
-* Linux/Android Kernel >= 5.5 , ARM64-aarch64 : ecapture-v0.4.1-linux/android-aarch64.tar.gz
-* Linux/Android Kernel >= 4.18 , X86_64 : ecapture-v0.4.1-linux/android-x86_64.tar.gz
+* Linux/Android Kernel >= 5.5 , ARM64-aarch64 : ecapture-v0.8.0-linux/android-arm64.tar.gz
+* Linux/Android Kernel >= 4.18 , X86_64 : ecapture-v0.8.0-linux/android-amd64.tar.gz
 
 #### Run
 

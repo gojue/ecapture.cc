@@ -24,8 +24,8 @@ Wireshark、tcpdump等工具，只能抓到加密后的流量，无法捕获TLS�
 
 open [https://github.com/gojue/ecapture/releases](https://github.com/gojue/ecapture/releases) , and choose your version.
 
-* Linux、Android ARM64-aarch64 CPU架构，内核版本 >= 5.5 ,  ecapture-v0.4.1-linux/android-aarch64.tar.gz
-* Linux/Android X86_64 CPU架构，内核版本 >= 4.18 , ecapture-v0.4.1-linux/android-x86_64.tar.gz
+* Linux、Android ARM64-aarch64 CPU架构，内核版本 >= 5.5 ,  ecapture-v0.8.0-linux/android-arm64.tar.gz
+* Linux/Android X86_64 CPU架构，内核版本 >= 4.18 , ecapture-v0.8.0-linux/android-amd64.tar.gz
 
 #### 运行
 
