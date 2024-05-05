@@ -18,7 +18,7 @@ const nav = [
     link: '/'
   },
   { text: 'Guide', link: '/guide/introduction' },
-  { text: 'Develop', link: '/develop/' },
+  { text: 'Develop', link: '/develop/compile' },
   {
     text: '中文',
     link: '/zh/',
