@@ -18,6 +18,7 @@ const nav = [
     link: '/'
   },
   { text: 'Guide', link: '/guide/introduction' },
+  { text: 'Develop', link: '/develop' },
   {
     text: '中文',
     link: '/zh/',
@@ -36,7 +37,7 @@ const nav = [
     items: [
       { text: 'eBPFManager', link: 'https://github.com/gojue/ebpfmanager'},
       { text: 'eBPFSlide', link: 'https://github.com/gojue/ebpf-slide'},
-      { text: 'eHIDSAgent', link: 'https://github.com/ehids/ehids-agent'}
+      { text: 'eHIDSAgent', link: 'https://github.com/gojue/ehids-agent'}
     ]
   },
   {
@@ -72,7 +73,6 @@ export const sidebar = {
   ],
   '/develop/': [
     {
-      activeMatch: `^/guide/`,
       text: 'Develop',
       items: [
         { text: 'Environment', link: '/develop/environment' },
@@ -180,7 +180,7 @@ export default defineConfigWithTheme<ThemeConfig>({
         'utf-8'
       )
     ],
-    ['link', { rel: 'shortcut icon', href: path.resolve(__dirname, "./public/favicon.ico") }],
+    ['link', { rel: 'shortcut icon', href: 'https://ecapture.cc/assets/logo-300x300-v2.059cb3f9.svg' }],
     // ['link', { rel: "apple-touch-icon", sizes: "180x180", href: path.resolve(__dirname, "./public/apple-touch-icon.png")}],
     // ['link', { rel: "icon", type: "image/png", sizes: "32x32", href: path.resolve(__dirname, "./public/favicon-32x32.png")}],
     // ['link', { rel: "icon", type: "image/png", sizes: "16x16", href: path.resolve(__dirname, "./public/favicon-16x16.png")}],
