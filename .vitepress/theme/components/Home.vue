@@ -104,7 +104,7 @@ html:not(.dark) .accent,
 .actions .get-started,
 .actions .setup {
   color: var(--vt-c-text-code);
-  display: ruby;
+  display: inline-flex;
 }
 
 .actions .get-started:hover,
