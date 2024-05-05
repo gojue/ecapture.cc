@@ -29,7 +29,7 @@ import VueMasteryModalZh from './VueMasteryModalZh.vue';
       </a>
       <a class="setup" href="https://github.com/gojue/ecapture/releases" target="_blank">
         下载
-        <img src="https://img.shields.io/github/v/release/gojue/ecapture?display_name=tag&include_prereleases&sort=semver&label=&color=ffc517"
+        <img src="https://img.shields.io/github/v/release/gojue/ecapture?display_name=tag&include_prereleases&sort=semver&label="
              alt="eCapture Version"/>
       </a>
     </p>
