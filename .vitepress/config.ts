@@ -83,6 +83,10 @@ export const sidebar = {
           text: 'User Space',
           link: '/develop/user_space'
         },
+        {
+          text: 'Compile',
+          link:'/develop/compile'
+        },
       ]
     },
   ],
