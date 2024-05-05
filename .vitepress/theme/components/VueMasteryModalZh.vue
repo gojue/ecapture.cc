@@ -100,12 +100,12 @@ watch(
 }
 
 #vuemastery-action:hover {
-  background-color: var(--vt-c-green-dark);
+  background-color: var(--vt-c-yellow-dark);
   transition-duration: 0.2s;
 }
 
 .dark #vuemastery-action:hover {
-  background-color: var(--vt-c-green-light);
+  background-color: var(--vt-c-yellow-light);
 }
 
 .icon-play {
@@ -167,7 +167,7 @@ watch(
 }
 
 .vuemastery-modal-footer-text a {
-  color: #42b983;
+  color: #ffe600;
   font-weight: 600;
 }
 

@@ -109,10 +109,13 @@ html:not(.dark) .accent,
   transform: translateX(2px);
 }
 
+.actions .setup {
+  display: inline-flex;
+}
+
 .actions .get-started,
 .actions .setup {
   color: var(--vt-c-text-code);
-  display: inline-flex;
 }
 
 .actions .get-started:hover,
