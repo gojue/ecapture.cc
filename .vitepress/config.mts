@@ -59,6 +59,11 @@ export const sidebar = {
           text: 'Quick Start',
           link: '/guide/quick-start'
         }
+        // ,
+        // {
+        //   text: 'Download',
+        //   link: '/download'
+        // }
       ]
     },
     {
@@ -167,10 +172,27 @@ export default defineConfigWithTheme<ThemeConfig>({
   lang: 'en-US',
   title: 'eCapture',
   description: 'eCapture - Capture SSL/TLS text content without CA certificate using eBPF',
-  srcDir: 'src',
+  srcDir: './src',
   srcExclude: ['tutorial/**/description.md'],
   scrollOffset: 'header',
+  assetsDir: 'assets',
 
+  ignoreDeadLinks: false,
+  chainWebpack: (config) => {
+    // 找到处理 JSON 文件的规则
+    const jsonRule = config.module.rule('json');
+
+
+    // 禁用 source map
+    jsonRule.include.add(/src\/assets\/releases/) // 只包括 src/assets/releases 目录
+        .end()
+        .use('json-loader').tap((options) => {
+      return {
+        ...options,
+        sourceMap: false, // 确保不生成 source map
+      };
+    });
+  },
   head: [
     [
       'script',
@@ -248,9 +270,12 @@ export default defineConfigWithTheme<ThemeConfig>({
       host: true,
       fs: {
         // for when developing with locally linked theme
-        allow: ['../..']
-      }
+        allow: ['../..'],
+        cachedChecks: false
+      },
+      force: true, // 强制重新加载
     },
+    assetsDir:"assets",
     build: {
       minify: 'terser',
       chunkSizeWarningLimit: Infinity
@@ -261,6 +286,7 @@ export default defineConfigWithTheme<ThemeConfig>({
   },
 
   vue: {
-    reactivityTransform: true
+    reactivityTransform: true,
   }
 })
+

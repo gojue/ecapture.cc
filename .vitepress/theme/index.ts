@@ -19,5 +19,5 @@ export default Object.assign({}, VPTheme, {
     app.provide('prefer-sfc', preferSFC)
     app.provide('filter-headers', filterHeadersByPreference)
     // app.component('VueSchoolLink', VueSchoolLink)
-  }
+  },
 })

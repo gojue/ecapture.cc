@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { watch } from 'vue'
+import {ref, watch } from 'vue'
 
 const VIDEO_SOURCE = 'https://player.bilibili.com/player.html?aid=552723736&bvid=BV1si4y1Q74a&cid=560493755&page=1'
-let showWhyVue: boolean = $ref(false)
+let showWhyVue: boolean = ref(false)
 
 watch(
   () => showWhyVue,

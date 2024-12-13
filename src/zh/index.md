@@ -4,7 +4,7 @@ title: 旁观者 - eBPF技术强力驱动，无需CA证书即可捕获HTTPS/TLS�
 ---
 
 <script setup>
-import Home from '/@theme/components/HomeZh.vue'
+import Home from '@theme/components/HomeZh.vue'
 </script>
 
 <Home />

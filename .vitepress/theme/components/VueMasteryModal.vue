@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { watch } from 'vue'
+import { ref, watch } from 'vue'
 
 const VIDEO_SOURCE = 'https://www.youtube.com/embed/CoDIjEQCvvA'
-let showWhyVue: boolean = $ref(false)
+let showWhyVue: boolean = ref(false)
 
 watch(
   () => showWhyVue,
