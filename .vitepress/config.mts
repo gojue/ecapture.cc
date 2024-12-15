@@ -19,6 +19,7 @@ const nav = [
   },
   { text: 'Guide', link: '/guide/introduction' },
   { text: 'Develop', link: '/develop/compile' },
+  { text: 'Download', link: '/download' },
   {
     text: '中文',
     link: '/zh/',
@@ -26,6 +27,7 @@ const nav = [
   {
     text: '使用指南',
     items: [
+      {text:'本地下载', link:'/zh/download'},
       {text:'快速上手', link:'/zh/guide/'},
       {text:'参数详解', link:'/zh/usage/'},
       {text:'自助开发', link:'/zh/develop/'},

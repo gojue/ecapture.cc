@@ -12,3 +12,15 @@
   clip: rect(0, 0, 0, 0);
   border: 0;
 }
+
+.docs-github-release-tag {
+  font-size: 10px;
+  font-weight: bold;
+  padding: 2px 2px;
+  margin-left: 6px;
+  background-color: var(--vt-c-red);
+  color: white;
+  border-radius: 8px;
+  vertical-align: middle;
+  line-height: 18px;
+}

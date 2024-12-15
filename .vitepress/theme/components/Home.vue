@@ -28,10 +28,8 @@ import VueMasteryModal from './VueMasteryModal.vue';
           />
         </svg>
       </a>
-      <a class="setup" href="https://github.com/gojue/ecapture/releases" target="_blank">
+      <a id="github_download" class="setup" href="./download" target="_blank">
         Download
-        <img src="https://img.shields.io/github/v/release/gojue/ecapture?display_name=tag&include_prereleases&sort=semver&label=&color=42b883"
-             alt="eCapture Version"/>
       </a>
     </p>
   </section>
@@ -235,4 +233,6 @@ html:not(.dark) .accent,
     font-size: 36px;
   }
 }
+
+
 </style>
