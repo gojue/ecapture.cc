@@ -2,65 +2,140 @@
 footer: false
 title: Download eCapture from Github.
 ---
+
+# Download
+
 <script setup>
-import { VTCodeGroup, VTCodeGroupTab } from '@vue/theme'
+import { ref, onMounted } from 'vue'
+import { marked } from 'marked'
+import { useRoute } from 'vitepress'
+
+const releases = ref([])
+const loading = ref(true)
+const route = useRoute()
+
+const CDN_DOMAIN = 'image.cnxct.com'    // assets 镜像域名
+const GITHUB_DOMAIN = 'github.com/gojue'    // assets download domain
+const GITHUB_API_DOMAIN = 'api.github.com/repos/gojue'    // github api domain
+
+// 根据当前路径判断是否使用 CDN
+const shouldUseCDN = () => {
+  return route.path.includes('/zh/')
+}
+// 将 GitHub 下载链接转换为 CDN 链接
+const convertToCDNUrl = (url) => {
+  if (!url) return url
+  return shouldUseCDN() ? url.replace(GITHUB_DOMAIN, CDN_DOMAIN).replace(GITHUB_API_DOMAIN, CDN_DOMAIN) : url
+}
+
+// 转换 Markdown 为 HTML
+const convertMarkdownToHtml = (markdown) => {
+  if (!markdown) return ''
+  return marked(markdown)
+}
+
+onMounted(async () => {
+  try {
+    const response = await fetch(convertToCDNUrl('https://api.github.com/repos/gojue/ecapture/releases/?t=202412191951'))
+    const data = await response.json()
+    releases.value = Array.isArray(data) ? data.map(release => ({
+      ...release,
+      body: convertMarkdownToHtml(release.body),
+      assets: (release.assets || []).map(asset => ({
+        ...asset,
+        browser_download_url: convertToCDNUrl(asset.browser_download_url)
+      }))
+    })) : []
+  } catch (error) {
+    console.error('Error fetching releases:', error)
+    releases.value = []
+  } finally {
+    loading.value = false
+  }
+})
 </script>
 
-# Download {#Download}
+<ClientOnly>
+  <div class="releases-container">
+    <div v-if="loading">Loading releases data...</div>
+    <div v-else-if="releases.length > 0">
+      <!-- Latest Version -->
+      <h2>Latest Version ({{ releases[0]?.tag_name || 'Unknown' }})</h2>
+      <p v-if="releases[0]?.published_at">Published: {{ new Date(releases[0].published_at).toLocaleDateString() }}</p>
+      <div v-if="releases[0]?.body" class="markdown-body" v-html="releases[0].body"></div>
+      <h3>Downloads</h3>
+      <ul v-if="releases[0]?.assets?.length">
+        <li v-for="asset in releases[0].assets" :key="asset.id">
+          <a :href="asset.browser_download_url">{{ asset.name }}</a>
+        </li>
+      </ul>
+      <!-- Previous Versions -->
+      <h2 class="previous-versions">Previous Versions</h2>
+      <div v-for="release in releases.slice(1)" :key="release.id">
+        <details>
+          <summary>Version {{ release.tag_name }} ({{ new Date(release.published_at).toLocaleDateString() }})</summary>
+          <ul v-if="release?.assets?.length">
+            <li v-for="asset in release.assets" :key="asset.id">
+              <a :href="asset.browser_download_url">{{ asset.name }}</a>
+            </li>
+          </ul>
+          <p v-else>No assets available for this version</p>
+        </details>
+      </div>
+    </div>
+    <div v-else>No releases available</div>
+  </div>
 
-## Latest Version (v0.9.0) {Latest Version v0.9.0}
-
-### eCapture v0.9.0
-:: published at 2024-12-15T12:08:50Z
-
-#### ChangeLogs
-* fix: pcap filter not work as expected
-* feat support capture zsh command
-* feat: detect CAP_BPF
-* feat: Enrich addr info with remote addr info
-* fix ecapture docker images CVE-2024-24790
-* fix #685, the Processor print "incoming chan is full",and exit.
-* feat: Support for new version detection feature.
-* build(deps): bump golang.org/x/crypto from 0.23.0 to 0.31.0
-* feat: Clean map when destroy socket
-
-#### Assets
-- [checksum-v0.9.0.txt](https://github.com/gojue/ecapture/releases/download/v0.9.0/checksum-v0.9.0.txt)
-- [ecapture-v0.9.0-android-amd64.tar.gz](https://github.com/gojue/ecapture/releases/download/v0.9.0/ecapture-v0.9.0-android-amd64.tar.gz)
-- [ecapture-v0.9.0-android-arm64.tar.gz](https://github.com/gojue/ecapture/releases/download/v0.9.0/ecapture-v0.9.0-android-arm64.tar.gz)
-- [ecapture-v0.9.0-linux-amd64.tar.gz](https://github.com/gojue/ecapture/releases/download/v0.9.0/ecapture-v0.9.0-linux-amd64.tar.gz)
-- [ecapture-v0.9.0-linux-arm64.tar.gz](https://github.com/gojue/ecapture/releases/download/v0.9.0/ecapture-v0.9.0-linux-arm64.tar.gz)
-- [ecapture_v0.9.0_linux_amd64.deb](https://github.com/gojue/ecapture/releases/download/v0.9.0/ecapture_v0.9.0_linux_amd64.deb)
-- [ecapture_v0.9.0_linux_arm64.deb](https://github.com/gojue/ecapture/releases/download/v0.9.0/ecapture_v0.9.0_linux_arm64.deb)
-
-## Old Versions
-
-### eCapture v0.8.12 { eCapture v0.8.12 }
-#### Assets
-- [checksum-v0.8.12.txt](https://github.com/gojue/ecapture/releases/download/v0.8.12/checksum-v0.8.12.txt)
-- [ecapture-v0.8.12-android-amd64.tar.gz](https://github.com/gojue/ecapture/releases/download/v0.8.12/ecapture-v0.8.12-android-amd64.tar.gz)
-- [ecapture-v0.8.12-android-arm64.tar.gz](https://github.com/gojue/ecapture/releases/download/v0.8.12/ecapture-v0.8.12-android-arm64.tar.gz)
-- [ecapture-v0.8.12-linux-amd64.tar.gz](https://github.com/gojue/ecapture/releases/download/v0.8.12/ecapture-v0.8.12-linux-amd64.tar.gz)
-- [ecapture-v0.8.12-linux-arm64.tar.gz](https://github.com/gojue/ecapture/releases/download/v0.8.12/ecapture-v0.8.12-linux-arm64.tar.gz)
-- [ecapture_v0.8.12_linux_amd64.deb](https://github.com/gojue/ecapture/releases/download/v0.8.12/ecapture_v0.8.12_linux_amd64.deb)
-- [ecapture_v0.8.12_linux_arm64.deb](https://github.com/gojue/ecapture/releases/download/v0.8.12/ecapture_v0.8.12_linux_arm64.deb)
-
-### eCapture v0.8.11 {eCapture v0.8.11}
-#### Assets
-- [checksum-v0.8.11.txt](https://github.com/gojue/ecapture/releases/download/v0.8.11/checksum-v0.8.11.txt)
-- [ecapture-v0.8.11-android-amd64.tar.gz](https://github.com/gojue/ecapture/releases/download/v0.8.11/ecapture-v0.8.11-android-amd64.tar.gz)
-- [ecapture-v0.8.11-android-arm64.tar.gz](https://github.com/gojue/ecapture/releases/download/v0.8.11/ecapture-v0.8.11-android-arm64.tar.gz)
-- [ecapture-v0.8.11-linux-amd64.tar.gz](https://github.com/gojue/ecapture/releases/download/v0.8.11/ecapture-v0.8.11-linux-amd64.tar.gz)
-- [ecapture-v0.8.11-linux-arm64.tar.gz](https://github.com/gojue/ecapture/releases/download/v0.8.11/ecapture-v0.8.11-linux-arm64.tar.gz)
-- [ecapture_v0.8.11_linux_amd64.deb](https://github.com/gojue/ecapture/releases/download/v0.8.11/ecapture_v0.8.11_linux_amd64.deb)
-- [ecapture_v0.8.11_linux_arm64.deb](https://github.com/gojue/ecapture/releases/download/v0.8.11/ecapture_v0.8.11_linux_arm64.deb)
-
-### eCapture v0.8.10 {eCapture v0.8.10}
-#### Assets
-- [checksum-v0.8.10.txt](https://github.com/gojue/ecapture/releases/download/v0.8.10/checksum-v0.8.10.txt)
-- [ecapture-v0.8.10-android-amd64.tar.gz](https://github.com/gojue/ecapture/releases/download/v0.8.10/ecapture-v0.8.10-android-amd64.tar.gz)
-- [ecapture-v0.8.10-android-arm64.tar.gz](https://github.com/gojue/ecapture/releases/download/v0.8.10/ecapture-v0.8.10-android-arm64.tar.gz)
-- [ecapture-v0.8.10-linux-amd64.tar.gz](https://github.com/gojue/ecapture/releases/download/v0.8.10/ecapture-v0.8.10-linux-amd64.tar.gz)
-- [ecapture-v0.8.10-linux-arm64.tar.gz](https://github.com/gojue/ecapture/releases/download/v0.8.10/ecapture-v0.8.10-linux-arm64.tar.gz)
-- [ecapture_v0.8.10_linux_amd64.deb](https://github.com/gojue/ecapture/releases/download/v0.8.10/ecapture_v0.8.10_linux_amd64.deb)
-- [ecapture_v0.8.10_linux_arm64.deb](https://github.com/gojue/ecapture/releases/download/v0.8.10/ecapture_v0.8.10_linux_arm64.deb)
+  <style>
+    .releases-container {
+      margin-top: 2rem;
+    }
+    .previous-versions {
+      margin-top: 3rem;
+    }
+    details {
+      margin: 1rem 0;
+      padding: 0.5rem;
+      border: 1px solid #eee;
+      border-radius: 4px;
+    }
+    summary {
+      cursor: pointer;
+      padding: 0.5rem;
+    }
+    summary:hover {
+      background-color: #f5f5f5;
+    }
+    details ul {
+      margin: 1rem 0;
+      padding-left: 2rem;
+    }
+    .markdown-body {
+      padding: 1rem;
+      margin: 1rem 0;
+      background-color: #f8f9fa;
+      border-radius: 4px;
+    }
+    .markdown-body h1,
+    .markdown-body h2,
+    .markdown-body h3,
+    .markdown-body h4 {
+      margin-top: 1.5rem;
+      margin-bottom: 1rem;
+    }
+    .markdown-body ul,
+    .markdown-body ol {
+      padding-left: 2rem;
+    }
+    .markdown-body code {
+      padding: 0.2em 0.4em;
+      background-color: #f3f4f5;
+      border-radius: 3px;
+    }
+    .markdown-body pre code {
+      display: block;
+      padding: 1rem;
+      overflow-x: auto;
+    }
+  </style>
+</ClientOnly>
