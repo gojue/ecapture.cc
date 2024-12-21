@@ -13,6 +13,7 @@ const navEn = [
   {
     text: 'Projects',
     items: [
+      { text: 'eCapture', link: 'https://github.com/gojue/ecapture'},
       { text: 'eBPFManager', link: 'https://github.com/gojue/ebpfmanager'},
       { text: 'eBPFSlide', link: 'https://github.com/gojue/ebpf-slide'},
       { text: 'eHIDSAgent', link: 'https://github.com/gojue/ehids-agent'}
@@ -30,15 +31,16 @@ const navZh = [
   { text: '本地下载', link: '/zh/download' },
   { text:'使用案例', link:'/zh/examples/'},
   {
-    text: 'Projects',
+    text: '其他项目',
     items: [
       { text: 'eBPFManager', link: 'https://github.com/gojue/ebpfmanager'},
-      { text: 'eBPFSlide', link: 'https://github.com/gojue/ebpf-slide'},
-      { text: 'eHIDSAgent', link: 'https://github.com/gojue/ehids-agent'}
+      { text: 'eBPF幻灯片', link: 'https://github.com/gojue/ebpf-slide'},
+      { text: 'eHIDSAgent', link: 'https://github.com/gojue/ehids-agent'},
+      { text: 'eCapture旁观者', link: 'https://github.com/gojue/ecapture'}
     ]
   },
   {
-    text: 'BLOG',
+    text: '作者博客',
     link: 'https://www.cnxct.com'
   }
 ]
@@ -228,7 +230,7 @@ export default defineConfigWithTheme<ThemeConfig>({
         socialLinks: [
           { icon: 'languages', link: '/'},
           { icon: 'github', link: 'https://github.com/gojue/ecapture' },
-          { icon: 'twitter', link: 'https://twitter.com/cfc4n' },
+          { icon: 'twitter', link: 'https://weibo.com/n/CFC4N' },
         ],
       },
     }
