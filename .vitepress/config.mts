@@ -5,35 +5,11 @@ import type { Config as ThemeConfig } from '@vue/theme'
 import baseConfig from '@vue/theme/config'
 import { headerPlugin } from './headerMdPlugin'
 
-const nav = [
-
-  //  TODO: dead link
-  // {
-  //   text: 'API',
-  //   activeMatch: `^/api/`,
-  //   link: '/api/'
-  // },
-  {
-    text: 'English',
-    link: '/'
-  },
+// 分别定义英文和中文导航
+const navEn = [
   { text: 'Guide', link: '/guide/introduction' },
   { text: 'Develop', link: '/develop/compile' },
   { text: 'Download', link: '/download' },
-  {
-    text: '中文',
-    link: '/zh/',
-  },
-  {
-    text: '使用指南',
-    items: [
-      {text:'本地下载', link:'/zh/download'},
-      {text:'快速上手', link:'/zh/guide/'},
-      {text:'参数详解', link:'/zh/usage/'},
-      {text:'自助开发', link:'/zh/develop/'},
-      {text:'使用案例', link:'/zh/examples/'},
-    ],
-  },
   {
     text: 'Projects',
     items: [
@@ -45,7 +21,26 @@ const nav = [
   {
     text: 'BLOG',
     link: 'https://www.cnxct.com'
+  }
+]
+
+const navZh = [
+  { text: '快速上手', link: '/zh/guide/introduction' },
+  { text: '自助开发', link: '/zh/develop' },
+  { text: '本地下载', link: '/zh/download' },
+  { text:'使用案例', link:'/zh/examples/'},
+  {
+    text: 'Projects',
+    items: [
+      { text: 'eBPFManager', link: 'https://github.com/gojue/ebpfmanager'},
+      { text: 'eBPFSlide', link: 'https://github.com/gojue/ebpf-slide'},
+      { text: 'eHIDSAgent', link: 'https://github.com/gojue/ehids-agent'}
+    ]
   },
+  {
+    text: 'BLOG',
+    link: 'https://www.cnxct.com'
+  }
 ]
 
 export const sidebar = {
@@ -61,11 +56,6 @@ export const sidebar = {
           text: 'Quick Start',
           link: '/guide/quick-start'
         }
-        // ,
-        // {
-        //   text: 'Download',
-        //   link: '/download'
-        // }
       ]
     },
     {
@@ -204,20 +194,47 @@ export default defineConfigWithTheme<ThemeConfig>({
         'utf-8'
       )
     ],
-    ['link', { rel: 'shortcut icon', href: 'https://ecapture.cc/assets/logo-300x300-v2.059cb3f9.svg' }],
+    ['link', { rel: 'shortcut icon', href: '/assets/logo-300x300-v2.svg' }],
+    ['link', { rel: "icon", type: "image/svg", sizes: "32x32", href: '/assets/logo-300x300-v2.svg'}],
     // ['link', { rel: "apple-touch-icon", sizes: "180x180", href: path.resolve(__dirname, "./public/apple-touch-icon.png")}],
-    // ['link', { rel: "icon", type: "image/png", sizes: "32x32", href: path.resolve(__dirname, "./public/favicon-32x32.png")}],
     // ['link', { rel: "icon", type: "image/png", sizes: "16x16", href: path.resolve(__dirname, "./public/favicon-16x16.png")}],
     // ['link', { rel: "manifest", href: path.resolve(__dirname, "./public/site.webmanifest")}],
     // ['link', { rel: "mask-icon", href: path.resolve(__dirname, "./public/safari-pinned-tab.svg"), color: "#3a0839"}],
     // ['link', { rel: "shortcut icon", href: path.resolve(__dirname, "./public/favicon.ico")}],
     // ['meta', { name: "msapplication-TileColor", content: "#3a0839"}],
     // ['meta', { name: "msapplication-config", content: path.resolve(__dirname, "./public/browserconfig.xml")}],
-    // ['meta', { name: "theme-color", content: "#ffffff"}],
+    ['meta', { name: "theme-color", content: "#ffffff"}],
   ],
 
+  locales: {
+    root: {
+      label: 'English',
+      lang: 'en-US',
+      themeConfig: {
+        nav: navEn,
+        socialLinks: [
+          { icon: 'languages', link: '/zh/'},
+          { icon: 'github', link: 'https://github.com/gojue/ecapture' },
+          { icon: 'twitter', link: 'https://twitter.com/cfc4n' },
+        ],
+      },
+    },
+    zh: {
+      label: '简体中文',
+      lang: 'zh-CN',
+      link: '/zh/',
+      themeConfig: {
+        nav: navZh,
+        socialLinks: [
+          { icon: 'languages', link: '/'},
+          { icon: 'github', link: 'https://github.com/gojue/ecapture' },
+          { icon: 'twitter', link: 'https://twitter.com/cfc4n' },
+        ],
+      },
+    }
+  },
+
   themeConfig: {
-    nav,
     sidebar,
 
     // algolia: {
@@ -228,13 +245,6 @@ export default defineConfigWithTheme<ThemeConfig>({
     //     facetFilters: ['version:v3']
     //   }
     // },
-
-    socialLinks: [
-      //  TODO: dead link
-      { icon: 'languages', link: '/zh/' },
-      { icon: 'github', link: 'https://github.com/gojue/ecapture' },
-      { icon: 'twitter', link: 'https://twitter.com/cfc4n' },
-    ],
 
     editLink: {
       repo: 'gojue/ecapture.cc#master',
