@@ -1,7 +1,7 @@
 <script setup>
-import DefaultTheme from 'vitepress/theme'
+import { VPTheme } from '@vue/theme'
 </script>
 
 <template>
-  <DefaultTheme.Layout />
+  <VPTheme.Layout />
 </template> 
