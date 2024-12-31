@@ -36,7 +36,7 @@ const convertMarkdownToHtml = (markdown) => {
 
 onMounted(async () => {
   try {
-    const response = await fetch(convertToCDNUrl('https://api.github.com/repos/gojue/ecapture/releases?t=202412191951'))
+    const response = await fetch(convertToCDNUrl('https://api.github.com/repos/gojue/ecapture/releases'))
     const data = await response.json()
     releases.value = Array.isArray(data) ? data.map(release => ({
       ...release,
