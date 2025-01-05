@@ -57,6 +57,10 @@ const props = defineProps({
     type: Array,
     required: true
   },
+  durations: {
+    type: Array,
+    default: () => []
+  },
   title: {
     type: String,
     default: ''
@@ -72,6 +76,7 @@ let timer = null
 
 const next = () => {
   currentIndex.value = (currentIndex.value + 1) % props.images.length
+  startAutoPlay()
 }
 
 const prev = () => {
@@ -80,12 +85,16 @@ const prev = () => {
     : currentIndex.value - 1
 }
 
+const getImageDuration = (index) => {
+  return props.durations[index] || 5000
+}
+
 // 自动轮播
 const startAutoPlay = () => {
   stopAutoPlay()
   timer = setInterval(() => {
     next()
-  }, 5000)
+  }, getImageDuration(currentIndex.value))
 }
 
 const stopAutoPlay = () => {
