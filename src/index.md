@@ -10,7 +10,7 @@ import ImageCarousel from '@theme/components/ImageCarousel.vue'
 import { fetchReleaseTag } from '../.vitepress/githubReleases'
 
 const images = ref([
-  '/assets/ecapture_zsh.gif',
+  '/assets/ecapture_zsh.jpeg',
   '/assets/ecapture_tls_https.gif',
   '/assets/ecapture_sshkeylog.gif',
   '/assets/ecapture_pcapng.gif',
