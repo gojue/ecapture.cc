@@ -168,19 +168,19 @@ const prevLightbox = () => {
 .carousel-container {
   position: relative;
   width: 100%;
-  max-width: 1000px; /* 增加最大宽度 */
+  max-width: 1200px;
   margin: 0 auto;
   overflow: hidden;
-  border-radius: 16px; /* 圆角 */
-  background: rgba(var(--vp-c-bg-rgb), 0.8); /* 半透明背景 */
-  backdrop-filter: blur(10px); /* 毛玻璃效果 */
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1); /* 阴影效果 */
+  border-radius: 16px;
+  background: rgba(var(--vp-c-bg-rgb), 0.8);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
   border: 1px solid rgba(var(--vp-c-brand-rgb), 0.1);
 }
 
 .carousel-content {
   position: relative;
-  height: 600px;
+  height: 700px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -192,8 +192,8 @@ const prevLightbox = () => {
   left: 0;
   right: 0;
   margin: auto;
-  max-width: 95%;
-  max-height: 95%;
+  max-width: 98%;
+  max-height: 98%;
   object-fit: contain;
   cursor: pointer;
 }
@@ -262,12 +262,13 @@ const prevLightbox = () => {
   background: var(--vp-c-brand);
   color: var(--vp-c-bg);
   border: none;
-  padding: 8px 12px;
+  padding: 4px 8px;
   border-radius: 4px;
   cursor: pointer;
   z-index: 1;
   opacity: 0.7;
   transition: opacity 0.3s;
+  font-size: 14px;
 }
 
 .carousel-button:hover {
