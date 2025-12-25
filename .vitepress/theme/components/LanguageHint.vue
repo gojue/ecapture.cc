@@ -33,9 +33,9 @@ onMounted(() => {
 
 const handleSwitch = () => {
   const currentPath = window.location.pathname
-  const newPath = isZh.value 
-    ? '/zh' + currentPath
-    : currentPath.replace('/zh/', '/')
+  const newPath = isZh.value
+    ? ('/' === currentPath ? '/zh/' : currentPath.replace('/en/', '/zh/'))
+    : ('/zh/' === currentPath ? '/' :currentPath.replace('/zh/', '/en/'))
   router.go(newPath)
   show.value = false
 }

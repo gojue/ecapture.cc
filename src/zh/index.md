@@ -1,13 +1,13 @@
 ---
 page: true
-title: 旁观者 - eBPF技术强力驱动，无需CA证书即可捕获HTTPS/TLS明文数据包。
+title: eCapture - 基于 eBPF 技术，无需 CA 证书即可捕获 SSL/TLS 明文内容。
 ---
 
 <script setup>
 import { onMounted, ref } from 'vue';
 import Home from '@theme/components/HomeZh.vue'
 import ImageCarousel from '@theme/components/ImageCarousel.vue'
-import { fetchReleaseTag } from '../../.vitepress/githubReleases'
+import { fetchReleaseTag } from './../../.vitepress/githubReleases'
 
 const images = ref([
   '/assets/ecapture-help.svg',
@@ -32,7 +32,7 @@ const imageDurations = [
 ]
 
 const carouselTitle = '功能展示'
-const carouselSubtitle = '捕获OpenSSL、GnuTLS的密钥、明文通讯。支持HTTP/3 QUIC、IPv6、TLS 1.3等。'
+const carouselSubtitle = '捕获 OpenSSL 和 GnuTLS 的 SSLKEYLOG 和明文通信。支持 HTTP/3 QUIC、IPv6、TLS 1.3 等。'
 
 onMounted(() => {
   fetchReleaseTag()
@@ -45,4 +45,3 @@ onMounted(() => {
   :title="carouselTitle"
   :subtitle="carouselSubtitle"
 />
-
