@@ -3,7 +3,7 @@ footer: false
 title: Download eCapture from Github.
 ---
 
-# Download
+# Download 高速下载
 
 <script setup>
 import { ref, onMounted } from 'vue'
@@ -85,57 +85,4 @@ onMounted(async () => {
     </div>
     <div v-else>No releases available</div>
   </div>
-
-  <style>
-    .releases-container {
-      margin-top: 2rem;
-    }
-    .previous-versions {
-      margin-top: 3rem;
-    }
-    details {
-      margin: 1rem 0;
-      padding: 0.5rem;
-      border: 1px solid #eee;
-      border-radius: 4px;
-    }
-    summary {
-      cursor: pointer;
-      padding: 0.5rem;
-    }
-    summary:hover {
-      background-color: #f5f5f5;
-    }
-    details ul {
-      margin: 1rem 0;
-      padding-left: 2rem;
-    }
-    .markdown-body {
-      padding: 1rem;
-      margin: 1rem 0;
-      background-color: #f8f9fa;
-      border-radius: 4px;
-    }
-    .markdown-body h1,
-    .markdown-body h2,
-    .markdown-body h3,
-    .markdown-body h4 {
-      margin-top: 1.5rem;
-      margin-bottom: 1rem;
-    }
-    .markdown-body ul,
-    .markdown-body ol {
-      padding-left: 2rem;
-    }
-    .markdown-body code {
-      padding: 0.2em 0.4em;
-      background-color: #f3f4f5;
-      border-radius: 3px;
-    }
-    .markdown-body pre code {
-      display: block;
-      padding: 1rem;
-      overflow-x: auto;
-    }
-  </style>
 </ClientOnly>

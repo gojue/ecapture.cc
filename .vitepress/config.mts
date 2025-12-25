@@ -9,33 +9,16 @@ import navigation from './navigation.json'
 
 export default withMermaid(defineConfigWithTheme<ThemeConfig>({
   extends: baseConfig,
-
   lang: 'en-US',
   title: 'eCapture',
   description: 'eCapture - Capture SSL/TLS text content without CA certificate using eBPF',
   srcDir: './src',
-  srcExclude: ['tutorial/**/description.md'],
   scrollOffset: 'header',
-  assetsDir: 'assets',
+  // assetsDir: 'assets',
 
   ignoreDeadLinks: false,
   transformPageData(pageData) {
     pageData.frontmatter.outline = pageData.frontmatter.outline ?? 'deep';
-  },
-  chainWebpack: (config) => {
-    // 找到处理 JSON 文件的规则
-    const jsonRule = config.module.rule('json');
-
-
-    // 禁用 source map
-    jsonRule.include.add(/src\/assets\/releases/) // 只包括 src/assets/releases 目录
-        .end()
-        .use('json-loader').tap((options) => {
-      return {
-        ...options,
-        sourceMap: false, // 确保不生成 source map
-      };
-    });
   },
   head: [
     [
@@ -58,7 +41,6 @@ export default withMermaid(defineConfigWithTheme<ThemeConfig>({
       themeConfig: {
         nav: navigation.nav.en,
         sidebar: navigation.sidebar,
-        outline: [2, 3],
         socialLinks: [
           { icon: 'languages', link: '/zh/'},
           { icon: 'github', link: 'https://github.com/gojue/ecapture' },
@@ -73,7 +55,6 @@ export default withMermaid(defineConfigWithTheme<ThemeConfig>({
       themeConfig: {
         nav: navigation.nav.zh,
         sidebar: navigation.sidebar,
-        outline: [2, 3],
         socialLinks: [
           { icon: 'languages', link: '/'},
           { icon: 'github', link: 'https://github.com/gojue/ecapture' },
@@ -84,7 +65,6 @@ export default withMermaid(defineConfigWithTheme<ThemeConfig>({
   },
 
   themeConfig: {
-    outline: [2, 3],
     editLink: {
       repo: 'gojue/ecapture.cc#master',
       text: 'Edit this page on GitHub',
@@ -95,17 +75,17 @@ export default withMermaid(defineConfigWithTheme<ThemeConfig>({
         text: 'MIT License',
         link: 'https://opensource.org/licenses/MIT'
       },
-      copyright: `Copyright © 2014-${new Date().getFullYear()} CFC4N, Powered by Vue.js`,
+      copyright: `Copyright © 2024-${new Date().getFullYear()} CFC4N, Powered by Vue.js`,
     }
   },
-
-  mermaid: {
-    // refer to mermaidjs.com for options
-  },
+  //
   markdown: {
-    // config(md) {
-    //   md.use(headerPlugin)
-    // }
+    config(md) {
+      md.use(headerPlugin)
+    },
+    headers: {
+      level: [2, 3, 4]  // 提取 h2, h3, h4 到大纲
+    }
   },
 
   vite: {

@@ -51,7 +51,25 @@ const backupItems = [
         src: path.join(srcDir, 'en/download/index.md'),
         backup: path.join(rootDir, 'temp_en_download_index.md'),
         isDirectory: false
-    }
+    },
+    {
+        name: 'src/zh/usage/android.md',
+        src: path.join(srcDir, 'zh/usage/android.md'),
+        backup: path.join(rootDir, 'temp_zh_usage_android.md'),
+        isDirectory: false
+    },
+    {
+        name: 'src/zh/usage/index.md',
+        src: path.join(srcDir, 'zh/usage/index.md'),
+        backup: path.join(rootDir, 'temp_zh_usage_index.md'),
+        isDirectory: false
+    },
+    {
+        name: 'src/zh/usage/docker.md',
+        src: path.join(srcDir, 'zh/usage/docker.md'),
+        backup: path.join(rootDir, 'temp_zh_usage_docker.md'),
+        isDirectory: false
+    },
 ];
 
 // Backup files and directories
@@ -289,27 +307,20 @@ const sidebarZh = generateSidebar('zh');
 const fullSidebar = { ...sidebarEn, ...sidebarZh };
 
 // 6. Update navigation.json
-if (fs.existsSync(navFile)) {
-    console.log('Updating navigation.json...');
-    const navConfig = JSON.parse(fs.readFileSync(navFile, 'utf-8'));
+console.log('Updating navigation.json...');
+// const navConfig = JSON.parse(fs.readFileSync(navFile, 'utf-8'));
+let navConfig = {}
+// Ensure nav object exists
+if (!navConfig.nav) navConfig.nav = {};
 
-    // Ensure nav object exists
-    if (!navConfig.nav) navConfig.nav = {};
+navConfig.nav.en = navEn;
+navConfig.nav.zh = navZh;
+navConfig.sidebar = fullSidebar;
 
-    navConfig.nav.en = navEn;
-    navConfig.nav.zh = navZh;
-    navConfig.sidebar = fullSidebar;
-
-    fs.writeFileSync(navFile, JSON.stringify(navConfig, null, 2));
-} else {
-    console.error('navigation.json not found!');
-}
+fs.writeFileSync(navFile, JSON.stringify(navConfig, null, 2));
 
 // Update sidebar.json if it exists
-const sidebarFile = path.join(rootDir, '.vitepress/sidebar.json');
-if (fs.existsSync(sidebarFile)) {
-    console.log('Updating sidebar.json...');
-    fs.writeFileSync(sidebarFile, JSON.stringify(fullSidebar, null, 2));
-}
+const sidebarFile = path.join(rootDir, '../.vitepress/sidebar.json');
+fs.writeFileSync(sidebarFile, JSON.stringify(fullSidebar, null, 2));
 
 console.log('Migration completed.');
