@@ -28,7 +28,7 @@ import VueMasteryModal from './VueMasteryModal.vue';
           />
         </svg>
       </a>
-      <a id="github_download" class="setup" href="./download" target="_blank">
+      <a id="github_download" class="setup" href="/en/download" target="_blank">
         Download
       </a>
     </p>

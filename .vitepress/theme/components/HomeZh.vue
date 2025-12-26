@@ -27,7 +27,7 @@ import VueMasteryModalZh from './VueMasteryModalZh.vue';
           />
         </svg>
       </a>
-      <a class="setup" id="github_download" href="./download" target="_blank">
+      <a class="setup" id="github_download" href="/zh/download" target="_blank">
         下载
       </a>
     </p>
