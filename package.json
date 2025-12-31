@@ -7,7 +7,7 @@
     "prebuild": "node scripts/generate_docs.js && node scripts/migrate_docs.js",
     "build": "vitepress build",
     "serve": "vitepress serve",
-    "clean": "rm -rf .vitepress/dist .vitepress/cache node_modules/.vite",
+    "clean": "rm -rf dist .vitepress/cache node_modules/.vite",
     "preinstall": "npx only-allow pnpm"
   },
   "dependencies": {
