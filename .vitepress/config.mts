@@ -13,6 +13,7 @@ export default withMermaid(defineConfigWithTheme<ThemeConfig>({
   title: 'eCapture',
   description: 'eCapture - Capture SSL/TLS text content without CA certificate using eBPF',
   srcDir: './src',
+  outDir: './dist',
   scrollOffset: 'header',
   // assetsDir: 'assets',
 
