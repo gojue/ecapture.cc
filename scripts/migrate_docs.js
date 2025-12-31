@@ -70,6 +70,12 @@ const backupItems = [
         backup: path.join(rootDir, 'temp_zh_usage_docker.md'),
         isDirectory: false
     },
+    {
+        name: 'src/zh/usage/grpc.md',
+        src: path.join(srcDir, 'zh/usage/grpc.md'),
+        backup: path.join(rootDir, 'temp_zh_usage_grpc.md'),
+        isDirectory: false
+    },
 ];
 
 // Backup files and directories
