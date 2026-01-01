@@ -4,7 +4,6 @@
   },
   "scripts": {
     "dev": "vitepress",
-    "prebuild": "node scripts/generate_docs.js && node scripts/migrate_docs.js",
     "build": "vitepress build",
     "serve": "vitepress serve",
     "clean": "rm -rf dist .vitepress/cache node_modules/.vite",
