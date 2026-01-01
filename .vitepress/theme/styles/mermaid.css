@@ -1,0 +1,175 @@
+/* Mermaid diagram styles with zoom functionality */
+
+/* Make mermaid diagrams clickable and show pointer cursor */
+.mermaid {
+  cursor: zoom-in;
+  transition: all 0.3s ease;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  margin: 1.5rem 0;
+  display: block;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.mermaid:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Lightbox overlay for zoomed mermaid diagrams */
+.mermaid-lightbox {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(0, 0, 0, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  cursor: zoom-out;
+  padding: 2rem;
+  box-sizing: border-box;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeOut {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.mermaid-lightbox-content {
+  width: 90vw;
+  max-width: 90vw;
+  max-height: 85vh;
+  overflow: hidden;
+  background-color: white;
+  border-radius: 8px;
+  padding: 2rem;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  animation: zoomIn 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  user-select: none;
+}
+
+.mermaid-lightbox-content > * {
+  width: 100%;
+  max-width: 100%;
+}
+
+.mermaid-lightbox-content svg {
+  width: 100% !important;
+  max-width: 100% !important;
+  height: auto !important;
+  max-height: 75vh;
+  display: block !important;
+  margin: auto;
+  opacity: 1 !important;
+  visibility: visible !important;
+  transform-origin: center center;
+}
+
+@keyframes zoomIn {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Dark mode support for lightbox */
+html.dark .mermaid-lightbox-content {
+  background-color: #1e1e1e;
+  color: #e0e0e0;
+}
+
+/* Close button */
+.mermaid-lightbox-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  width: 40px;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.9);
+  border: none;
+  border-radius: 50%;
+  font-size: 24px;
+  line-height: 40px;
+  text-align: center;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  z-index: 10000;
+  transition: all 0.2s ease;
+}
+
+.mermaid-lightbox-close:hover {
+  background: white;
+  transform: scale(1.1);
+}
+
+html.dark .mermaid-lightbox-close {
+  background: rgba(30, 30, 30, 0.9);
+  color: white;
+}
+
+html.dark .mermaid-lightbox-close:hover {
+  background: #2a2a2a;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .mermaid-lightbox-content {
+    padding: 1rem;
+    max-width: 98%;
+    max-height: 98%;
+  }
+
+  .mermaid-lightbox-close {
+    top: 0.5rem;
+    right: 0.5rem;
+  }
+}
+
+/* Make mermaid diagrams more visible */
+.mermaid svg {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Add a subtle hint that diagrams are clickable */
+.mermaid::after {
+  content: "🔍 Click to enlarge";
+  display: block;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--vp-c-text-2);
+  margin-top: 0.5rem;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.mermaid:hover::after {
+  opacity: 1;
+}
+

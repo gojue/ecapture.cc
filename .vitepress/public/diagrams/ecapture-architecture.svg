@@ -1,0 +1,164 @@
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" width="100%" height="100%">
+  <style>
+    .layer {
+      fill: #f5f5f5;
+      stroke: #d9d9d9;
+      stroke-width: 2;
+      rx: 10;
+      ry: 10;
+    }
+    .component {
+      fill: #e6f7ff;
+      stroke: #1890ff;
+      stroke-width: 2;
+      rx: 6;
+      ry: 6;
+    }
+    .external {
+      fill: #fff1f0;
+      stroke: #ff4d4f;
+      stroke-width: 2;
+      rx: 6;
+      ry: 6;
+    }
+    .kernel {
+      fill: #f6ffed;
+      stroke: #52c41a;
+      stroke-width: 2;
+      rx: 6;
+      ry: 6;
+    }
+    .arrow {
+      stroke: #666;
+      stroke-width: 1.5;
+      fill: none;
+      marker-end: url(#arrowhead);
+    }
+    .label {
+      font-family: Arial, sans-serif;
+      font-size: 14px;
+      text-anchor: middle;
+      dominant-baseline: middle;
+    }
+    .layer-label {
+      font-family: Arial, sans-serif;
+      font-size: 16px;
+      font-weight: bold;
+      fill: #333;
+      text-anchor: start;
+    }
+    .title {
+      font-family: Arial, sans-serif;
+      font-size: 24px;
+      font-weight: bold;
+      text-anchor: middle;
+    }
+  </style>
+  
+  <defs>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#666" />
+    </marker>
+  </defs>
+  
+  <text x="400" y="40" class="title">eCapture Architecture</text>
+  
+  <!-- User Interface Layer -->
+  <rect x="100" y="80" width="600" height="80" class="layer" />
+  <text x="120" y="100" class="layer-label">User Interface</text>
+  
+  <rect x="150" y="110" width="120" height="40" class="component" />
+  <text x="210" y="130" class="label">Command Line</text>
+  
+  <rect x="340" y="110" width="120" height="40" class="component" />
+  <text x="400" y="130" class="label">Config Files</text>
+  
+  <rect x="530" y="110" width="120" height="40" class="component" />
+  <text x="590" y="130" class="label">API</text>
+  
+  <!-- Application Layer -->
+  <rect x="100" y="170" width="600" height="120" class="layer" />
+  <text x="120" y="190" class="layer-label">Application Layer</text>
+  
+  <rect x="150" y="210" width="120" height="40" class="component" />
+  <text x="210" y="230" class="label">Controller</text>
+  
+  <rect x="340" y="210" width="120" height="40" class="component" />
+  <text x="400" y="230" class="label">Processor</text>
+  
+  <rect x="530" y="210" width="120" height="40" class="component" />
+  <text x="590" y="230" class="label">Output Manager</text>
+  
+  <!-- Capture Modules Layer -->
+  <rect x="100" y="300" width="600" height="110" class="layer" />
+  <text x="120" y="320" class="layer-label">Capture Modules</text>
+  
+  <rect x="150" y="340" width="80" height="50" class="component" />
+  <text x="190" y="365" class="label">TLS/SSL</text>
+  
+  <rect x="250" y="340" width="80" height="50" class="component" />
+  <text x="290" y="365" class="label">MySQL</text>
+  
+  <rect x="350" y="340" width="80" height="50" class="component" />
+  <text x="390" y="365" class="label">PostgreSQL</text>
+  
+  <rect x="450" y="340" width="80" height="50" class="component" />
+  <text x="490" y="365" class="label">Redis</text>
+  
+  <rect x="550" y="340" width="80" height="50" class="component" />
+  <text x="590" y="365" class="label">MongoDB</text>
+  
+  <!-- eBPF Layer -->
+  <rect x="100" y="420" width="600" height="80" class="layer" />
+  <text x="120" y="440" class="layer-label">eBPF Layer</text>
+  
+  <rect x="150" y="450" width="160" height="40" class="component" />
+  <text x="230" y="470" class="label">eBPF Programs</text>
+  
+  <rect x="360" y="450" width="160" height="40" class="component" />
+  <text x="440" y="470" class="label">BPF Maps</text>
+  
+  <rect x="550" y="450" width="100" height="40" class="component" />
+  <text x="600" y="470" class="label">Helpers</text>
+  
+  <!-- Kernel Layer -->
+  <rect x="100" y="510" width="600" height="70" class="layer" />
+  <text x="120" y="530" class="layer-label">Linux Kernel</text>
+  
+  <rect x="190" y="540" width="100" height="30" class="kernel" />
+  <text x="240" y="555" class="label">Kprobes</text>
+  
+  <rect x="350" y="540" width="100" height="30" class="kernel" />
+  <text x="400" y="555" class="label">Uprobes</text>
+  
+  <rect x="510" y="540" width="100" height="30" class="kernel" />
+  <text x="560" y="555" class="label">Tracepoints</text>
+  
+  <!-- External Applications -->
+  <rect x="10" y="250" width="80" height="120" class="external" />
+  <text x="50" y="310" class="label" style="writing-mode: tb; text-orientation: upright;">Target Applications</text>
+  
+  <!-- Connections -->
+  <!-- UI to Application layer -->
+  <path d="M 210 150 L 210 210" class="arrow" />
+  <path d="M 400 150 L 400 210" class="arrow" />
+  <path d="M 590 150 L 590 210" class="arrow" />
+  
+  <!-- Application layer to Capture modules -->
+  <path d="M 210 250 L 210 340" class="arrow" />
+  <path d="M 400 250 L 390 340" class="arrow" />
+  <path d="M 590 250 L 590 340" class="arrow" />
+  
+  <!-- Capture modules to eBPF layer -->
+  <path d="M 190 390 L 190 450" class="arrow" />
+  <path d="M 390 390 L 390 450" class="arrow" />
+  <path d="M 590 390 L 590 450" class="arrow" />
+  
+  <!-- eBPF to Kernel -->
+  <path d="M 230 490 L 230 540" class="arrow" />
+  <path d="M 440 490 L 400 540" class="arrow" />
+  <path d="M 600 490 L 560 540" class="arrow" />
+  
+  <!-- External Apps connections -->
+  <path d="M 90 310 L 150 365" class="arrow" />
+</svg> 
