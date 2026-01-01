@@ -53,29 +53,11 @@ const backupItems = [
         isDirectory: false
     },
     {
-        name: 'src/zh/usage/android.md',
-        src: path.join(srcDir, 'zh/usage/android.md'),
-        backup: path.join(rootDir, 'temp_zh_usage_android.md'),
-        isDirectory: false
-    },
-    {
-        name: 'src/zh/usage/index.md',
-        src: path.join(srcDir, 'zh/usage/index.md'),
-        backup: path.join(rootDir, 'temp_zh_usage_index.md'),
-        isDirectory: false
-    },
-    {
-        name: 'src/zh/usage/docker.md',
-        src: path.join(srcDir, 'zh/usage/docker.md'),
-        backup: path.join(rootDir, 'temp_zh_usage_docker.md'),
-        isDirectory: false
-    },
-    {
-        name: 'src/zh/usage/grpc.md',
-        src: path.join(srcDir, 'zh/usage/grpc.md'),
-        backup: path.join(rootDir, 'temp_zh_usage_grpc.md'),
-        isDirectory: false
-    },
+        name: 'src/zh/usage/',
+        src: path.join(srcDir, 'zh/usage/'),
+        backup: path.join(rootDir, 'temp_zh_usage'),
+        isDirectory: true
+    }
 ];
 
 // Backup files and directories
