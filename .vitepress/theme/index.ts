@@ -8,6 +8,7 @@ import {
 } from './components/preferences'
 import NavTitleBar from './components/NavTitleBar.vue'
 import LanguageHint from './components/LanguageHint.vue'
+import { setupMermaidZoom } from './composables/mermaidZoom'
 
 export default Object.assign({}, VPTheme, {
   Layout: () => {
@@ -22,5 +23,10 @@ export default Object.assign({}, VPTheme, {
     app.provide('prefer-composition', preferComposition)
     app.provide('prefer-sfc', preferSFC)
     app.provide('filter-headers', filterHeadersByPreference)
+
+    // Setup mermaid zoom functionality
+    if (typeof window !== 'undefined') {
+      setupMermaidZoom()
+    }
   },
 })

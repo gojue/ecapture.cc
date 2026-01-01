@@ -18,6 +18,15 @@ export default withMermaid(defineConfigWithTheme<ThemeConfig>({
   // assetsDir: 'assets',
 
   ignoreDeadLinks: false,
+
+  // Mermaid configuration
+  mermaid: {
+    // Configure mermaid with better default settings
+    theme: 'default',
+    themeVariables: {
+      fontSize: '16px',
+    },
+  },
   transformPageData(pageData) {
     pageData.frontmatter.outline = pageData.frontmatter.outline ?? 'deep';
   },
