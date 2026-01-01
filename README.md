@@ -47,48 +47,48 @@ This repository hosts the **official documentation website** for [eCapture (ÊóÅË
 The documentation is organized into the following sections:
 
 ### 1. Overview
-- [Introduction](docs/en/1-overview/index.md) - System purpose and capabilities
-- [Installation & Quick Start](docs/en/1-overview/1.1-installation-and-quick-start.md) - Get started quickly
-- [Command Line Interface](docs/en/1-overview/1.2-command-line-interface.md) - CLI reference
-- [Dependencies & Requirements](docs/en/1-overview/1.3-dependencies-and-system-requirements.md) - System prerequisites
+- [Introduction](src/en/1-overview/index.md) - System purpose and capabilities
+- [Installation & Quick Start](src/en/1-overview/1.1-installation-and-quick-start.md) - Get started quickly
+- [Command Line Interface](src/en/1-overview/1.2-command-line-interface.md) - CLI reference
+- [Dependencies & Requirements](src/en/1-overview/1.3-dependencies-and-system-requirements.md) - System prerequisites
 
 ### 2. Architecture
-- [Architecture Overview](docs/en/2-architecture/index.md) - Five-layer system design
-- [eBPF Engine](docs/en/2-architecture/2.1-ebpf-engine.md) - eBPF program management
-- [Event Processing Pipeline](docs/en/2-architecture/2.2-event-processing-pipeline.md) - Data flow and processing
-- [Configuration System](docs/en/2-architecture/2.3-configuration-system.md) - Configuration management
-- [Module System & Lifecycle](docs/en/2-architecture/2.4-module-system-and-lifecycle.md) - Module architecture
-- [Version Detection](docs/en/2-architecture/2.5-version-detection-and-bytecode-selection.md) - Dynamic bytecode selection
-- [Connection Tracking](docs/en/2-architecture/2.6-network-connection-tracking.md) - Network flow management
+- [Architecture Overview](src/en/2-architecture/index.md) - Five-layer system design
+- [eBPF Engine](src/en/2-architecture/2.1-ebpf-engine.md) - eBPF program management
+- [Event Processing Pipeline](src/en/2-architecture/2.2-event-processing-pipeline.md) - Data flow and processing
+- [Configuration System](src/en/2-architecture/2.3-configuration-system.md) - Configuration management
+- [Module System & Lifecycle](src/en/2-architecture/2.4-module-system-and-lifecycle.md) - Module architecture
+- [Version Detection](src/en/2-architecture/2.5-version-detection-and-bytecode-selection.md) - Dynamic bytecode selection
+- [Connection Tracking](src/en/2-architecture/2.6-network-connection-tracking.md) - Network flow management
 
 ### 3. Capture Modules
-- [Modules Overview](docs/en/3-capture-modules/index.md) - Module registry
+- [Modules Overview](src/en/3-capture-modules/index.md) - Module registry
 - **TLS/SSL Modules**
-  - [OpenSSL Module](docs/en/3-capture-modules/3.1.1-openssl-module.md) - OpenSSL/BoringSSL/LibreSSL
-  - [Go TLS Module](docs/en/3-capture-modules/3.1.2-go-tls-module.md) - Go crypto/tls
-  - [GnuTLS & NSS Modules](docs/en/3-capture-modules/3.1.3-gnutls-and-nss-modules.md) - GnuTLS and Firefox/Chrome NSS
-  - [Master Secret Extraction](docs/en/3-capture-modules/3.1.4-master-secret-extraction.md) - Key extraction mechanics
+  - [OpenSSL Module](src/en/3-capture-modules/3.1.1-openssl-module.md) - OpenSSL/BoringSSL/LibreSSL
+  - [Go TLS Module](src/en/3-capture-modules/3.1.2-go-tls-module.md) - Go crypto/tls
+  - [GnuTLS & NSS Modules](src/en/3-capture-modules/3.1.3-gnutls-and-nss-modules.md) - GnuTLS and Firefox/Chrome NSS
+  - [Master Secret Extraction](src/en/3-capture-modules/3.1.4-master-secret-extraction.md) - Key extraction mechanics
 - **System Audit Modules**
-  - [Shell Command Auditing](docs/en/3-capture-modules/3.2.1-shell-command-auditing.md) - Bash/Zsh monitoring
-  - [Database Query Auditing](docs/en/3-capture-modules/3.2.2-database-query-auditing.md) - MySQL/PostgreSQL queries
-- [Network Packet Capture (TC)](docs/en/3-capture-modules/3.3-network-packet-capture-with-tc.md) - TC eBPF programs
+  - [Shell Command Auditing](src/en/3-capture-modules/3.2.1-shell-command-auditing.md) - Bash/Zsh monitoring
+  - [Database Query Auditing](src/en/3-capture-modules/3.2.2-database-query-auditing.md) - MySQL/PostgreSQL queries
+- [Network Packet Capture (TC)](src/en/3-capture-modules/3.3-network-packet-capture-with-tc.md) - TC eBPF programs
 
 ### 4. Output Formats
-- [Text Output Mode](docs/en/4-output-formats/4.1-text-output-mode.md) - Console/file output
-- [PCAP Integration](docs/en/4-output-formats/4.2-pcap-integration.md) - Wireshark-compatible format
-- [TLS Key Logging](docs/en/4-output-formats/4.3-tls-key-logging.md) - SSLKEYLOGFILE format
-- [Protobuf & External Integration](docs/en/4-output-formats/4.4-protobuf-and-external-integration.md) - WebSocket/TCP streaming
+- [Text Output Mode](src/en/4-output-formats/4.1-text-output-mode.md) - Console/file output
+- [PCAP Integration](src/en/4-output-formats/4.2-pcap-integration.md) - Wireshark-compatible format
+- [TLS Key Logging](src/en/4-output-formats/4.3-tls-key-logging.md) - SSLKEYLOGFILE format
+- [Protobuf & External Integration](src/en/4-output-formats/4.4-protobuf-and-external-integration.md) - WebSocket/TCP streaming
 
 ### 5. Development Guide
-- [Build System](docs/en/5-development-guide/5.1-build-system.md) - Compilation and build process
+- [Build System](src/en/5-development-guide/5.1-build-system.md) - Compilation and build process
 - **eBPF Program Development**
-  - [Program Structure](docs/en/5-development-guide/5.2.1-ebpf-program-structure.md) - eBPF code organization
-  - [Structure Offset Calculation](docs/en/5-development-guide/5.2.2-structure-offset-calculation.md) - Memory layout handling
-- [Adding New Modules](docs/en/5-development-guide/5.3-adding-new-modules.md) - Extend eCapture
-- [Event Processing & Parsers](docs/en/5-development-guide/5.4-event-processing-and-parsers.md) - Custom parsers
+  - [Program Structure](src/en/5-development-guide/5.2.1-ebpf-program-structure.md) - eBPF code organization
+  - [Structure Offset Calculation](src/en/5-development-guide/5.2.2-structure-offset-calculation.md) - Memory layout handling
+- [Adding New Modules](src/en/5-development-guide/5.3-adding-new-modules.md) - Extend eCapture
+- [Event Processing & Parsers](src/en/5-development-guide/5.4-event-processing-and-parsers.md) - Custom parsers
 
 ### 6. Troubleshooting & FAQ
-- [Common Issues](docs/en/6-troubleshooting-and-faq/index.md) - Solutions to frequent problems
+- [Common Issues](src/en/6-troubleshooting-and-faq/index.md) - Solutions to frequent problems
 
 ---
 

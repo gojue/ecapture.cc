@@ -47,48 +47,48 @@
 文档分为以下几个部分：
 
 ### 1. 概述
-- [简介](docs/zh/1-overview/index.md) - 系统目的与功能
-- [安装与快速入门](docs/zh/1-overview/1.1-installation-and-quick-start.md) - 快速开始
-- [命令行界面](docs/zh/1-overview/1.2-command-line-interface.md) - CLI 参考
-- [依赖与系统要求](docs/zh/1-overview/1.3-dependencies-and-system-requirements.md) - 系统先决条件
+- [简介](src/zh/1-overview/index.md) - 系统目的与功能
+- [安装与快速入门](src/zh/1-overview/1.1-installation-and-quick-start.md) - 快速开始
+- [命令行界面](src/zh/1-overview/1.2-command-line-interface.md) - CLI 参考
+- [依赖与系统要求](src/zh/1-overview/1.3-dependencies-and-system-requirements.md) - 系统先决条件
 
 ### 2. 架构设计
-- [架构概述](docs/zh/2-architecture/index.md) - 五层系统设计
-- [eBPF 引擎](docs/zh/2-architecture/2.1-ebpf-engine.md) - eBPF 程序管理
-- [事件处理管道](docs/zh/2-architecture/2.2-event-processing-pipeline.md) - 数据流和处理
-- [配置系统](docs/zh/2-architecture/2.3-configuration-system.md) - 配置管理
-- [模块系统与生命周期](docs/zh/2-architecture/2.4-module-system-and-lifecycle.md) - 模块架构
-- [版本检测](docs/zh/2-architecture/2.5-version-detection-and-bytecode-selection.md) - 动态字节码选择
-- [连接跟踪](docs/zh/2-architecture/2.6-network-connection-tracking.md) - 网络流管理
+- [架构概述](src/zh/2-architecture/index.md) - 五层系统设计
+- [eBPF 引擎](src/zh/2-architecture/2.1-ebpf-engine.md) - eBPF 程序管理
+- [事件处理管道](src/zh/2-architecture/2.2-event-processing-pipeline.md) - 数据流和处理
+- [配置系统](src/zh/2-architecture/2.3-configuration-system.md) - 配置管理
+- [模块系统与生命周期](src/zh/2-architecture/2.4-module-system-and-lifecycle.md) - 模块架构
+- [版本检测](src/zh/2-architecture/2.5-version-detection-and-bytecode-selection.md) - 动态字节码选择
+- [连接跟踪](src/zh/2-architecture/2.6-network-connection-tracking.md) - 网络流管理
 
 ### 3. 捕获模块
-- [模块概述](docs/zh/3-capture-modules/index.md) - 模块注册表
+- [模块概述](src/zh/3-capture-modules/index.md) - 模块注册表
 - **TLS/SSL 模块**
-  - [OpenSSL 模块](docs/zh/3-capture-modules/3.1.1-openssl-module.md) - OpenSSL/BoringSSL/LibreSSL
-  - [Go TLS 模块](docs/zh/3-capture-modules/3.1.2-go-tls-module.md) - Go crypto/tls
-  - [GnuTLS 与 NSS 模块](docs/zh/3-capture-modules/3.1.3-gnutls-and-nss-modules.md) - GnuTLS 和 Firefox/Chrome NSS
-  - [Master Secret 提取](docs/zh/3-capture-modules/3.1.4-master-secret-extraction.md) - 密钥提取机制
+  - [OpenSSL 模块](src/zh/3-capture-modules/3.1.1-openssl-module.md) - OpenSSL/BoringSSL/LibreSSL
+  - [Go TLS 模块](src/zh/3-capture-modules/3.1.2-go-tls-module.md) - Go crypto/tls
+  - [GnuTLS 与 NSS 模块](src/zh/3-capture-modules/3.1.3-gnutls-and-nss-modules.md) - GnuTLS 和 Firefox/Chrome NSS
+  - [Master Secret 提取](src/zh/3-capture-modules/3.1.4-master-secret-extraction.md) - 密钥提取机制
 - **系统审计模块**
-  - [Shell 命令审计](docs/zh/3-capture-modules/3.2.1-shell-command-auditing.md) - Bash/Zsh 监控
-  - [数据库查询审计](docs/zh/3-capture-modules/3.2.2-database-query-auditing.md) - MySQL/PostgreSQL 查询
-- [网络数据包捕获 (TC)](docs/zh/3-capture-modules/3.3-network-packet-capture-with-tc.md) - TC eBPF 程序
+  - [Shell 命令审计](src/zh/3-capture-modules/3.2.1-shell-command-auditing.md) - Bash/Zsh 监控
+  - [数据库查询审计](src/zh/3-capture-modules/3.2.2-database-query-auditing.md) - MySQL/PostgreSQL 查询
+- [网络数据包捕获 (TC)](src/zh/3-capture-modules/3.3-network-packet-capture-with-tc.md) - TC eBPF 程序
 
 ### 4. 输出格式
-- [文本输出模式](docs/zh/4-output-formats/4.1-text-output-mode.md) - 控制台/文件输出
-- [PCAP 集成](docs/zh/4-output-formats/4.2-pcap-integration.md) - Wireshark 兼容格式
-- [TLS 密钥日志](docs/zh/4-output-formats/4.3-tls-key-logging.md) - SSLKEYLOGFILE 格式
-- [Protobuf 与外部集成](docs/zh/4-output-formats/4.4-protobuf-and-external-integration.md) - WebSocket/TCP 流
+- [文本输出模式](src/zh/4-output-formats/4.1-text-output-mode.md) - 控制台/文件输出
+- [PCAP 集成](src/zh/4-output-formats/4.2-pcap-integration.md) - Wireshark 兼容格式
+- [TLS 密钥日志](src/zh/4-output-formats/4.3-tls-key-logging.md) - SSLKEYLOGFILE 格式
+- [Protobuf 与外部集成](src/zh/4-output-formats/4.4-protobuf-and-external-integration.md) - WebSocket/TCP 流
 
 ### 5. 开发指南
-- [构建系统](docs/zh/5-development-guide/5.1-build-system.md) - 编译和构建过程
+- [构建系统](src/zh/5-development-guide/5.1-build-system.md) - 编译和构建过程
 - **eBPF 程序开发**
-  - [程序结构](docs/zh/5-development-guide/5.2.1-ebpf-program-structure.md) - eBPF 代码组织
-  - [结构体偏移计算](docs/zh/5-development-guide/5.2.2-structure-offset-calculation.md) - 内存布局处理
-- [添加新模块](docs/zh/5-development-guide/5.3-adding-new-modules.md) - 扩展 eCapture
-- [事件处理与解析器](docs/zh/5-development-guide/5.4-event-processing-and-parsers.md) - 自定义解析器
+  - [程序结构](src/zh/5-development-guide/5.2.1-ebpf-program-structure.md) - eBPF 代码组织
+  - [结构体偏移计算](src/zh/5-development-guide/5.2.2-structure-offset-calculation.md) - 内存布局处理
+- [添加新模块](src/zh/5-development-guide/5.3-adding-new-modules.md) - 扩展 eCapture
+- [事件处理与解析器](src/zh/5-development-guide/5.4-event-processing-and-parsers.md) - 自定义解析器
 
 ### 6. 故障排除与常见问题
-- [常见问题](docs/zh/6-troubleshooting-and-faq/index.md) - 常见问题的解决方案
+- [常见问题](src/zh/6-troubleshooting-and-faq/index.md) - 常见问题的解决方案
 
 ---
 
