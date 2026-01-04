@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import {ref, watch } from 'vue'
-
-const VIDEO_SOURCE = 'https://player.bilibili.com/player.html?aid=552723736&bvid=BV1si4y1Q74a&cid=560493755&page=1'
+const VIDEO_SOURCE = 'https://player.bilibili.com/player.html?isOutside=true&aid=115819514238165&bvid=BV1gcvQB7E8b&cid=35123495954&p=1'
 let showWhyVue: boolean = ref(false)
 
 watch(

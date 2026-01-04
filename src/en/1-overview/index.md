@@ -393,7 +393,7 @@ graph TD
     start["Module Init<br/>e.g., MOpenSSLProbe.Init()"]
     detect["Version Detection<br/>ELF Parsing"]
     check_ver{{"Version<br/>Found?"}}
-    map["Bytecode Mapping<br/>OpenSSL 1.0.2-3.5.x<br/>BoringSSL A12-A16"}
+    map["Bytecode Mapping<br/>OpenSSL 1.0.2-3.5.x<br/>BoringSSL A12-A16"]
     check_btf{{"BTF<br/>Enabled?"}}
     core["Load CO-RE Bytecode<br/>*_core.o"}
     noncore["Load Non-CO-RE<br/>*_noncore.o"]

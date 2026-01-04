@@ -13,7 +13,7 @@ import VueMasteryModalZh from './VueMasteryModalZh.vue';
     </p>
     <p class="actions">
       <vue-mastery-modal-zh />
-      <a class="get-started" href="/zh/guide/introduction.html">
+      <a class="get-started" href="/zh/1-overview/">
         使用方法
         <svg
           class="icon"

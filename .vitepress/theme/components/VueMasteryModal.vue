@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 
-const VIDEO_SOURCE = 'https://www.youtube.com/embed/CoDIjEQCvvA'
+const VIDEO_SOURCE = 'https://youtu.be/AE60fSOHySY'
 let showWhyVue: boolean = ref(false)
 
 watch(
