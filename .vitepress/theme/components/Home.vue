@@ -593,8 +593,10 @@ section {
   z-index: 2;
   display: flex;
   align-items: center;
+  justify-content: flex-start;
   gap: 8px;
-  padding: 14px 32px;
+  padding: 14px 24px 14px 20px;
+  width: 100%;
 }
 
 .button-glow {

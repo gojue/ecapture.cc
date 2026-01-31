@@ -69,21 +69,21 @@ const initMatrixRain = (canvas: HTMLCanvasElement) => {
 
   const drawMatrix = () => {
     // Semi-transparent black for trail effect
-    ctx.fillStyle = 'rgba(10, 14, 20, 0.05)'
+    ctx.fillStyle = 'rgba(10, 14, 20, 0.1)'
     ctx.fillRect(0, 0, canvas.width, canvas.height)
 
     drops.forEach(drop => {
       drop.chars.forEach((char, i) => {
         const y = drop.y + i * fontSize
 
-        // Color gradient based on position
+        // Color gradient based on position - 更柔和的颜色
         if (i === drop.chars.length - 1) {
-          ctx.fillStyle = '#5cd0ae' // Bright teal for leading char
-          ctx.shadowBlur = 10
-          ctx.shadowColor = '#5cd0ae'
+          ctx.fillStyle = 'rgba(67, 170, 139, 0.3)' // 降低亮度
+          ctx.shadowBlur = 5
+          ctx.shadowColor = 'rgba(67, 170, 139, 0.2)'
         } else {
-          const alpha = 1 - (i / drop.chars.length)
-          ctx.fillStyle = `rgba(92, 208, 174, ${alpha * 0.8})`
+          const alpha = (1 - (i / drop.chars.length)) * 0.2
+          ctx.fillStyle = `rgba(67, 170, 139, ${alpha})`
           ctx.shadowBlur = 0
         }
 
@@ -165,12 +165,12 @@ const initHexGrid = (canvas: HTMLCanvasElement) => {
 
     if (distance < maxDistance) {
       const intensity = 1 - (distance / maxDistance)
-      ctx.strokeStyle = `rgba(67, 170, 139, ${intensity * 0.8})`
-      ctx.lineWidth = 2
+      ctx.strokeStyle = `rgba(67, 170, 139, ${intensity * 0.3})`
+      ctx.lineWidth = 1
       hex.active = true
     } else {
-      const pulseOpacity = Math.sin(hex.pulsePhase) * 0.2 + 0.1
-      ctx.strokeStyle = `rgba(67, 170, 139, ${hex.active ? pulseOpacity : 0.05})`
+      const pulseOpacity = Math.sin(hex.pulsePhase) * 0.08 + 0.05
+      ctx.strokeStyle = `rgba(67, 170, 139, ${hex.active ? pulseOpacity : 0.02})`
       ctx.lineWidth = 1
     }
 
@@ -241,7 +241,7 @@ const initDataPackets = (canvas: HTMLCanvasElement) => {
     ctx.beginPath()
     packet.trail.forEach((point, i) => {
       const alpha = i / packet.trail.length
-      ctx.globalAlpha = alpha * 0.5
+      ctx.globalAlpha = alpha * 0.2
       if (i === 0) ctx.moveTo(point.x, point.y)
       else ctx.lineTo(point.x, point.y)
     })
@@ -250,7 +250,7 @@ const initDataPackets = (canvas: HTMLCanvasElement) => {
 
     // Draw packet
     ctx.fillStyle = packet.color
-    ctx.shadowBlur = 15
+    ctx.shadowBlur = 8
     ctx.shadowColor = packet.color
 
     if (packet.decrypting > 0) {
@@ -383,30 +383,30 @@ onUnmounted(() => {
 }
 
 .matrix-rain {
-  opacity: 0.3;
+  opacity: 0.08;
   z-index: 1;
 }
 
 .dark .matrix-rain {
-  opacity: 0.4;
+  opacity: 0.12;
 }
 
 .hex-grid {
-  opacity: 0.2;
+  opacity: 0.08;
   z-index: 2;
 }
 
 .dark .hex-grid {
-  opacity: 0.3;
+  opacity: 0.12;
 }
 
 .data-packets {
-  opacity: 0.6;
+  opacity: 0.15;
   z-index: 3;
 }
 
 .dark .data-packets {
-  opacity: 0.8;
+  opacity: 0.25;
 }
 
 .mouse-encryption-effect {
@@ -422,9 +422,9 @@ onUnmounted(() => {
   position: absolute;
   width: 4px;
   height: 4px;
-  background: #5cd0ae;
+  background: rgba(67, 170, 139, 0.4);
   border-radius: 50%;
-  box-shadow: 0 0 10px #5cd0ae;
+  box-shadow: 0 0 6px rgba(67, 170, 139, 0.3);
   animation: particleFloat 3s ease-in-out infinite;
 }
 
@@ -470,15 +470,15 @@ onUnmounted(() => {
 /* Reduce effects on mobile for performance */
 @media (max-width: 768px) {
   .matrix-rain {
-    opacity: 0.15;
+    opacity: 0.05;
   }
 
   .hex-grid {
-    opacity: 0.1;
+    opacity: 0.05;
   }
 
   .data-packets {
-    opacity: 0.3;
+    opacity: 0.1;
   }
 
   .mouse-encryption-effect {
