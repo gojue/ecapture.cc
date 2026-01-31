@@ -9,6 +9,41 @@ onMounted(() => {
     isLoaded.value = true;
   }, 100);
 });
+
+// Animated encryption/decryption text
+const encryptedChars = '▓▒░█▄▀■□◆◇★☆01';
+const decryptedText = 'SSL/TLS text content';
+const displayText = ref(decryptedText);
+
+const animateText = () => {
+  let iterations = 0;
+  const maxIterations = 20;
+
+  const interval = setInterval(() => {
+    displayText.value = decryptedText
+      .split('')
+      .map((char, index) => {
+        if (index < iterations) {
+          return decryptedText[index];
+        }
+        return encryptedChars[Math.floor(Math.random() * encryptedChars.length)];
+      })
+      .join('');
+
+    iterations += 1;
+
+    if (iterations > maxIterations) {
+      clearInterval(interval);
+      displayText.value = decryptedText;
+    }
+  }, 50);
+};
+
+// Trigger animation on mount and periodically
+onMounted(() => {
+  setTimeout(animateText, 1000);
+  setInterval(animateText, 8000);
+});
 </script>
 
 <template>
@@ -17,6 +52,30 @@ onMounted(() => {
       <div class="gradient-orb orb-1"></div>
       <div class="gradient-orb orb-2"></div>
       <div class="gradient-orb orb-3"></div>
+
+      <!-- Encryption Data Stream -->
+      <div class="data-stream-container">
+        <div class="data-stream stream-1">
+          <span v-for="n in 15" :key="`s1-${n}`" class="data-byte">{{ ['0x', 'FF', 'A3', '7C', 'B2', 'E9'][n % 6] }}</span>
+        </div>
+        <div class="data-stream stream-2">
+          <span v-for="n in 15" :key="`s2-${n}`" class="data-byte">{{ ['CA', '8F', '1D', '5E', '92', '4B'][n % 6] }}</span>
+        </div>
+        <div class="data-stream stream-3">
+          <span v-for="n in 15" :key="`s3-${n}`" class="data-byte">{{ ['3A', 'D7', '6C', 'F1', '8E', '2F'][n % 6] }}</span>
+        </div>
+      </div>
+
+      <!-- Encryption Lock Icon with Pulse -->
+      <div class="encryption-lock">
+        <svg class="lock-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="5" y="11" width="14" height="10" rx="2" />
+          <path d="M12 15v2" />
+          <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+        </svg>
+        <div class="lock-pulse"></div>
+        <div class="lock-pulse delay-1"></div>
+      </div>
     </div>
 
     <div class="hero-content">
@@ -27,7 +86,7 @@ onMounted(() => {
 
       <h1 class="tagline">
         <span class="tagline-line">Capture</span>
-        <span class="accent">SSL/TLS text content</span>
+        <span class="accent decrypting-text">{{ displayText }}</span>
         <span class="tagline-line">without CA certificate</span>
       </h1>
 
@@ -246,12 +305,174 @@ section {
   background-size: 200% 200%;
 }
 
+.decrypting-text {
+  font-family: 'Courier New', monospace;
+  letter-spacing: 2px;
+  text-shadow: 0 0 30px rgba(67, 170, 139, 0.5);
+}
+
+.dark .decrypting-text {
+  text-shadow: 0 0 40px rgba(92, 208, 174, 0.7);
+}
+
 @keyframes gradient-shift {
   0%, 100% {
     background-position: 0% 50%;
   }
   50% {
     background-position: 100% 50%;
+  }
+}
+
+/* Data Stream Effects */
+.data-stream-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  opacity: 0.15;
+  pointer-events: none;
+}
+
+.dark .data-stream-container {
+  opacity: 0.25;
+}
+
+.data-stream {
+  position: absolute;
+  display: flex;
+  gap: 20px;
+  white-space: nowrap;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  color: var(--ec-c-teal);
+  animation: streamFlow 20s linear infinite;
+}
+
+.stream-1 {
+  top: 20%;
+  left: -100%;
+  animation-duration: 25s;
+}
+
+.stream-2 {
+  top: 50%;
+  left: -100%;
+  animation-duration: 30s;
+  animation-delay: -10s;
+}
+
+.stream-3 {
+  top: 70%;
+  left: -100%;
+  animation-duration: 35s;
+  animation-delay: -20s;
+}
+
+.data-byte {
+  display: inline-block;
+  padding: 4px 8px;
+  background: rgba(67, 170, 139, 0.1);
+  border: 1px solid rgba(67, 170, 139, 0.3);
+  border-radius: 4px;
+  opacity: 0;
+  animation: byteAppear 2s ease-in-out infinite;
+}
+
+.dark .data-byte {
+  background: rgba(92, 208, 174, 0.15);
+  border-color: rgba(92, 208, 174, 0.4);
+}
+
+.data-byte:nth-child(odd) {
+  animation-delay: 0.5s;
+}
+
+@keyframes streamFlow {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(200vw);
+  }
+}
+
+@keyframes byteAppear {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.8;
+    transform: scale(1.1);
+  }
+}
+
+/* Encryption Lock */
+.encryption-lock {
+  position: absolute;
+  top: 15%;
+  right: 10%;
+  width: 80px;
+  height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0.3;
+  animation: lockFloat 4s ease-in-out infinite;
+}
+
+.dark .encryption-lock {
+  opacity: 0.4;
+}
+
+.lock-icon {
+  width: 50px;
+  height: 50px;
+  color: var(--ec-c-teal);
+  position: relative;
+  z-index: 2;
+  filter: drop-shadow(0 0 10px rgba(67, 170, 139, 0.5));
+}
+
+.dark .lock-icon {
+  color: #5cd0ae;
+  filter: drop-shadow(0 0 15px rgba(92, 208, 174, 0.7));
+}
+
+.lock-pulse {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border: 2px solid var(--ec-c-teal);
+  border-radius: 50%;
+  animation: lockPulse 2s ease-out infinite;
+  opacity: 0.6;
+}
+
+.lock-pulse.delay-1 {
+  animation-delay: 1s;
+}
+
+@keyframes lockFloat {
+  0%, 100% {
+    transform: translateY(0) rotate(0deg);
+  }
+  50% {
+    transform: translateY(-20px) rotate(5deg);
+  }
+}
+
+@keyframes lockPulse {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1.5);
+    opacity: 0;
   }
 }
 
