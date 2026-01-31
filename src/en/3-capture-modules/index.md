@@ -5,92 +5,100 @@
 
 The following files were used as context for generating this wiki page:
 
-- [CHANGELOG.md](https://github.com/gojue/ecapture/blob/0766a93b/CHANGELOG.md)
-- [README.md](https://github.com/gojue/ecapture/blob/0766a93b/README.md)
-- [README_CN.md](https://github.com/gojue/ecapture/blob/0766a93b/README_CN.md)
-- [cli/cmd/bash.go](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/bash.go)
-- [cli/cmd/gnutls.go](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/gnutls.go)
-- [cli/cmd/gotls.go](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/gotls.go)
-- [cli/cmd/mysqld.go](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/mysqld.go)
-- [cli/cmd/nspr.go](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/nspr.go)
-- [cli/cmd/postgres.go](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/postgres.go)
-- [cli/cmd/tls.go](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/tls.go)
-- [cli/cmd/zsh.go](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/zsh.go)
-- [images/ecapture-help-v0.8.9.svg](https://github.com/gojue/ecapture/blob/0766a93b/images/ecapture-help-v0.8.9.svg)
-- [main.go](https://github.com/gojue/ecapture/blob/0766a93b/main.go)
-- [pkg/util/ws/client.go](https://github.com/gojue/ecapture/blob/0766a93b/pkg/util/ws/client.go)
-- [pkg/util/ws/client_test.go](https://github.com/gojue/ecapture/blob/0766a93b/pkg/util/ws/client_test.go)
+- [CHANGELOG.md](https://github.com/gojue/ecapture/blob/ca085d05/CHANGELOG.md)
+- [README.md](https://github.com/gojue/ecapture/blob/ca085d05/README.md)
+- [README_CN.md](https://github.com/gojue/ecapture/blob/ca085d05/README_CN.md)
+- [cli/cmd/bash.go](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/bash.go)
+- [cli/cmd/gnutls.go](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/gnutls.go)
+- [cli/cmd/gotls.go](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/gotls.go)
+- [cli/cmd/mysqld.go](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/mysqld.go)
+- [cli/cmd/nspr.go](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/nspr.go)
+- [cli/cmd/postgres.go](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/postgres.go)
+- [cli/cmd/tls.go](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/tls.go)
+- [cli/cmd/zsh.go](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/zsh.go)
+- [images/ecapture-help-v0.8.9.svg](https://github.com/gojue/ecapture/blob/ca085d05/images/ecapture-help-v0.8.9.svg)
+- [main.go](https://github.com/gojue/ecapture/blob/ca085d05/main.go)
+- [pkg/util/ws/client.go](https://github.com/gojue/ecapture/blob/ca085d05/pkg/util/ws/client.go)
+- [pkg/util/ws/client_test.go](https://github.com/gojue/ecapture/blob/ca085d05/pkg/util/ws/client_test.go)
 
 </details>
 
 
 
-## Purpose and Scope
+## Overview
 
-This page provides an overview of eCapture's capture module system, which implements specialized data capture capabilities for different protocols, libraries, and applications. Each module targets a specific technology (OpenSSL, GnuTLS, Go TLS, Bash, MySQL, etc.) and implements a common interface to integrate with eCapture's event processing pipeline.
+eCapture implements eight capture modules that provide specialized data interception capabilities for different protocols, libraries, and applications. Each module hooks specific functions using eBPF uprobes to capture plaintext data before encryption or after decryption.
 
-For detailed information about specific module types, see:
-- TLS/SSL capture implementations: [TLS/SSL Modules](3.1-tlsssl-modules.md)
-- Shell and database auditing: [System Audit Modules](3.2-system-audit-modules.md)
-- Network packet capture mechanisms: [Network Packet Capture with TC](3.3-network-packet-capture-with-tc.md)
-- Module interface and lifecycle management: [Module System and Lifecycle](../2-architecture/2.4-module-system-and-lifecycle.md)
+The eight modules are:
+- **TLS/SSL Modules**: OpenSSL/BoringSSL, GoTLS, GnuTLS, NSPR/NSS
+- **System Audit Modules**: Bash, Zsh, MySQL, PostgreSQL
 
-## Module System Overview
+Each module implements the `IModule` interface and integrates with the shared eBPF engine, event processor, and output formatters. Modules are registered as CLI subcommands using Cobra and instantiated via the module registry pattern.
 
-eCapture's modular architecture allows it to capture data from diverse sources through a unified interface. Each module is responsible for:
+For detailed subsystem documentation, see:
+- TLS/SSL implementations: [Page 3.1 - TLS/SSL Capture Modules]
+- System auditing: [Page 3.2 - System Audit Modules]
+- Network packet capture: [Page 3.3 - Network Packet Capture with TC]
+- Module interface: [Page 2.5 - Module System and Lifecycle]
+- Event processing: [Page 2.2 - Event Processing Pipeline]
 
-1. **Target Detection**: Locating the appropriate binary or shared library to instrument
-2. **eBPF Program Management**: Loading and attaching version-specific eBPF bytecode
-3. **Event Processing**: Decoding and formatting captured data
-4. **Output Generation**: Producing data in text, pcap, or keylog formats
+Sources: [README.md:152-161](https://github.com/gojue/ecapture/blob/ca085d05/README.md#L152-L161), [cli/cmd/tls.go:29-48](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/tls.go#L29-L48), [cli/cmd/gotls.go:29-40](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/gotls.go#L29-L40)
 
-The system currently implements **eight capture modules**, each registered via CLI subcommands and accessible through the module registry.
+## Module Registration Architecture
 
-Sources: [README.md:152-161](https://github.com/gojue/ecapture/blob/0766a93b/README.md#L152-L161), [cli/cmd/tls.go:29-48](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/tls.go#L29-L48), [cli/cmd/gotls.go:29-40](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/gotls.go#L29-L40)
-
-## Module Registry and Architecture
+**CLI Command Registration Flow**
 
 ```mermaid
 graph TB
-    subgraph "CLI Layer"
+    subgraph CLI["cli/cmd/*.go files"]
         rootCmd["rootCmd<br/>(cobra.Command)"]
-        tlsCmd["opensslCmd<br/>'tls' subcommand"]
-        gotlsCmd["gotlsCmd<br/>'gotls' subcommand"]
-        gnutlsCmd["gnutlsCmd<br/>'gnutls' subcommand"]
-        nssCmd["nssCmd<br/>'nspr' subcommand"]
-        bashCmd["bashCmd<br/>'bash' subcommand"]
-        zshCmd["zshCmd<br/>'zsh' subcommand"]
-        mysqldCmd["mysqldCmd<br/>'mysqld' subcommand"]
-        postgresCmd["postgresCmd<br/>'postgres' subcommand"]
+        
+        opensslCmd["opensslCmd = &cobra.Command<br/>Use: 'tls'<br/>Aliases: ['openssl']"]
+        gotlsCmd["gotlsCmd = &cobra.Command<br/>Use: 'gotls'<br/>Aliases: ['tlsgo']"]
+        gnutlsCmd["gnutlsCmd = &cobra.Command<br/>Use: 'gnutls'<br/>Aliases: ['gnu']"]
+        nssCmd["nssCmd = &cobra.Command<br/>Use: 'nspr'<br/>Aliases: ['nss']"]
+        bashCmd["bashCmd = &cobra.Command<br/>Use: 'bash'"]
+        zshCmd["zshCmd = &cobra.Command<br/>Use: 'zsh'"]
+        mysqldCmd["mysqldCmd = &cobra.Command<br/>Use: 'mysqld'"]
+        postgresCmd["postgresCmd = &cobra.Command<br/>Use: 'postgres'"]
     end
     
-    subgraph "Configuration Layer"
-        oc["OpensslConfig<br/>oc variable"]
-        goc["GoTLSConfig<br/>goc variable"]
-        gc["GnutlsConfig<br/>gc variable"]
-        nc["NsprConfig<br/>nc variable"]
-        bc["BashConfig<br/>bc variable"]
-        zc["ZshConfig<br/>zc variable"]
-        myc["MysqldConfig<br/>myc variable"]
-        pgc["PostgresConfig<br/>pgc variable"]
+    subgraph Config["config.New*Config()"]
+        oc["oc = config.NewOpensslConfig()"]
+        goc["goc = config.NewGoTLSConfig()"]
+        gc["gc = config.NewGnutlsConfig()"]
+        nc["nc = config.NewNsprConfig()"]
+        bc["bc = config.NewBashConfig()"]
+        zc["zc = config.NewZshConfig()"]
+        myc["myc = config.NewMysqldConfig()"]
+        pgc["pgc = config.NewPostgresConfig()"]
     end
     
-    subgraph "Module Layer"
-        modOpenssl["ModuleNameOpenssl<br/>constant"]
-        modGotls["ModuleNameGotls<br/>constant"]
-        modGnutls["ModuleNameGnutls<br/>constant"]
-        modNspr["ModuleNameNspr<br/>constant"]
-        modBash["ModuleNameBash<br/>constant"]
-        modZsh["ModuleNameZsh<br/>constant"]
-        modMysqld["ModuleNameMysqld<br/>constant"]
-        modPostgres["ModuleNamePostgres<br/>constant"]
+    subgraph RunE["Command RunE Functions"]
+        openSSLCommandFunc["openSSLCommandFunc()"]
+        goTLSCommandFunc["goTLSCommandFunc()"]
+        gnuTlsCommandFunc["gnuTlsCommandFunc()"]
+        nssCommandFunc["nssCommandFunc()"]
+        bashCommandFunc["bashCommandFunc()"]
+        zshCommandFunc["zshCommandFunc()"]
+        mysqldCommandFunc["mysqldCommandFunc()"]
+        postgresCommandFunc["postgresCommandFunc()"]
     end
     
-    subgraph "Execution"
-        runModule["runModule()<br/>function"]
+    subgraph ModuleNames["module.ModuleName* constants"]
+        ModuleNameOpenssl["module.ModuleNameOpenssl"]
+        ModuleNameGotls["module.ModuleNameGotls"]
+        ModuleNameGnutls["module.ModuleNameGnutls"]
+        ModuleNameNspr["module.ModuleNameNspr"]
+        ModuleNameBash["module.ModuleNameBash"]
+        ModuleNameZsh["module.ModuleNameZsh"]
+        ModuleNameMysqld["module.ModuleNameMysqld"]
+        ModuleNamePostgres["module.ModuleNamePostgres"]
     end
     
-    rootCmd --> tlsCmd
+    runModule["runModule(moduleName, config)"]
+    
+    rootCmd --> opensslCmd
     rootCmd --> gotlsCmd
     rootCmd --> gnutlsCmd
     rootCmd --> nssCmd
@@ -99,316 +107,500 @@ graph TB
     rootCmd --> mysqldCmd
     rootCmd --> postgresCmd
     
-    tlsCmd --> oc
-    gotlsCmd --> goc
-    gnutlsCmd --> gc
-    nssCmd --> nc
-    bashCmd --> bc
-    zshCmd --> zc
-    mysqldCmd --> myc
-    postgresCmd --> pgc
+    opensslCmd --> openSSLCommandFunc
+    gotlsCmd --> goTLSCommandFunc
+    gnutlsCmd --> gnuTlsCommandFunc
+    nssCmd --> nssCommandFunc
+    bashCmd --> bashCommandFunc
+    zshCmd --> zshCommandFunc
+    mysqldCmd --> mysqldCommandFunc
+    postgresCmd --> postgresCommandFunc
     
-    oc --> modOpenssl
-    goc --> modGotls
-    gc --> modGnutls
-    nc --> modNspr
-    bc --> modBash
-    zc --> modZsh
-    myc --> modMysqld
-    pgc --> modPostgres
+    oc -.->|passed to| openSSLCommandFunc
+    goc -.->|passed to| goTLSCommandFunc
+    gc -.->|passed to| gnuTlsCommandFunc
+    nc -.->|passed to| nssCommandFunc
+    bc -.->|passed to| bashCommandFunc
+    zc -.->|passed to| zshCommandFunc
+    myc -.->|passed to| mysqldCommandFunc
+    pgc -.->|passed to| postgresCommandFunc
     
-    modOpenssl --> runModule
-    modGotls --> runModule
-    modGnutls --> runModule
-    modNspr --> runModule
-    modBash --> runModule
-    modZsh --> runModule
-    modMysqld --> runModule
-    modPostgres --> runModule
+    openSSLCommandFunc --> ModuleNameOpenssl
+    goTLSCommandFunc --> ModuleNameGotls
+    gnuTlsCommandFunc --> ModuleNameGnutls
+    nssCommandFunc --> ModuleNameNspr
+    bashCommandFunc --> ModuleNameBash
+    zshCommandFunc --> ModuleNameZsh
+    mysqldCommandFunc --> ModuleNameMysqld
+    postgresCommandFunc --> ModuleNamePostgres
+    
+    ModuleNameOpenssl --> runModule
+    ModuleNameGotls --> runModule
+    ModuleNameGnutls --> runModule
+    ModuleNameNspr --> runModule
+    ModuleNameBash --> runModule
+    ModuleNameZsh --> runModule
+    ModuleNameMysqld --> runModule
+    ModuleNamePostgres --> runModule
 ```
 
-**Module Registration Architecture**: Each module is registered as a Cobra CLI subcommand with its own configuration object. When invoked, the command function calls `runModule()` with the module name constant and configuration, which instantiates the appropriate module implementation via the module registry.
+Each module follows a consistent registration pattern:
 
-Sources: [cli/cmd/tls.go:26-67](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/tls.go#L26-L67), [cli/cmd/gotls.go:26-58](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/gotls.go#L26-L58), [cli/cmd/bash.go:24-55](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/bash.go#L24-L55), [cli/cmd/mysqld.go:27-49](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/mysqld.go#L27-L49), [cli/cmd/postgres.go:27-45](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/postgres.go#L27-L45), [cli/cmd/nspr.go:27-51](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/nspr.go#L27-L51), [cli/cmd/gnutls.go:29-64](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/gnutls.go#L29-L64), [cli/cmd/zsh.go:27-57](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/zsh.go#L27-L57)
+1. **Command Definition**: Each `cli/cmd/*.go` file defines a `cobra.Command` struct with `Use`, `Aliases`, `Short`, `Long`, and `RunE` fields
+2. **Configuration Object**: Package-level variable (e.g., `oc`, `goc`) created via `config.New*Config()` constructor
+3. **Command Function**: `RunE` handler function (e.g., `openSSLCommandFunc`) processes CLI flags and invokes `runModule()`
+4. **Module Constant**: String constant like `module.ModuleNameOpenssl` identifies the module implementation
+5. **Registration**: `init()` function adds command to `rootCmd` and binds flags to config object
 
-## Module Categories
+Sources: [cli/cmd/tls.go:26-67](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/tls.go#L26-L67), [cli/cmd/gotls.go:26-58](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/gotls.go#L26-L58), [cli/cmd/bash.go:24-55](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/bash.go#L24-L55), [cli/cmd/mysqld.go:27-49](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/mysqld.go#L27-L49), [cli/cmd/postgres.go:27-45](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/postgres.go#L27-L45), [cli/cmd/nspr.go:27-51](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/nspr.go#L27-L51), [cli/cmd/gnutls.go:29-64](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/gnutls.go#L29-L64), [cli/cmd/zsh.go:27-57](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/zsh.go#L27-L57)
 
-eCapture's eight modules are organized into three functional categories based on their capture targets and techniques:
+## Module Categories and Capabilities
+
+eCapture's eight modules are organized into three functional categories:
 
 ### TLS/SSL Encryption Libraries
 
-These modules intercept cryptographic functions to capture plaintext data before encryption or after decryption:
+Five modules intercept cryptographic library functions to capture plaintext before encryption or after decryption:
 
-| Module | CLI Command | Target Library | Supported Versions | Primary Use Case |
-|--------|-------------|----------------|-------------------|------------------|
-| **OpenSSL** | `tls`, `openssl` | libssl.so | 1.0.x, 1.1.x, 3.0.x+ | General TLS/HTTPS capture |
-| **BoringSSL** | `tls` | libssl.so | Android 12-16 | Android HTTPS capture |
-| **Go TLS** | `gotls`, `tlsgo` | Built-in crypto/tls | All Go versions | Go application capture |
-| **GnuTLS** | `gnutls`, `gnu` | libgnutls.so | 3.x | Alternative TLS library |
-| **NSPR/NSS** | `nspr`, `nss` | libnspr4.so | All versions | Firefox/Thunderbird |
+| Module | CLI Command | Target Library | Hook Functions | Supported Versions |
+|--------|-------------|----------------|----------------|-------------------|
+| **OpenSSL/BoringSSL** | `tls`, `openssl` | libssl.so, libcrypto.so | `SSL_read`, `SSL_write`, `SSL_do_handshake`, `SSL_get_wbio` | OpenSSL 1.0.2-3.5.x, BoringSSL Android 12-16 |
+| **Go TLS** | `gotls`, `tlsgo` | crypto/tls (built-in) | `crypto/tls.(*Conn).Read`, `crypto/tls.(*Conn).Write` | All Go versions (1.x-1.24+) |
+| **GnuTLS** | `gnutls`, `gnu` | libgnutls.so | `gnutls_record_recv`, `gnutls_record_send` | GnuTLS 3.x |
+| **NSPR/NSS** | `nspr`, `nss` | libnspr4.so, libnss3.so | `PR_Read`, `PR_Write` | All NSS versions |
 
-Sources: [README.md:152-161](https://github.com/gojue/ecapture/blob/0766a93b/README.md#L152-L161), [README_CN.md:128-138](https://github.com/gojue/ecapture/blob/0766a93b/README_CN.md#L128-L138), [cli/cmd/tls.go:29-33](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/tls.go#L29-L33), [cli/cmd/gotls.go:29-33](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/gotls.go#L29-L33), [cli/cmd/gnutls.go:32-36](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/gnutls.go#L32-L36), [cli/cmd/nspr.go:30-34](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/nspr.go#L30-L34)
+**Capture Modes**: TLS/SSL modules support three modes via `-m` flag:
+- `text`: Direct plaintext output with HTTP/1.x/HTTP2 parsing
+- `pcap`/`pcapng`: Network packets with embedded TLS keys in PCAPNG DSB
+- `keylog`/`key`: Master secret extraction in SSLKEYLOGFILE format
 
-### System Audit and Command Capture
+Sources: [cli/cmd/tls.go:32-33](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/tls.go#L32-L33), [cli/cmd/gotls.go:32-33](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/gotls.go#L32-L33), [cli/cmd/gnutls.go:35-36](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/gnutls.go#L35-L36), [cli/cmd/nspr.go:32-33](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/nspr.go#L32-L33), [README.md:163-176](https://github.com/gojue/ecapture/blob/ca085d05/README.md#L163-L176)
 
-These modules hook into command interpreters and database servers for security auditing:
+### System Audit Modules
 
-| Module | CLI Command | Target Binary | Hook Points | Audit Capability |
-|--------|-------------|---------------|-------------|------------------|
-| **Bash** | `bash` | /bin/bash | readline library | Command input/output |
-| **Zsh** | `zsh` | /bin/zsh | readline functions | Command execution |
-| **MySQL** | `mysqld` | /usr/sbin/mysqld | dispatch_command | SQL query logging |
-| **PostgreSQL** | `postgres` | /usr/bin/postgres | Query execution | SQL audit |
+Four modules hook into command interpreters and database servers:
 
-Sources: [README.md:152-161](https://github.com/gojue/ecapture/blob/0766a93b/README.md#L152-L161), [cli/cmd/bash.go:27-32](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/bash.go#L27-L32), [cli/cmd/zsh.go:30-35](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/zsh.go#L30-L35), [cli/cmd/mysqld.go:30-36](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/mysqld.go#L30-L36), [cli/cmd/postgres.go:30-33](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/postgres.go#L30-L33)
+| Module | CLI Command | Target Binary | Hook Functions | Data Captured |
+|--------|-------------|---------------|----------------|---------------|
+| **Bash** | `bash` | /bin/bash | `readline()` from libreadline.so | Command input, return value, errno |
+| **Zsh** | `zsh` | /bin/zsh | `zle_line_finish()` | Command input, execution result |
+| **MySQL** | `mysqld` | /usr/sbin/mysqld, /usr/sbin/mariadbd | `dispatch_command()` | SQL query text, connection ID |
+| **PostgreSQL** | `postgres` | /usr/bin/postgres | `exec_simple_query()` | SQL statements |
+
+**Filtering**: Bash and Zsh support `-e`/`--errnumber` flag to filter by command exit status.
+
+Sources: [cli/cmd/bash.go:28-32](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/bash.go#L28-L32), [cli/cmd/zsh.go:31-35](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/zsh.go#L31-L35), [cli/cmd/mysqld.go:31-36](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/mysqld.go#L31-L36), [cli/cmd/postgres.go:31-33](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/postgres.go#L31-L33)
 
 ### Network Packet Capture
 
-Network-level capture is integrated into TLS/SSL modules via Traffic Control (TC) eBPF classifiers. See [Network Packet Capture with TC](3.3-network-packet-capture-with-tc.md) for details.
+TLS/SSL modules integrate with Traffic Control (TC) eBPF classifiers when using pcap mode:
 
-## Detailed Module Descriptions
+- **TC Probe**: Attaches to network interface via `-i`/`--ifname` flag
+- **BPF Filtering**: Supports pcap filter expressions (e.g., `tcp port 443`)
+- **Connection Tracking**: Uses kprobe on `tcp_sendmsg`/`udp_sendmsg` for PID/UID mapping
+- **Protocol Support**: IPv4/IPv6, TCP/UDP, ICMP
+
+See [Page 3.3 - Network Packet Capture with TC] for implementation details.
+
+Sources: [cli/cmd/tls.go:56](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/tls.go#L56), [cli/cmd/gotls.go:47](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/gotls.go#L47), [CHANGELOG.md:153](https://github.com/gojue/ecapture/blob/ca085d05/CHANGELOG.md#L153)
+
+## Module Implementation Structure
+
+**Module Class Hierarchy and Hook Points**
 
 ```mermaid
-graph LR
-    subgraph "TLS/SSL Modules"
+graph TB
+    subgraph TLS["TLS/SSL Module Implementations"]
         direction TB
-        M1["MOpenSSLProbe"]
-        M1_desc["Hooks: SSL_read/SSL_write<br/>SSL_do_handshake<br/>Master key extraction"]
         
-        M2["MGoTLSProbe"]
-        M2_desc["Hooks: crypto/tls.Conn.Read<br/>crypto/tls.Conn.Write<br/>PIE binary support"]
+        MOpenSSL["MOpenSSLProbe struct"]
+        MOpenSSL_hooks["Uprobe Hooks:<br/>• SSL_read (entry + return)<br/>• SSL_write (entry + return)<br/>• SSL_do_handshake (entry)<br/>• SSL_get_wbio (master key)<br/>• SSL_in_before (master key)"]
         
-        M3["MGnuTLSProbe"]
-        M3_desc["Hooks: gnutls_record_recv<br/>gnutls_record_send<br/>Early secret support"]
+        MGoTLS["MGoTLSProbe struct"]
+        MGoTLS_hooks["Uprobe Hooks:<br/>• crypto/tls.(*Conn).Read<br/>• crypto/tls.(*Conn).Write<br/>• crypto/tls.(*Config).writeKeyLog<br/>ELF Analysis:<br/>• .gopclntab parsing<br/>• PIE offset calculation"]
         
-        M4["MNSPRProbe"]
-        M4_desc["Hooks: PR_Read/PR_Write<br/>NSS/Firefox encryption"]
+        MGnuTLS["MGnuTLSProbe struct"]
+        MGnuTLS_hooks["Uprobe Hooks:<br/>• gnutls_record_recv<br/>• gnutls_record_send<br/>• gnutls_handshake (keylog)<br/>Early Secret Support:<br/>• TLS 1.3 0-RTT secrets"]
         
-        M1 -.-> M1_desc
-        M2 -.-> M2_desc
-        M3 -.-> M3_desc
-        M4 -.-> M4_desc
+        MNSPR["MNSPRProbe struct"]
+        MNSPR_hooks["Uprobe Hooks:<br/>• PR_Read<br/>• PR_Write<br/>Target Apps:<br/>• Firefox<br/>• Thunderbird"]
+        
+        MOpenSSL --> MOpenSSL_hooks
+        MGoTLS --> MGoTLS_hooks
+        MGnuTLS --> MGnuTLS_hooks
+        MNSPR --> MNSPR_hooks
     end
     
-    subgraph "System Audit Modules"
+    subgraph Audit["System Audit Module Implementations"]
         direction TB
-        M5["MBashProbe"]
-        M5_desc["Hook: readline()<br/>Command line input<br/>Return value filtering"]
         
-        M6["MZshProbe"]
-        M6_desc["Hook: zsh readline<br/>Zsh command capture"]
+        MBash["MBashProbe struct"]
+        MBash_hooks["Uprobe Hook:<br/>• readline() from libreadline.so<br/>Uretprobe:<br/>• readline() return value<br/>Captures:<br/>• Command text<br/>• Exit errno"]
         
-        M7["MMysqldProbe"]
-        M7_desc["Hook: dispatch_command()<br/>MySQL 5.6/5.7/8.0<br/>MariaDB 10.5+"]
+        MZsh["MZshProbe struct"]
+        MZsh_hooks["Uprobe Hook:<br/>• zle_line_finish()<br/>Captures:<br/>• Command text<br/>• Execution status"]
         
-        M8["MPostgresProbe"]
-        M8_desc["Hook: exec_simple_query<br/>PostgreSQL 10+"]
+        MMySQL["MMysqldProbe struct"]
+        MMySQL_hooks["Uprobe Hook:<br/>• dispatch_command()<br/>• COM_QUERY handler<br/>Versions:<br/>• MySQL 5.6/5.7/8.0<br/>• MariaDB 10.5+"]
         
-        M5 -.-> M5_desc
-        M6 -.-> M6_desc
-        M7 -.-> M7_desc
-        M8 -.-> M8_desc
+        MPostgres["MPostgresProbe struct"]
+        MPostgres_hooks["Uprobe Hook:<br/>• exec_simple_query()<br/>Versions:<br/>• PostgreSQL 10+"]
+        
+        MBash --> MBash_hooks
+        MZsh --> MZsh_hooks
+        MMySQL --> MMySQL_hooks
+        MPostgres --> MPostgres_hooks
     end
 ```
 
-**Module Implementation Details**: Each module is implemented as a separate struct that embeds common functionality and implements module-specific hook points and event processing logic.
+All module structs embed common functionality through the `Module` base struct and implement the `IModule` interface with these methods:
 
-### OpenSSL/BoringSSL Module
+- `Init()`: Initialize module, detect target binary/library, load eBPF bytecode
+- `Start()`: Attach eBPF probes to hook points
+- `Run()`: Start event loop, process captured data
+- `Close()`: Cleanup, detach probes, close resources
+- `Decode()`: Parse raw eBPF event data into typed event structs
+- `Dispatcher()`: Route events to appropriate processors
 
-The `tls` command targets OpenSSL and BoringSSL libraries, providing the most comprehensive TLS capture capabilities. It supports:
+Sources: [README.md:36-43](https://github.com/gojue/ecapture/blob/ca085d05/README.md#L36-L43), [cli/cmd/tls.go:29-48](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/tls.go#L29-L48), [cli/cmd/gotls.go:29-40](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/gotls.go#L29-L40), [cli/cmd/gnutls.go:32-45](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/gnutls.go#L32-L45), [cli/cmd/nspr.go:30-40](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/nspr.go#L30-L40), [cli/cmd/bash.go:27-33](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/bash.go#L27-L33), [cli/cmd/zsh.go:30-36](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/zsh.go#L30-L36), [cli/cmd/mysqld.go:30-36](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/mysqld.go#L30-L36), [cli/cmd/postgres.go:30-33](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/postgres.go#L30-L33)
 
-- **Version Detection**: Automatic detection of OpenSSL 1.0.2 through 3.5.x and Android BoringSSL A12-A16
-- **Three Capture Modes**:
-  - `text`: Direct plaintext capture with HTTP/HTTP2 parsing
-  - `pcap`/`pcapng`: Network packet capture with embedded decryption keys
-  - `keylog`/`key`: TLS master secret extraction for external decryption
-- **Hook Points**: `SSL_read`, `SSL_write`, `SSL_do_handshake`, `SSL_get_wbio`, `SSL_in_before`
-- **Connection Tracking**: 4-tuple network tracking via TC and kprobe hooks
+## Module-Specific Features
 
-Sources: [cli/cmd/tls.go:29-48](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/tls.go#L29-L48), [README.md:163-253](https://github.com/gojue/ecapture/blob/0766a93b/README.md#L163-L253), [CHANGELOG.md:14-24](https://github.com/gojue/ecapture/blob/0766a93b/CHANGELOG.md#L14-L24)
+### OpenSSL/BoringSSL Module (`tls`)
 
-### Go TLS Module
+**Command**: `ecapture tls [flags] [pcap filter expression]`
 
-The `gotls` command captures plaintext from Go applications using the standard `crypto/tls` package:
+**Key Features**:
+- **Automatic Version Detection**: Parses ELF `.rodata` section to extract version string from libssl.so
+- **Version Support**: OpenSSL 1.0.2a-1.1.1w, 3.0.0-3.5.x; BoringSSL Android 12-16
+- **Downgrade Strategy**: Iterative version string truncation for closest bytecode match
+- **Three Modes**: `-m text`, `-m pcap`, `-m keylog`
 
-- **Binary Analysis**: Parses Go binary metadata to locate TLS functions
-- **PIE Support**: Handles Position Independent Executables with dynamic offset calculation
-- **ABI Compatibility**: Supports both register-based and stack-based calling conventions
-- **Capture Modes**: Same three modes as OpenSSL (text, pcap, keylog)
+**Hook Functions**:
+- `SSL_read()`: Capture decrypted data
+- `SSL_write()`: Capture plaintext before encryption
+- `SSL_do_handshake()`: Intercept handshake for connection tracking
+- `SSL_get_wbio()`: Extract master key for TLS 1.2
+- `SSL_in_before()`: Extract early secrets for TLS 1.3
 
-Sources: [cli/cmd/gotls.go:29-40](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/gotls.go#L29-L40), [README.md:254-276](https://github.com/gojue/ecapture/blob/0766a93b/README.md#L254-L276), [CHANGELOG.md:21-29](https://github.com/gojue/ecapture/blob/0766a93b/CHANGELOG.md#L21-L29)
+**Library Detection**: Searches `/etc/ld.so.conf` and common paths (`/usr/lib*/libssl.so*`). Override with `--libssl` flag.
 
-### GnuTLS Module
-
-The `gnutls` command targets the GnuTLS library used by wget and other applications:
-
-- **Hook Points**: `gnutls_record_recv`, `gnutls_record_send`
-- **Version Support**: GnuTLS 3.x with automatic version detection
-- **Early Secret Support**: Captures TLS 1.3 early secrets for 0-RTT decryption
-- **Capture Modes**: text, pcap, keylog
-
-Sources: [cli/cmd/gnutls.go:32-45](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/gnutls.go#L32-L45), [CHANGELOG.md:126-127](https://github.com/gojue/ecapture/blob/0766a93b/CHANGELOG.md#L126-L127)
-
-### NSPR/NSS Module
-
-The `nspr` command captures traffic from Firefox, Thunderbird, and other Mozilla applications:
-
-- **Target**: NSPR (Netscape Portable Runtime) library used by NSS
-- **Hook Points**: `PR_Read`, `PR_Write` functions
-- **Application Support**: Firefox browser, Thunderbird email client
-
-Sources: [cli/cmd/nspr.go:30-40](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/nspr.go#L30-L40), [README.md:158](https://github.com/gojue/ecapture/blob/0766a93b/README.md#L158)
-
-### Bash Module
-
-The `bash` command provides command-line auditing for Bash shells:
-
-- **Hook Points**: `readline()` function from libreadline
-- **Capture Data**: Command input before execution, return value after execution
-- **Filtering**: Optional errno filtering to capture only failed commands
-- **Auto-detection**: Automatically locates bash binary from `$SHELL` environment
-
-Command usage:
+**Example**:
 ```
-ecapture bash [--bash=/bin/bash] [--errnumber=N]
+ecapture tls -m pcap -i eth0 -w capture.pcapng tcp port 443
 ```
 
-Sources: [cli/cmd/bash.go:27-55](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/bash.go#L27-L55), [README.md:153](https://github.com/gojue/ecapture/blob/0766a93b/README.md#L153)
+Sources: [cli/cmd/tls.go:29-67](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/tls.go#L29-L67), [README.md:163-229](https://github.com/gojue/ecapture/blob/ca085d05/README.md#L163-L229), [CHANGELOG.md:14-15,98-99]()
 
-### Zsh Module
+### Go TLS Module (`gotls`)
 
-The `zsh` command provides similar auditing capabilities for Zsh shells:
+**Command**: `ecapture gotls --elfpath=/path/to/binary [flags]`
 
-- **Hook Points**: Zsh-specific readline implementations
-- **Features**: Command capture, return value tracking, errno filtering
-- **Platform Support**: Linux only (excluded from Android builds via build tags)
+**Key Features**:
+- **ELF Parsing**: Locates TLS functions via `.gopclntab` section
+- **PIE Binary Support**: Calculates runtime offsets for Position Independent Executables
+- **ABI Versions**: Supports both stack-based (Go <1.17) and register-based (Go ≥1.17) ABIs
+- **Three Modes**: `-m text`, `-m pcap`, `-m keylog`
 
-Sources: [cli/cmd/zsh.go:30-57](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/zsh.go#L30-L57), [README.md:154](https://github.com/gojue/ecapture/blob/0766a93b/README.md#L154), [CHANGELOG.md:369](https://github.com/gojue/ecapture/blob/0766a93b/CHANGELOG.md#L369)
+**Hook Functions**:
+- `crypto/tls.(*Conn).Read()`: Capture decrypted data
+- `crypto/tls.(*Conn).Write()`: Capture plaintext
+- `crypto/tls.(*Config).writeKeyLog()`: Extract master secrets
 
-### MySQL Module
-
-The `mysqld` command captures SQL queries from MySQL and MariaDB servers:
-
-- **Version Support**: MySQL 5.6, 5.7, 8.0 and MariaDB 10.5+
-- **Hook Points**: `dispatch_command()` function at version-specific offsets
-- **Capture Data**: Full SQL query text with timestamp and connection info
-- **Offset Support**: Manual offset specification for custom builds
-
-Command usage:
+**Example**:
 ```
-ecapture mysqld [--mysqld=/usr/sbin/mysqld] [--funcname=dispatch_command]
+ecapture gotls --elfpath=/usr/bin/myapp -m keylog -k keys.log
 ```
 
-Sources: [cli/cmd/mysqld.go:30-49](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/mysqld.go#L30-L49), [README.md:157](https://github.com/gojue/ecapture/blob/0766a93b/README.md#L157)
+Sources: [cli/cmd/gotls.go:29-58](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/gotls.go#L29-L58), [README.md:254-276](https://github.com/gojue/ecapture/blob/ca085d05/README.md#L254-L276), [CHANGELOG.md:21](https://github.com/gojue/ecapture/blob/ca085d05/CHANGELOG.md#L21)
 
-### PostgreSQL Module
+### GnuTLS Module (`gnutls`)
 
-The `postgres` command provides query auditing for PostgreSQL databases:
+**Command**: `ecapture gnutls [flags]`
 
+**Key Features**:
+- **Target Applications**: wget, curl (when built with GnuTLS)
+- **Early Secret Support**: Captures TLS 1.3 early traffic secrets for 0-RTT data
+- **Three Modes**: `-m text`, `-m pcap`, `-m keylog`
+
+**Hook Functions**:
+- `gnutls_record_recv()`: Capture decrypted data
+- `gnutls_record_send()`: Capture plaintext
+- `gnutls_handshake()`: Extract session keys
+
+**Library Detection**: Auto-detects libgnutls.so. Override with `--gnutls` flag.
+
+Sources: [cli/cmd/gnutls.go:32-64](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/gnutls.go#L32-L64), [CHANGELOG.md:126](https://github.com/gojue/ecapture/blob/ca085d05/CHANGELOG.md#L126)
+
+### NSPR/NSS Module (`nspr`)
+
+**Command**: `ecapture nspr [flags]`
+
+**Key Features**:
+- **Target Applications**: Firefox, Thunderbird, Chrome (on some Linux distros)
+- **NSS Versions**: All versions using NSPR I/O layer
+
+**Hook Functions**:
+- `PR_Read()`: Capture decrypted data from NSPR sockets
+- `PR_Write()`: Capture plaintext before encryption
+
+**Library Detection**: Auto-detects libnspr4.so. Override with `--nspr` flag.
+
+**Note**: TLS key extraction not supported in current version; text mode only.
+
+Sources: [cli/cmd/nspr.go:30-51](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/nspr.go#L30-L51), [README.md:158](https://github.com/gojue/ecapture/blob/ca085d05/README.md#L158), [CHANGELOG.md:402](https://github.com/gojue/ecapture/blob/ca085d05/CHANGELOG.md#L402)
+
+### Bash Module (`bash`)
+
+**Command**: `ecapture bash [--errnumber=N]`
+
+**Key Features**:
+- **Command Capture**: Intercepts all commands entered in Bash shell
+- **Return Value Tracking**: Captures command exit status via uretprobe
+- **Errno Filtering**: `-e`/`--errnumber` flag filters commands by exit code (default: all commands)
+
+**Hook Functions**:
+- `readline()` from libreadline.so: Entry probe captures command text
+- `readline()` return: Uretprobe captures return address and errno
+
+**Auto-Detection**: Uses `$SHELL` environment variable. Override with `--bash` flag.
+
+Sources: [cli/cmd/bash.go:27-55](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/bash.go#L27-L55), [README.md:153](https://github.com/gojue/ecapture/blob/ca085d05/README.md#L153)
+
+### Zsh Module (`zsh`)
+
+**Command**: `ecapture zsh [--errnumber=N]`
+
+**Key Features**:
+- **Zsh-Specific Hooks**: Targets zsh's line editor (zle) functions
+- **Command Tracking**: Captures command text and execution result
+- **Platform**: Linux only (excluded from Android via `//go:build !androidgki`)
+
+**Hook Functions**:
+- `zle_line_finish()`: Captures completed command line
+
+**Auto-Detection**: Uses `$SHELL` environment variable. Override with `--zsh` flag.
+
+Sources: [cli/cmd/zsh.go:30-57](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/zsh.go#L30-L57), [CHANGELOG.md:369](https://github.com/gojue/ecapture/blob/ca085d05/CHANGELOG.md#L369)
+
+### MySQL Module (`mysqld`)
+
+**Command**: `ecapture mysqld [--mysqld=/path/to/mysqld] [--funcname=dispatch_command]`
+
+**Key Features**:
+- **Version Support**: MySQL 5.6, 5.7, 8.0; MariaDB 10.5+
+- **Query Capture**: Intercepts SQL queries at protocol dispatch layer
+- **Offset Customization**: `--offset` flag for non-standard builds
+
+**Hook Functions**:
+- `dispatch_command()`: Main SQL query dispatcher
+- `COM_QUERY` handler: Captures query text
+
+**Detection**: Default paths `/usr/sbin/mysqld`, `/usr/sbin/mariadbd`.
+
+Sources: [cli/cmd/mysqld.go:30-49](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/mysqld.go#L30-L49), [README.md:157](https://github.com/gojue/ecapture/blob/ca085d05/README.md#L157)
+
+### PostgreSQL Module (`postgres`)
+
+**Command**: `ecapture postgres [--postgres=/path/to/postgres] [--funcname=exec_simple_query]`
+
+**Key Features**:
 - **Version Support**: PostgreSQL 10 and newer
-- **Hook Points**: Query execution functions
-- **Function Customization**: Allows specifying custom function names for different builds
+- **Query Capture**: Intercepts simple query execution path
 
-Sources: [cli/cmd/postgres.go:30-45](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/postgres.go#L30-L45), [README.md:159](https://github.com/gojue/ecapture/blob/0766a93b/README.md#L159)
+**Hook Functions**:
+- `exec_simple_query()`: Main query execution entry point
 
-## Common Module Features
+**Detection**: Default path `/usr/bin/postgres`.
 
-All capture modules share a common set of capabilities through the eCapture framework:
+Sources: [cli/cmd/postgres.go:30-45](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/postgres.go#L30-L45), [README.md:159](https://github.com/gojue/ecapture/blob/ca085d05/README.md#L159)
 
-### Configuration Interface
+## Common Configuration Parameters
 
-Each module implements an `IConfig` interface with common parameters:
+All modules accept these shared flags defined in `BaseConfig`:
 
-| Parameter | Flag | Description | Default |
-|-----------|------|-------------|---------|
-| PID Filter | `--pid` | Target specific process ID | All processes |
-| UID Filter | `--uid` | Target specific user ID | All users |
-| Output File | `-l`, `--logaddr` | Save events to file | stdout |
-| Hex Mode | `--hex` | Display data in hexadecimal | false |
-| BTF Mode | `--btf` | Specify BTF bytecode mode | Auto-detect |
-| Map Size | `--mapsize` | eBPF map size in KB | 5120 |
+| Flag | Type | Description | Default |
+|------|------|-------------|---------|
+| `--pid` | uint64 | Target specific process ID | 0 (all processes) |
+| `--uid` | uint64 | Target specific user ID | 0 (all users) |
+| `-l`, `--logaddr` | string | Output file path | "" (stdout) |
+| `--hex` | bool | Display payload in hexadecimal | false |
+| `--btf` | string | BTF file path for non-CO-RE mode | "" (auto) |
+| `--mapsize` | uint64 | eBPF map size in KB | 5120 |
 
-Sources: [cli/cmd/tls.go:50-58](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/tls.go#L50-L58), [cli/cmd/gotls.go:42-48](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/gotls.go#L42-L48)
+**TLS/SSL Module-Specific Flags**:
 
-### Output Modes
+| Flag | Modules | Description | Default |
+|------|---------|-------------|---------|
+| `-m`, `--model` | tls, gotls, gnutls | Capture mode: text/pcap/keylog | "text" |
+| `-w`, `--pcapfile` | tls, gotls, gnutls | PCAPNG output file | "save.pcapng" |
+| `-k`, `--keylogfile` | tls, gotls, gnutls | Key log file (SSLKEYLOGFILE format) | "ecapture_*_key.log" |
+| `-i`, `--ifname` | tls, gotls, gnutls | Network interface for TC probe | "" (required for pcap mode) |
+| `--libssl` | tls | Path to libssl.so | Auto-detect |
+| `--ssl_version` | tls, gnutls | Force specific version | Auto-detect |
+| `--elfpath` | gotls | Path to Go binary | Required |
 
-TLS/SSL modules support three output modes controlled by the `-m`/`--model` flag:
+**System Audit Module-Specific Flags**:
 
-1. **Text Mode** (`-m text`): Direct plaintext output with HTTP/HTTP2 parsing
-2. **PCAP Mode** (`-m pcap`): Network packet capture with decryption keys embedded
-3. **Keylog Mode** (`-m keylog`): TLS master secret extraction only
+| Flag | Modules | Description | Default |
+|------|---------|-------------|---------|
+| `--bash` | bash | Path to bash binary | $SHELL |
+| `--zsh` | zsh | Path to zsh binary | $SHELL |
+| `-e`, `--errnumber` | bash, zsh | Filter by exit code | 0 (all) |
+| `--mysqld` | mysqld | Path to mysqld binary | /usr/sbin/mariadbd |
+| `--postgres` | postgres | Path to postgres binary | /usr/bin/postgres |
+| `-f`, `--funcname` | mysqld, postgres | Target function name | dispatch_command/exec_simple_query |
+| `--offset` | mysqld | Manual function offset | 0 |
 
-See [Output Formats](../4-output-formats/index.md) for detailed information on each mode.
+Sources: [cli/cmd/tls.go:50-58](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/tls.go#L50-L58), [cli/cmd/gotls.go:42-48](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/gotls.go#L42-L48), [cli/cmd/bash.go:36-38](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/bash.go#L36-L38), [cli/cmd/mysqld.go:40-42](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/mysqld.go#L40-L42)
 
-Sources: [cli/cmd/tls.go:53](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/tls.go#L53), [cli/cmd/gotls.go:45](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/gotls.go#L45), [README.md:171-253](https://github.com/gojue/ecapture/blob/0766a93b/README.md#L171-L253)
+## TLS/SSL Module Output Modes
 
-### Network Integration
+TLS/SSL modules (tls, gotls, gnutls) support three output modes via `-m`/`--model` flag:
 
-TLS/SSL modules can attach TC (Traffic Control) eBPF classifiers for network packet capture:
+### Text Mode (`-m text`)
 
-- **Interface Selection**: `-i`/`--ifname` specifies the network interface
-- **PCAP Filters**: Optional BPF filter expressions (e.g., `tcp port 443`)
-- **Connection Mapping**: Maps network flows to processes via kprobe hooks
+**Default mode**. Captures and displays plaintext data directly to console or file.
 
-Sources: [cli/cmd/tls.go:56](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/tls.go#L56), [README.md:180-229](https://github.com/gojue/ecapture/blob/0766a93b/README.md#L180-L229)
+**Features**:
+- HTTP/1.x request/response parsing with headers
+- HTTP/2 frame parsing with HPACK header decompression
+- Automatic gzip decompression for `Content-Encoding: gzip`
+- Color-coded output (requests in green, responses in blue)
+- UUID-based connection tracking
 
-## Module Selection and Invocation
+**Output Destination**: stdout or file specified by `-l` flag.
+
+### PCAP Mode (`-m pcap`)
+
+Captures network packets and saves them in PCAPNG format with embedded TLS keys.
+
+**Features**:
+- Requires `-i`/`--ifname` to specify network interface
+- Embeds TLS master secrets in Decryption Secrets Block (DSB)
+- Supports optional BPF filter expressions (e.g., `tcp port 443`)
+- Compatible with Wireshark for direct decryption
+- IPv4/IPv6 support
+
+**Output**: File specified by `-w`/`--pcapfile` flag.
+
+**Example**:
+```
+ecapture tls -m pcap -i eth0 -w capture.pcapng host 192.168.1.100 and tcp port 443
+```
+
+### Keylog Mode (`-m keylog`)
+
+Extracts TLS master secrets only without capturing data payloads.
+
+**Features**:
+- Saves keys in SSLKEYLOGFILE format compatible with Wireshark/tshark
+- TLS 1.2: `CLIENT_RANDOM` with master key
+- TLS 1.3: Multiple secrets (early, handshake, traffic)
+- Can be combined with tcpdump for offline decryption
+
+**Output**: File specified by `-k`/`--keylogfile` flag.
+
+**Example**:
+```
+# Terminal 1: Capture keys
+ecapture tls -m keylog -k keys.log
+
+# Terminal 2: Decrypt with tshark
+tshark -o tls.keylog_file:keys.log -Y http -T fields -e http.file_data -i eth0
+```
+
+Sources: [cli/cmd/tls.go:53-56](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/tls.go#L53-L56), [README.md:171-247](https://github.com/gojue/ecapture/blob/ca085d05/README.md#L171-L247), [CHANGELOG.md:687-743](https://github.com/gojue/ecapture/blob/ca085d05/CHANGELOG.md#L687-L743)
+
+## Module Lifecycle and Execution Flow
+
+**Module Invocation Sequence Diagram**
 
 ```mermaid
 sequenceDiagram
     participant User
-    participant CLI as "Cobra CLI"
-    participant Cmd as "Command Function"
-    participant Run as "runModule()"
-    participant Registry as "Module Registry"
-    participant Module as "IModule Implementation"
-    participant eBPF as "eBPF Manager"
+    participant main["main.main()"]
+    participant cli["cli.Start()"]
+    participant cobra["rootCmd.Execute()"]
+    participant cmdFunc["openSSLCommandFunc()"]
+    participant runMod["runModule()"]
+    participant modReg["GetModuleFunc()"]
+    participant probe["MOpenSSLProbe"]
+    participant mgr["ebpfmanager"]
     
-    User->>CLI: ecapture tls -m pcap -i eth0
-    CLI->>Cmd: opensslCmd.RunE()
-    Cmd->>Cmd: Parse args into OpensslConfig
-    Cmd->>Run: runModule(ModuleNameOpenssl, oc)
-    Run->>Registry: GetModuleFunc(ModuleNameOpenssl)
-    Registry->>Module: NewOpenSSLProbe(oc)
-    Module->>Module: Init()
-    Module->>eBPF: Load bytecode, attach probes
-    Module->>Module: Start()
-    Module->>Module: Run() - event loop
-    Note over Module: Capture and process events
-    User->>Module: Ctrl+C signal
-    Module->>Module: Close()
-    Module->>eBPF: Detach probes
-    Module-->>User: Cleanup complete
+    User->>main: ./ecapture tls -m pcap -i eth0
+    main->>cli: Start()
+    cli->>cobra: Execute()
+    cobra->>cmdFunc: opensslCmd.RunE(cmd, args)
+    
+    cmdFunc->>cmdFunc: Parse args → oc.PcapFilter
+    cmdFunc->>runMod: runModule(ModuleNameOpenssl, oc)
+    
+    runMod->>modReg: GetModuleFunc(ModuleNameOpenssl)
+    modReg->>probe: NewMOpenSSLProbe(oc)
+    
+    probe->>probe: Init()
+    Note over probe: • Detect libssl.so path<br/>• Parse ELF for version<br/>• Select bytecode file
+    
+    probe->>probe: Start()
+    probe->>mgr: InitManager()
+    mgr->>mgr: Load eBPF programs
+    mgr->>mgr: Attach uprobes/TC hooks
+    
+    probe->>probe: Run()
+    loop Event Processing
+        probe->>probe: readEvents()
+        probe->>probe: Decode()
+        probe->>probe: Dispatcher()
+        Note over probe: Forward to EventProcessor
+    end
+    
+    User->>probe: SIGINT (Ctrl+C)
+    probe->>probe: Close()
+    probe->>mgr: Detach probes
+    probe->>mgr: Close maps
+    probe-->>User: Exit
 ```
 
-**Module Invocation Flow**: The CLI framework routes subcommands to their respective handler functions, which create module-specific configurations and call `runModule()` to instantiate and execute the appropriate module implementation.
+**Execution Steps**:
 
-The module selection process:
+1. **Entry Point**: `main.main()` calls `cli.Start()` → [main.go:9-11](https://github.com/gojue/ecapture/blob/ca085d05/main.go#L9-L11)
+2. **Command Routing**: Cobra framework executes matched subcommand's `RunE` function
+3. **Config Preparation**: Command function parses flags, creates config object (e.g., `OpensslConfig`)
+4. **Module Lookup**: `runModule()` retrieves module factory function from registry
+5. **Module Construction**: Factory creates module instance (e.g., `MOpenSSLProbe`)
+6. **Initialization**: `Init()` method detects target binary, selects eBPF bytecode
+7. **Probe Attachment**: `Start()` loads eBPF programs and attaches to hook points
+8. **Event Loop**: `Run()` processes events until signal received
+9. **Cleanup**: `Close()` detaches probes and releases resources
 
-1. **CLI Parsing**: User invokes a subcommand (e.g., `ecapture tls`)
-2. **Configuration Creation**: Command handler creates module-specific config object
-3. **Module Instantiation**: `runModule()` looks up the module by name constant
-4. **Lifecycle Execution**: Module progresses through Init → Start → Run → Close phases
-5. **Event Processing**: Module processes events until interrupted
+Sources: [main.go:1-11](https://github.com/gojue/ecapture/blob/ca085d05/main.go#L1-L11), [cli/cmd/tls.go:62-67](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/tls.go#L62-L67), [cli/cmd/gotls.go:52-58](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/gotls.go#L52-L58)
 
-Sources: [cli/cmd/tls.go:62-67](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/tls.go#L62-L67), [cli/cmd/gotls.go:52-58](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/gotls.go#L52-L58), [main.go:1-11](https://github.com/gojue/ecapture/blob/0766a93b/main.go#L1-L11)
+## Platform-Specific Module Availability
 
-## Module Build Configuration
+Modules use Go build tags to control platform compilation:
 
-Modules can be conditionally compiled based on platform and feature requirements:
+**Build Tag: `//go:build !androidgki`**
 
-- **Build Tags**: `//go:build !androidgki` excludes modules from Android kernel builds
-- **Platform-Specific**: Some modules (bash, gnutls, nspr, mysqld, postgres, zsh) are Linux-only
-- **Universal Modules**: OpenSSL and GoTLS modules support both Linux and Android
+Five modules are excluded from Android GKI (Generic Kernel Image) builds:
 
-Android-excluded modules:
-- GnuTLS: [cli/cmd/gnutls.go:1-2](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/gnutls.go#L1-L2)
-- NSPR/NSS: [cli/cmd/nspr.go:1-2](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/nspr.go#L1-L2)
-- MySQL: [cli/cmd/mysqld.go:1-2](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/mysqld.go#L1-L2)
-- PostgreSQL: [cli/cmd/postgres.go:1-2](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/postgres.go#L1-L2)
-- Zsh: [cli/cmd/zsh.go:1-2](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/zsh.go#L1-L2)
+| Module | File | Reason for Exclusion |
+|--------|------|---------------------|
+| GnuTLS | [cli/cmd/gnutls.go:1-2](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/gnutls.go#L1-L2) | Library not available on Android |
+| NSPR/NSS | [cli/cmd/nspr.go:1-2](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/nspr.go#L1-L2) | Mozilla libraries not on Android |
+| MySQL | [cli/cmd/mysqld.go:1-2](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/mysqld.go#L1-L2) | Server software not on Android |
+| PostgreSQL | [cli/cmd/postgres.go:1-2](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/postgres.go#L1-L2) | Server software not on Android |
+| Zsh | [cli/cmd/zsh.go:1-2](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/zsh.go#L1-L2) | Shell not on Android |
 
-Sources: [cli/cmd/gnutls.go:1-2](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/gnutls.go#L1-L2), [cli/cmd/nspr.go:1-2](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/nspr.go#L1-L2), [cli/cmd/mysqld.go:1-2](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/mysqld.go#L1-L2), [cli/cmd/postgres.go:1-2](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/postgres.go#L1-L2), [cli/cmd/zsh.go:1-2](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/zsh.go#L1-L2)
+**Universal Modules** (Linux + Android):
+
+- OpenSSL/BoringSSL (`tls`): Supports both OpenSSL on Linux and BoringSSL on Android
+- Go TLS (`gotls`): Go binaries run on both platforms
+- Bash (`bash`): Available on both Linux and Android (via Termux)
+
+**Platform Detection**: Build system automatically selects appropriate modules based on target platform specified during compilation.
+
+Sources: [cli/cmd/gnutls.go:1-2](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/gnutls.go#L1-L2), [cli/cmd/nspr.go:1-2](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/nspr.go#L1-L2), [cli/cmd/mysqld.go:1-2](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/mysqld.go#L1-L2), [cli/cmd/postgres.go:1-2](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/postgres.go#L1-L2), [cli/cmd/zsh.go:1-2](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/zsh.go#L1-L2)
 
 ## Version History and Evolution
 
@@ -422,4 +614,4 @@ Recent module enhancements documented in the changelog:
 - **v0.9.0**: Zsh command capture, connection cleanup improvements
 - **v0.7.0**: Module split (OpenSSL/GnuTLS/NSPR separated), keylog mode introduced
 
-Sources: [CHANGELOG.md:11-757](https://github.com/gojue/ecapture/blob/0766a93b/CHANGELOG.md#L11-L757)
+Sources: [CHANGELOG.md:11-757](https://github.com/gojue/ecapture/blob/ca085d05/CHANGELOG.md#L11-L757)

@@ -1,71 +1,94 @@
 # 捕获模块
 
-## 目的与范围
+## 概述
 
-本页面提供 eCapture 捕获模块系统的概述，该系统为不同的协议、库和应用程序实现了专门的数据捕获能力。每个模块针对特定的技术（OpenSSL、GnuTLS、Go TLS、Bash、MySQL 等），并实现通用接口以集成到 eCapture 的事件处理流程中。
+eCapture 实现了八个捕获模块，为不同的协议、库和应用程序提供专门的数据拦截能力。每个模块使用 eBPF uprobe 来钩住特定函数，在加密前或解密后捕获明文数据。这些模块通过 Cobra 注册为 CLI 子命令，并通过模块注册表模式实例化。
 
-有关特定模块类型的详细信息，请参阅：
-- TLS/SSL 捕获实现：[TLS/SSL 模块](3.1-tlsssl-modules.md)
-- Shell 和数据库审计：[系统审计模块](3.2-system-audit-modules.md)
-- 网络数据包捕获机制：[TC 网络数据包捕获](3.3-network-packet-capture-with-tc.md)
-- 模块接口和生命周期管理：[模块系统与生命周期](../2-architecture/2.4-module-system-and-lifecycle.md)
+**模块分类：**
 
-## 模块系统概述
+| 类别 | 模块 | 用途 |
+|----------|---------|---------|
+| **TLS/SSL 加密库** | OpenSSL/BoringSSL、Go TLS、GnuTLS、NSPR/NSS | 拦截加密库函数以捕获 TLS/SSL 明文和主密钥 |
+| **系统审计** | Bash、Zsh、MySQL、PostgreSQL | 钩住命令解释器和数据库服务器以捕获命令和查询 |
+| **网络数据包捕获** | TC 分类器（与 TLS 模块集成） | 在内核级别捕获网络数据包并丰富进程上下文 |
 
-eCapture 的模块化架构允许通过统一的接口从不同来源捕获数据。每个模块负责：
+**可用命令：**
+```
+ecapture tls      # OpenSSL/BoringSSL TLS/SSL 捕获
+ecapture gotls    # Go TLS 捕获
+ecapture gnutls   # GnuTLS 捕获
+ecapture nspr     # NSPR/NSS 捕获
+ecapture bash     # Bash 命令审计
+ecapture zsh      # Zsh 命令审计
+ecapture mysqld   # MySQL 查询审计
+ecapture postgres # PostgreSQL 查询审计
+```
 
-1. **目标检测**：定位要检测的适当二进制文件或共享库
-2. **eBPF 程序管理**：加载和附加特定版本的 eBPF 字节码
-3. **事件处理**：解码和格式化捕获的数据
-4. **输出生成**：以 text、pcap 或 keylog 格式生成数据
+所有模块都实现了 `IModule` 接口，并通过 `Module` 基础结构体共享通用功能。详细实现信息请参见：
 
-该系统目前实现了 **8 个捕获模块**，每个模块都通过 CLI 子命令注册，并可通过模块注册表访问。
+- **TLS/SSL 模块**：参见 [3.1 - TLS/SSL 捕获模块]
+- **系统审计模块**：参见 [3.2 - 系统审计模块]
+- **网络数据包捕获**：参见 [3.3 - 基于 TC 的网络数据包捕获]
+- **模块架构**：参见 [2.5 - 模块系统与生命周期]
+- **事件处理**：参见 [2.2 - 事件处理流程]
 
-来源：[README.md:152-161](https://github.com/gojue/ecapture/blob/0766a93b/README.md#L152-L161), [cli/cmd/tls.go:29-48](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/tls.go#L29-L48), [cli/cmd/gotls.go:29-40](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/gotls.go#L29-L40)
+来源：[README.md:152-161](https://github.com/gojue/ecapture/blob/ca085d05/README.md#L152-L161), [cli/cmd/tls.go:29-48](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/tls.go#L29-L48), [cli/cmd/gotls.go:29-40](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/gotls.go#L29-L40), [cli/cmd/bash.go:27-33](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/bash.go#L27-L33), [cli/cmd/mysqld.go:30-36](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/mysqld.go#L30-L36)
 
-## 模块注册表与架构
+## 模块注册架构
+
+**CLI 命令注册流程**
 
 ```mermaid
 graph TB
-    subgraph "CLI 层"
+    subgraph CLI["cli/cmd/*.go 文件"]
         rootCmd["rootCmd<br/>(cobra.Command)"]
-        tlsCmd["opensslCmd<br/>'tls' 子命令"]
-        gotlsCmd["gotlsCmd<br/>'gotls' 子命令"]
-        gnutlsCmd["gnutlsCmd<br/>'gnutls' 子命令"]
-        nssCmd["nssCmd<br/>'nspr' 子命令"]
-        bashCmd["bashCmd<br/>'bash' 子命令"]
-        zshCmd["zshCmd<br/>'zsh' 子命令"]
-        mysqldCmd["mysqldCmd<br/>'mysqld' 子命令"]
-        postgresCmd["postgresCmd<br/>'postgres' 子命令"]
+        
+        opensslCmd["opensslCmd = &cobra.Command<br/>Use: 'tls'<br/>Aliases: ['openssl']"]
+        gotlsCmd["gotlsCmd = &cobra.Command<br/>Use: 'gotls'<br/>Aliases: ['tlsgo']"]
+        gnutlsCmd["gnutlsCmd = &cobra.Command<br/>Use: 'gnutls'<br/>Aliases: ['gnu']"]
+        nssCmd["nssCmd = &cobra.Command<br/>Use: 'nspr'<br/>Aliases: ['nss']"]
+        bashCmd["bashCmd = &cobra.Command<br/>Use: 'bash'"]
+        zshCmd["zshCmd = &cobra.Command<br/>Use: 'zsh'"]
+        mysqldCmd["mysqldCmd = &cobra.Command<br/>Use: 'mysqld'"]
+        postgresCmd["postgresCmd = &cobra.Command<br/>Use: 'postgres'"]
     end
     
-    subgraph "配置层"
-        oc["OpensslConfig<br/>oc 变量"]
-        goc["GoTLSConfig<br/>goc 变量"]
-        gc["GnutlsConfig<br/>gc 变量"]
-        nc["NsprConfig<br/>nc 变量"]
-        bc["BashConfig<br/>bc 变量"]
-        zc["ZshConfig<br/>zc 变量"]
-        myc["MysqldConfig<br/>myc 变量"]
-        pgc["PostgresConfig<br/>pgc 变量"]
+    subgraph Config["config.New*Config()"]
+        oc["oc = config.NewOpensslConfig()"]
+        goc["goc = config.NewGoTLSConfig()"]
+        gc["gc = config.NewGnutlsConfig()"]
+        nc["nc = config.NewNsprConfig()"]
+        bc["bc = config.NewBashConfig()"]
+        zc["zc = config.NewZshConfig()"]
+        myc["myc = config.NewMysqldConfig()"]
+        pgc["pgc = config.NewPostgresConfig()"]
     end
     
-    subgraph "模块层"
-        modOpenssl["ModuleNameOpenssl<br/>常量"]
-        modGotls["ModuleNameGotls<br/>常量"]
-        modGnutls["ModuleNameGnutls<br/>常量"]
-        modNspr["ModuleNameNspr<br/>常量"]
-        modBash["ModuleNameBash<br/>常量"]
-        modZsh["ModuleNameZsh<br/>常量"]
-        modMysqld["ModuleNameMysqld<br/>常量"]
-        modPostgres["ModuleNamePostgres<br/>常量"]
+    subgraph RunE["命令 RunE 函数"]
+        openSSLCommandFunc["openSSLCommandFunc()"]
+        goTLSCommandFunc["goTLSCommandFunc()"]
+        gnuTlsCommandFunc["gnuTlsCommandFunc()"]
+        nssCommandFunc["nssCommandFunc()"]
+        bashCommandFunc["bashCommandFunc()"]
+        zshCommandFunc["zshCommandFunc()"]
+        mysqldCommandFunc["mysqldCommandFunc()"]
+        postgresCommandFunc["postgresCommandFunc()"]
     end
     
-    subgraph "执行层"
-        runModule["runModule()<br/>函数"]
+    subgraph ModuleNames["module.ModuleName* 常量"]
+        ModuleNameOpenssl["module.ModuleNameOpenssl"]
+        ModuleNameGotls["module.ModuleNameGotls"]
+        ModuleNameGnutls["module.ModuleNameGnutls"]
+        ModuleNameNspr["module.ModuleNameNspr"]
+        ModuleNameBash["module.ModuleNameBash"]
+        ModuleNameZsh["module.ModuleNameZsh"]
+        ModuleNameMysqld["module.ModuleNameMysqld"]
+        ModuleNamePostgres["module.ModuleNamePostgres"]
     end
     
-    rootCmd --> tlsCmd
+    runModule["runModule(moduleName, config)"]
+    
+    rootCmd --> opensslCmd
     rootCmd --> gotlsCmd
     rootCmd --> gnutlsCmd
     rootCmd --> nssCmd
@@ -74,327 +97,479 @@ graph TB
     rootCmd --> mysqldCmd
     rootCmd --> postgresCmd
     
-    tlsCmd --> oc
-    gotlsCmd --> goc
-    gnutlsCmd --> gc
-    nssCmd --> nc
-    bashCmd --> bc
-    zshCmd --> zc
-    mysqldCmd --> myc
-    postgresCmd --> pgc
+    opensslCmd --> openSSLCommandFunc
+    gotlsCmd --> goTLSCommandFunc
+    gnutlsCmd --> gnuTlsCommandFunc
+    nssCmd --> nssCommandFunc
+    bashCmd --> bashCommandFunc
+    zshCmd --> zshCommandFunc
+    mysqldCmd --> mysqldCommandFunc
+    postgresCmd --> postgresCommandFunc
     
-    oc --> modOpenssl
-    goc --> modGotls
-    gc --> modGnutls
-    nc --> modNspr
-    bc --> modBash
-    zc --> modZsh
-    myc --> modMysqld
-    pgc --> modPostgres
+    oc -.->|传递给| openSSLCommandFunc
+    goc -.->|传递给| goTLSCommandFunc
+    gc -.->|传递给| gnuTlsCommandFunc
+    nc -.->|传递给| nssCommandFunc
+    bc -.->|传递给| bashCommandFunc
+    zc -.->|传递给| zshCommandFunc
+    myc -.->|传递给| mysqldCommandFunc
+    pgc -.->|传递给| postgresCommandFunc
     
-    modOpenssl --> runModule
-    modGotls --> runModule
-    modGnutls --> runModule
-    modNspr --> runModule
-    modBash --> runModule
-    modZsh --> runModule
-    modMysqld --> runModule
-    modPostgres --> runModule
+    openSSLCommandFunc --> ModuleNameOpenssl
+    goTLSCommandFunc --> ModuleNameGotls
+    gnuTlsCommandFunc --> ModuleNameGnutls
+    nssCommandFunc --> ModuleNameNspr
+    bashCommandFunc --> ModuleNameBash
+    zshCommandFunc --> ModuleNameZsh
+    mysqldCommandFunc --> ModuleNameMysqld
+    postgresCommandFunc --> ModuleNamePostgres
+    
+    ModuleNameOpenssl --> runModule
+    ModuleNameGotls --> runModule
+    ModuleNameGnutls --> runModule
+    ModuleNameNspr --> runModule
+    ModuleNameBash --> runModule
+    ModuleNameZsh --> runModule
+    ModuleNameMysqld --> runModule
+    ModuleNamePostgres --> runModule
 ```
 
-**模块注册架构**：每个模块都注册为一个 Cobra CLI 子命令，带有自己的配置对象。当被调用时，命令函数使用模块名称常量和配置调用 `runModule()`，通过模块注册表实例化相应的模块实现。
+每个模块遵循一致的注册模式：
 
-来源：[cli/cmd/tls.go:26-67](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/tls.go#L26-L67), [cli/cmd/gotls.go:26-58](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/gotls.go#L26-L58), [cli/cmd/bash.go:24-55](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/bash.go#L24-L55), [cli/cmd/mysqld.go:27-49](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/mysqld.go#L27-L49), [cli/cmd/postgres.go:27-45](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/postgres.go#L27-L45), [cli/cmd/nspr.go:27-51](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/nspr.go#L27-L51), [cli/cmd/gnutls.go:29-64](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/gnutls.go#L29-L64), [cli/cmd/zsh.go:27-57](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/zsh.go#L27-L57)
+1. **命令定义**：每个 `cli/cmd/*.go` 文件定义一个 `cobra.Command` 结构体，包含 `Use`、`Aliases`、`Short`、`Long` 和 `RunE` 字段
+2. **配置对象**：通过 `config.New*Config()` 构造函数创建包级别变量（例如 `oc`、`goc`）
+3. **命令函数**：`RunE` 处理函数（例如 `openSSLCommandFunc`）处理 CLI 标志并调用 `runModule()`
+4. **模块常量**：字符串常量（如 `module.ModuleNameOpenssl`）标识模块实现
+5. **注册**：`init()` 函数将命令添加到 `rootCmd` 并将标志绑定到配置对象
 
-## 模块分类
+来源：[cli/cmd/tls.go:26-67](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/tls.go#L26-L67), [cli/cmd/gotls.go:26-58](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/gotls.go#L26-L58), [cli/cmd/bash.go:24-55](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/bash.go#L24-L55), [cli/cmd/mysqld.go:27-49](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/mysqld.go#L27-L49), [cli/cmd/postgres.go:27-45](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/postgres.go#L27-L45), [cli/cmd/nspr.go:27-51](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/nspr.go#L27-L51), [cli/cmd/gnutls.go:29-64](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/gnutls.go#L29-L64), [cli/cmd/zsh.go:27-57](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/zsh.go#L27-L57)
 
-eCapture 的 8 个模块根据捕获目标和技术分为三个功能类别：
+## 模块类别与能力
+
+eCapture 的八个模块被组织为三个功能类别：
 
 ### TLS/SSL 加密库
 
-这些模块拦截加密函数，在加密前或解密后捕获明文数据：
+五个模块拦截加密库函数以在加密前或解密后捕获明文：
 
-| 模块 | CLI 命令 | 目标库 | 支持版本 | 主要用途 |
-|--------|-------------|----------------|-------------------|------------------|
-| **OpenSSL** | `tls`, `openssl` | libssl.so | 1.0.x, 1.1.x, 3.0.x+ | 通用 TLS/HTTPS 捕获 |
-| **BoringSSL** | `tls` | libssl.so | Android 12-16 | Android HTTPS 捕获 |
-| **Go TLS** | `gotls`, `tlsgo` | 内置 crypto/tls | 所有 Go 版本 | Go 应用程序捕获 |
-| **GnuTLS** | `gnutls`, `gnu` | libgnutls.so | 3.x | 替代 TLS 库 |
-| **NSPR/NSS** | `nspr`, `nss` | libnspr4.so | 所有版本 | Firefox/Thunderbird |
+| 模块 | CLI 命令 | 目标库 | 钩子函数 | 支持的版本 |
+|--------|-------------|----------------|----------------|-------------------|
+| **OpenSSL/BoringSSL** | `tls`、`openssl` | libssl.so、libcrypto.so | `SSL_read`、`SSL_write`、`SSL_do_handshake`、`SSL_get_wbio` | OpenSSL 1.0.2-3.5.x、BoringSSL Android 12-16 |
+| **Go TLS** | `gotls`、`tlsgo` | crypto/tls（内置） | `crypto/tls.(*Conn).Read`、`crypto/tls.(*Conn).Write` | 所有 Go 版本（1.x-1.24+） |
+| **GnuTLS** | `gnutls`、`gnu` | libgnutls.so | `gnutls_record_recv`、`gnutls_record_send` | GnuTLS 3.x |
+| **NSPR/NSS** | `nspr`、`nss` | libnspr4.so、libnss3.so | `PR_Read`、`PR_Write` | 所有 NSS 版本 |
 
-来源：[README.md:152-161](https://github.com/gojue/ecapture/blob/0766a93b/README.md#L152-L161), [README_CN.md:128-138](https://github.com/gojue/ecapture/blob/0766a93b/README_CN.md#L128-L138), [cli/cmd/tls.go:29-33](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/tls.go#L29-L33), [cli/cmd/gotls.go:29-33](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/gotls.go#L29-L33), [cli/cmd/gnutls.go:32-36](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/gnutls.go#L32-L36), [cli/cmd/nspr.go:30-34](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/nspr.go#L30-L34)
+**捕获模式**：TLS/SSL 模块通过 `-m` 标志支持三种模式：
+- `text`：直接明文输出，支持 HTTP/1.x/HTTP2 解析
+- `pcap`/`pcapng`：网络数据包，在 PCAPNG DSB 中嵌入 TLS 密钥
+- `keylog`/`key`：以 SSLKEYLOGFILE 格式提取主密钥
 
-### 系统审计与命令捕获
+来源：[cli/cmd/tls.go:32-33](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/tls.go#L32-L33), [cli/cmd/gotls.go:32-33](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/gotls.go#L32-L33), [cli/cmd/gnutls.go:35-36](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/gnutls.go#L35-L36), [cli/cmd/nspr.go:32-33](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/nspr.go#L32-L33), [README.md:163-176](https://github.com/gojue/ecapture/blob/ca085d05/README.md#L163-L176)
 
-这些模块挂钩到命令解释器和数据库服务器进行安全审计：
+### 系统审计模块
 
-| 模块 | CLI 命令 | 目标二进制 | 钩子点 | 审计能力 |
-|--------|-------------|---------------|-------------|------------------|
-| **Bash** | `bash` | /bin/bash | readline 库 | 命令输入/输出 |
-| **Zsh** | `zsh` | /bin/zsh | readline 函数 | 命令执行 |
-| **MySQL** | `mysqld` | /usr/sbin/mysqld | dispatch_command | SQL 查询日志 |
-| **PostgreSQL** | `postgres` | /usr/bin/postgres | 查询执行 | SQL 审计 |
+四个模块钩住命令解释器和数据库服务器：
 
-来源：[README.md:152-161](https://github.com/gojue/ecapture/blob/0766a93b/README.md#L152-L161), [cli/cmd/bash.go:27-32](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/bash.go#L27-L32), [cli/cmd/zsh.go:30-35](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/zsh.go#L30-L35), [cli/cmd/mysqld.go:30-36](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/mysqld.go#L30-L36), [cli/cmd/postgres.go:30-33](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/postgres.go#L30-L33)
+| 模块 | CLI 命令 | 目标二进制文件 | 钩子函数 | 捕获的数据 |
+|--------|-------------|---------------|----------------|---------------|
+| **Bash** | `bash` | /bin/bash | libreadline.so 中的 `readline()` | 命令输入、返回值、errno |
+| **Zsh** | `zsh` | /bin/zsh | `zle_line_finish()` | 命令输入、执行结果 |
+| **MySQL** | `mysqld` | /usr/sbin/mysqld、/usr/sbin/mariadbd | `dispatch_command()` | SQL 查询文本、连接 ID |
+| **PostgreSQL** | `postgres` | /usr/bin/postgres | `exec_simple_query()` | SQL 语句 |
+
+**过滤**：Bash 和 Zsh 支持 `-e`/`--errnumber` 标志以按命令退出状态过滤。
+
+来源：[cli/cmd/bash.go:28-32](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/bash.go#L28-L32), [cli/cmd/zsh.go:31-35](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/zsh.go#L31-L35), [cli/cmd/mysqld.go:31-36](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/mysqld.go#L31-L36), [cli/cmd/postgres.go:31-33](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/postgres.go#L31-L33)
 
 ### 网络数据包捕获
 
-网络级捕获通过流量控制（TC）eBPF 分类器集成到 TLS/SSL 模块中。详见 [TC 网络数据包捕获](3.3-network-packet-capture-with-tc.md)。
+TLS/SSL 模块在使用 pcap 模式时与 Traffic Control (TC) eBPF 分类器集成：
 
-## 详细模块描述
+- **TC 探针**：通过 `-i`/`--ifname` 标志附加到网络接口
+- **BPF 过滤**：支持 pcap 过滤表达式（例如 `tcp port 443`）
+- **连接跟踪**：使用 kprobe 在 `tcp_sendmsg`/`udp_sendmsg` 上进行 PID/UID 映射
+- **协议支持**：IPv4/IPv6、TCP/UDP、ICMP
+
+详情请参见 [3.3 - 基于 TC 的网络数据包捕获]。
+
+来源：[cli/cmd/tls.go:56](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/tls.go#L56), [cli/cmd/gotls.go:47](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/gotls.go#L47), [CHANGELOG.md:153](https://github.com/gojue/ecapture/blob/ca085d05/CHANGELOG.md#L153)
+
+## 模块钩子点与目标
+
+**模块目标函数与捕获的数据**
 
 ```mermaid
 graph LR
-    subgraph "TLS/SSL 模块"
+    subgraph TLS_Modules["TLS/SSL 模块"]
         direction TB
-        M1["MOpenSSLProbe"]
-        M1_desc["钩子：SSL_read/SSL_write<br/>SSL_do_handshake<br/>主密钥提取"]
         
-        M2["MGoTLSProbe"]
-        M2_desc["钩子：crypto/tls.Conn.Read<br/>crypto/tls.Conn.Write<br/>PIE 二进制支持"]
+        MOpenSSL["MOpenSSLProbe"]
+        MOpenSSL_targets["libssl.so 函数:<br/>• SSL_read()<br/>• SSL_write()<br/>• SSL_do_handshake()<br/>• SSL_get_wbio()<br/>• SSL_in_before()"]
         
-        M3["MGnuTLSProbe"]
-        M3_desc["钩子：gnutls_record_recv<br/>gnutls_record_send<br/>早期密钥支持"]
+        MGoTLS["MGoTLSProbe"]
+        MGoTLS_targets["crypto/tls 包:<br/>• (*Conn).Read<br/>• (*Conn).Write<br/>• (*Config).writeKeyLog<br/>需要: --elfpath"]
         
-        M4["MNSPRProbe"]
-        M4_desc["钩子：PR_Read/PR_Write<br/>NSS/Firefox 加密"]
+        MGnuTLS["MGnuTLSProbe"]
+        MGnuTLS_targets["libgnutls.so 函数:<br/>• gnutls_record_recv()<br/>• gnutls_record_send()<br/>• gnutls_handshake()"]
         
-        M1 -.-> M1_desc
-        M2 -.-> M2_desc
-        M3 -.-> M3_desc
-        M4 -.-> M4_desc
+        MNSPR["MNSPRProbe"]
+        MNSPR_targets["libnspr4.so 函数:<br/>• PR_Read()<br/>• PR_Write()"]
     end
     
-    subgraph "系统审计模块"
+    subgraph Audit_Modules["系统审计模块"]
         direction TB
-        M5["MBashProbe"]
-        M5_desc["钩子：readline()<br/>命令行输入<br/>返回值过滤"]
         
-        M6["MZshProbe"]
-        M6_desc["钩子：zsh readline<br/>Zsh 命令捕获"]
+        MBash["MBashProbe"]
+        MBash_targets["libreadline.so:<br/>• readline()<br/>捕获: 命令 + errno"]
         
-        M7["MMysqldProbe"]
-        M7_desc["钩子：dispatch_command()<br/>MySQL 5.6/5.7/8.0<br/>MariaDB 10.5+"]
+        MZsh["MZshProbe"]
+        MZsh_targets["zsh 二进制文件:<br/>• zle_line_finish()<br/>捕获: 命令"]
         
-        M8["MPostgresProbe"]
-        M8_desc["钩子：exec_simple_query<br/>PostgreSQL 10+"]
+        MMySQL["MMysqldProbe"]
+        MMySQL_targets["mysqld/mariadbd:<br/>• dispatch_command()<br/>捕获: SQL 查询"]
         
-        M5 -.-> M5_desc
-        M6 -.-> M6_desc
-        M7 -.-> M7_desc
-        M8 -.-> M8_desc
+        MPostgres["MPostgresProbe"]
+        MPostgres_targets["postgres 二进制文件:<br/>• exec_simple_query()<br/>捕获: SQL 查询"]
     end
+    
+    MOpenSSL --> MOpenSSL_targets
+    MGoTLS --> MGoTLS_targets
+    MGnuTLS --> MGnuTLS_targets
+    MNSPR --> MNSPR_targets
+    
+    MBash --> MBash_targets
+    MZsh --> MZsh_targets
+    MMySQL --> MMySQL_targets
+    MPostgres --> MPostgres_targets
 ```
 
-**模块实现细节**：每个模块实现为一个单独的结构体，嵌入通用功能并实现模块特定的钩子点和事件处理逻辑。
+**IModule 接口方法**
 
-### OpenSSL/BoringSSL 模块
+`user/module/` 中的所有模块实现必须实现以下方法：
 
-`tls` 命令针对 OpenSSL 和 BoringSSL 库，提供最全面的 TLS 捕获能力。它支持：
+| 方法 | 用途 |
+|--------|---------|
+| `Init()` | 检测目标二进制文件/库路径，解析版本，选择 eBPF 字节码 |
+| `Start()` | 加载 eBPF 程序，将 uprobe/TC 钩子附加到目标函数 |
+| `Run()` | 启动事件读取循环，处理捕获的数据直到关闭 |
+| `Close()` | 分离探针，关闭映射，清理资源 |
+| `Decode()` | 将原始 eBPF 事件字节解析为类型化的事件结构体 |
+| `Dispatcher()` | 将解码的事件路由到 EventProcessor 进行输出 |
 
-- **版本检测**：自动检测 OpenSSL 1.0.2 到 3.5.x 以及 Android BoringSSL A12-A16
-- **三种捕获模式**：
-  - `text`：直接明文捕获，支持 HTTP/HTTP2 解析
-  - `pcap`/`pcapng`：网络数据包捕获，嵌入解密密钥
-  - `keylog`/`key`：TLS 主密钥提取，用于外部解密
-- **钩子点**：`SSL_read`、`SSL_write`、`SSL_do_handshake`、`SSL_get_wbio`、`SSL_in_before`
-- **连接跟踪**：通过 TC 和 kprobe 钩子进行 4 元组网络跟踪
+`Module` 基础结构体提供 eBPF 映射管理、事件读取和配置处理的共享功能。详细实现请参见 [2.5 - 模块系统与生命周期]。
 
-来源：[cli/cmd/tls.go:29-48](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/tls.go#L29-L48), [README.md:163-253](https://github.com/gojue/ecapture/blob/0766a93b/README.md#L163-L253), [CHANGELOG.md:14-24](https://github.com/gojue/ecapture/blob/0766a93b/CHANGELOG.md#L14-L24)
+来源：[cli/cmd/tls.go:29-48](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/tls.go#L29-L48), [cli/cmd/gotls.go:29-40](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/gotls.go#L29-L40), [cli/cmd/bash.go:27-33](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/bash.go#L27-L33), [cli/cmd/mysqld.go:30-36](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/mysqld.go#L30-L36)
 
-### Go TLS 模块
+## 模块概述
 
-`gotls` 命令从使用标准 `crypto/tls` 包的 Go 应用程序捕获明文：
+### TLS/SSL 捕获模块
 
-- **二进制分析**：解析 Go 二进制元数据以定位 TLS 函数
-- **PIE 支持**：处理位置无关可执行文件，动态计算偏移量
-- **ABI 兼容性**：支持基于寄存器和基于栈的调用约定
-- **捕获模式**：与 OpenSSL 相同的三种模式（text、pcap、keylog）
+eCapture 提供五个模块用于捕获来自不同加密库的加密 TLS/SSL 流量。所有 TLS/SSL 模块支持三种捕获模式（`-m text|pcap|keylog`），并可以提取主密钥用于离线解密。详细信息请参见 [3.1 - TLS/SSL 捕获模块]。
 
-来源：[cli/cmd/gotls.go:29-40](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/gotls.go#L29-L40), [README.md:254-276](https://github.com/gojue/ecapture/blob/0766a93b/README.md#L254-L276), [CHANGELOG.md:21-29](https://github.com/gojue/ecapture/blob/0766a93b/CHANGELOG.md#L21-L29)
+**OpenSSL/BoringSSL 模块（`tls`、`openssl`）**
 
-### GnuTLS 模块
+捕获使用 OpenSSL（1.0.2-3.5.x）或 BoringSSL（Android 12-16）的应用程序的 TLS/SSL 流量。自动检测库版本并选择适当的 eBPF 字节码。钩住 `SSL_read()`、`SSL_write()`、`SSL_do_handshake()` 和主密钥提取函数。参见 [3.1.1 - OpenSSL 模块]。
 
-`gnutls` 命令针对 wget 和其他应用程序使用的 GnuTLS 库：
-
-- **钩子点**：`gnutls_record_recv`、`gnutls_record_send`
-- **版本支持**：GnuTLS 3.x，支持自动版本检测
-- **早期密钥支持**：捕获 TLS 1.3 早期密钥，用于 0-RTT 解密
-- **捕获模式**：text、pcap、keylog
-
-来源：[cli/cmd/gnutls.go:32-45](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/gnutls.go#L32-L45), [CHANGELOG.md:126-127](https://github.com/gojue/ecapture/blob/0766a93b/CHANGELOG.md#L126-L127)
-
-### NSPR/NSS 模块
-
-`nspr` 命令捕获来自 Firefox、Thunderbird 和其他 Mozilla 应用程序的流量：
-
-- **目标**：NSS 使用的 NSPR（Netscape Portable Runtime）库
-- **钩子点**：`PR_Read`、`PR_Write` 函数
-- **应用程序支持**：Firefox 浏览器、Thunderbird 电子邮件客户端
-
-来源：[cli/cmd/nspr.go:30-40](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/nspr.go#L30-L40), [README.md:158](https://github.com/gojue/ecapture/blob/0766a93b/README.md#L158)
-
-### Bash 模块
-
-`bash` 命令为 Bash shell 提供命令行审计：
-
-- **钩子点**：libreadline 中的 `readline()` 函数
-- **捕获数据**：执行前的命令输入，执行后的返回值
-- **过滤**：可选的 errno 过滤，仅捕获失败的命令
-- **自动检测**：从 `$SHELL` 环境变量自动定位 bash 二进制文件
-
-命令用法：
-```
-ecapture bash [--bash=/bin/bash] [--errnumber=N]
+```bash
+ecapture tls -m pcap -i eth0 -w capture.pcapng tcp port 443
 ```
 
-来源：[cli/cmd/bash.go:27-55](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/bash.go#L27-L55), [README.md:153](https://github.com/gojue/ecapture/blob/0766a93b/README.md#L153)
+**Go TLS 模块（`gotls`、`tlsgo`）**
 
-### Zsh 模块
+捕获使用 `crypto/tls` 标准库的 Go 程序的 TLS 流量。需要 `--elfpath` 标志指向 Go 二进制文件。解析 ELF `.gopclntab` 段以定位函数偏移，支持基于寄存器（Go ≥1.17）和基于栈（Go <1.17）的 ABI。参见 [3.1.3 - Go TLS 模块]。
 
-`zsh` 命令为 Zsh shell 提供类似的审计功能：
-
-- **钩子点**：Zsh 特定的 readline 实现
-- **功能**：命令捕获、返回值跟踪、errno 过滤
-- **平台支持**：仅限 Linux（通过构建标签从 Android 构建中排除）
-
-来源：[cli/cmd/zsh.go:30-57](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/zsh.go#L30-L57), [README.md:154](https://github.com/gojue/ecapture/blob/0766a93b/README.md#L154), [CHANGELOG.md:369](https://github.com/gojue/ecapture/blob/0766a93b/CHANGELOG.md#L369)
-
-### MySQL 模块
-
-`mysqld` 命令从 MySQL 和 MariaDB 服务器捕获 SQL 查询：
-
-- **版本支持**：MySQL 5.6、5.7、8.0 以及 MariaDB 10.5+
-- **钩子点**：特定版本偏移量处的 `dispatch_command()` 函数
-- **捕获数据**：完整的 SQL 查询文本，带时间戳和连接信息
-- **偏移量支持**：为自定义构建手动指定偏移量
-
-命令用法：
-```
-ecapture mysqld [--mysqld=/usr/sbin/mysqld] [--funcname=dispatch_command]
+```bash
+ecapture gotls --elfpath=/usr/bin/myapp -m keylog -k keys.log
 ```
 
-来源：[cli/cmd/mysqld.go:30-49](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/mysqld.go#L30-L49), [README.md:157](https://github.com/gojue/ecapture/blob/0766a93b/README.md#L157)
+**GnuTLS 模块（`gnutls`、`gnu`）**
 
-### PostgreSQL 模块
+捕获使用 libgnutls.so 的应用程序（例如 wget、curl）的流量。支持 TLS 1.3 早期密钥提取用于 0-RTT 数据。钩住 `gnutls_record_recv()`、`gnutls_record_send()` 和 `gnutls_handshake()`。参见 [3.1.4 - GnuTLS 与 NSS 模块]。
 
-`postgres` 命令为 PostgreSQL 数据库提供查询审计：
+```bash
+ecapture gnutls -m keylog -k gnutls_keys.log --gnutls=/lib/x86_64-linux-gnu/libgnutls.so
+```
 
-- **版本支持**：PostgreSQL 10 及更新版本
-- **钩子点**：查询执行函数
-- **函数自定义**：允许为不同构建指定自定义函数名称
+**NSPR/NSS 模块（`nspr`、`nss`）**
 
-来源：[cli/cmd/postgres.go:30-45](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/postgres.go#L30-L45), [README.md:159](https://github.com/gojue/ecapture/blob/0766a93b/README.md#L159)
+捕获使用 libnspr4.so/libnss3.so 的 Mozilla 应用程序（Firefox、Thunderbird）的流量。钩住 NSPR I/O 层的 `PR_Read()` 和 `PR_Write()`。当前仅支持文本模式。参见 [3.1.4 - GnuTLS 与 NSS 模块]。
 
-## 通用模块功能
+```bash
+ecapture nspr --nspr=/lib/x86_64-linux-gnu/libnspr4.so
+```
 
-所有捕获模块通过 eCapture 框架共享一组通用能力：
+来源：[cli/cmd/tls.go:29-67](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/tls.go#L29-L67), [cli/cmd/gotls.go:29-58](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/gotls.go#L29-L58), [cli/cmd/gnutls.go:32-64](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/gnutls.go#L32-L64), [cli/cmd/nspr.go:30-51](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/nspr.go#L30-L51)
 
-### 配置接口
+### 系统审计模块
 
-每个模块实现一个 `IConfig` 接口，带有通用参数：
+eCapture 提供四个模块用于审计系统命令和数据库查询。这些模块捕获命令行输入和 SQL 查询以用于安全审计目的。详细信息请参见 [3.2 - 系统审计模块]。
 
-| 参数 | 标志 | 描述 | 默认值 |
-|-----------|------|-------------|---------|
-| PID 过滤 | `--pid` | 针对特定进程 ID | 所有进程 |
-| UID 过滤 | `--uid` | 针对特定用户 ID | 所有用户 |
-| 输出文件 | `-l`, `--logaddr` | 将事件保存到文件 | stdout |
-| 十六进制模式 | `--hex` | 以十六进制显示数据 | false |
-| BTF 模式 | `--btf` | 指定 BTF 字节码模式 | 自动检测 |
-| 映射大小 | `--mapsize` | eBPF 映射大小（KB） | 5120 |
+**Bash 模块（`bash`）**
 
-来源：[cli/cmd/tls.go:50-58](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/tls.go#L50-L58), [cli/cmd/gotls.go:42-48](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/gotls.go#L42-L48)
+通过钩住 libreadline.so 的 `readline()` 审计 Bash shell 中输入的命令。捕获命令文本、退出状态和 errno。支持使用 `-e` 标志按退出代码过滤。参见 [3.2.1 - Shell 命令审计]。
 
-### 输出模式
+```bash
+ecapture bash --errnumber=0  # 仅显示成功的命令
+```
 
-TLS/SSL 模块支持三种由 `-m`/`--model` 标志控制的输出模式：
+**Zsh 模块（`zsh`）**
 
-1. **文本模式**（`-m text`）：直接明文输出，支持 HTTP/HTTP2 解析
-2. **PCAP 模式**（`-m pcap`）：网络数据包捕获，嵌入解密密钥
-3. **Keylog 模式**（`-m keylog`）：仅提取 TLS 主密钥
+通过钩住 Zsh 行编辑器的 `zle_line_finish()` 审计 Zsh 命令。类似于 Bash 模块，但针对 Zsh 特定函数。仅限 Linux。参见 [3.2.1 - Shell 命令审计]。
 
-详细信息请参阅 [输出格式](../4-output-formats/index.md)。
+```bash
+ecapture zsh --zsh=/bin/zsh
+```
 
-来源：[cli/cmd/tls.go:53](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/tls.go#L53), [cli/cmd/gotls.go:45](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/gotls.go#L45), [README.md:171-253](https://github.com/gojue/ecapture/blob/0766a93b/README.md#L171-L253)
+**MySQL 模块（`mysqld`）**
 
-### 网络集成
+通过钩住 `dispatch_command()` 函数审计 MySQL/MariaDB 查询。支持 MySQL 5.6/5.7/8.0 和 MariaDB 10.5+。捕获 SQL 查询文本和连接元数据。参见 [3.2.2 - 数据库查询审计]。
 
-TLS/SSL 模块可以附加 TC（流量控制）eBPF 分类器以进行网络数据包捕获：
+```bash
+ecapture mysqld --mysqld=/usr/sbin/mysqld --funcname=dispatch_command
+```
 
-- **接口选择**：`-i`/`--ifname` 指定网络接口
-- **PCAP 过滤器**：可选的 BPF 过滤器表达式（例如 `tcp port 443`）
-- **连接映射**：通过 kprobe 钩子将网络流映射到进程
+**PostgreSQL 模块（`postgres`）**
 
-来源：[cli/cmd/tls.go:56](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/tls.go#L56), [README.md:180-229](https://github.com/gojue/ecapture/blob/0766a93b/README.md#L180-L229)
+通过钩住 `exec_simple_query()` 审计 PostgreSQL 查询。支持 PostgreSQL 10 及更新版本。捕获 SQL 语句和连接信息。参见 [3.2.2 - 数据库查询审计]。
 
-## 模块选择与调用
+```bash
+ecapture postgres --postgres=/usr/bin/postgres
+```
+
+来源：[cli/cmd/bash.go:27-55](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/bash.go#L27-L55), [cli/cmd/zsh.go:30-57](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/zsh.go#L30-L57), [cli/cmd/mysqld.go:30-49](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/mysqld.go#L30-L49), [cli/cmd/postgres.go:30-45](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/postgres.go#L30-L45)
+
+## 通用配置参数
+
+所有模块都接受在 `BaseConfig` 中定义的这些共享标志：
+
+| 标志 | 类型 | 描述 | 默认值 |
+|------|------|-------------|---------|
+| `--pid` | uint64 | 目标特定进程 ID | 0（所有进程） |
+| `--uid` | uint64 | 目标特定用户 ID | 0（所有用户） |
+| `-l`、`--logaddr` | string | 输出文件路径 | ""（stdout） |
+| `--hex` | bool | 以十六进制显示有效负载 | false |
+| `--btf` | string | 非 CO-RE 模式的 BTF 文件路径 | ""（自动） |
+| `--mapsize` | uint64 | eBPF 映射大小（KB） | 5120 |
+
+**TLS/SSL 模块特定标志**：
+
+| 标志 | 模块 | 描述 | 默认值 |
+|------|---------|-------------|---------|
+| `-m`、`--model` | tls、gotls、gnutls | 捕获模式：text/pcap/keylog | "text" |
+| `-w`、`--pcapfile` | tls、gotls、gnutls | PCAPNG 输出文件 | "save.pcapng" |
+| `-k`、`--keylogfile` | tls、gotls、gnutls | 密钥日志文件（SSLKEYLOGFILE 格式） | "ecapture_*_key.log" |
+| `-i`、`--ifname` | tls、gotls、gnutls | TC 探针的网络接口 | ""（pcap 模式必需） |
+| `--libssl` | tls | libssl.so 的路径 | 自动检测 |
+| `--ssl_version` | tls、gnutls | 强制指定版本 | 自动检测 |
+| `--elfpath` | gotls | Go 二进制文件路径 | 必需 |
+
+**系统审计模块特定标志**：
+
+| 标志 | 模块 | 描述 | 默认值 |
+|------|---------|-------------|---------|
+| `--bash` | bash | bash 二进制文件路径 | $SHELL |
+| `--zsh` | zsh | zsh 二进制文件路径 | $SHELL |
+| `-e`、`--errnumber` | bash、zsh | 按退出代码过滤 | 0（全部） |
+| `--mysqld` | mysqld | mysqld 二进制文件路径 | /usr/sbin/mariadbd |
+| `--postgres` | postgres | postgres 二进制文件路径 | /usr/bin/postgres |
+| `-f`、`--funcname` | mysqld、postgres | 目标函数名称 | dispatch_command/exec_simple_query |
+| `--offset` | mysqld | 手动函数偏移 | 0 |
+
+来源：[cli/cmd/tls.go:50-58](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/tls.go#L50-L58), [cli/cmd/gotls.go:42-48](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/gotls.go#L42-L48), [cli/cmd/bash.go:36-38](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/bash.go#L36-L38), [cli/cmd/mysqld.go:40-42](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/mysqld.go#L40-L42)
+
+## TLS/SSL 模块输出模式
+
+TLS/SSL 模块（tls、gotls、gnutls）通过 `-m`/`--model` 标志支持三种输出模式：
+
+### 文本模式（`-m text`）
+
+**默认模式**。直接将明文数据捕获并显示到控制台或文件。
+
+**特性**：
+- HTTP/1.x 请求/响应解析（带标头）
+- HTTP/2 帧解析（带 HPACK 标头解压缩）
+- 自动 gzip 解压缩（`Content-Encoding: gzip`）
+- 彩色输出（请求为绿色，响应为蓝色）
+- 基于 UUID 的连接跟踪
+
+**输出目标**：stdout 或由 `-l` 标志指定的文件。
+
+### PCAP 模式（`-m pcap`）
+
+捕获网络数据包并以 PCAPNG 格式保存，其中嵌入 TLS 密钥。
+
+**特性**：
+- 需要 `-i`/`--ifname` 指定网络接口
+- 在解密密钥块（DSB）中嵌入 TLS 主密钥
+- 支持可选的 BPF 过滤表达式（例如 `tcp port 443`）
+- 兼容 Wireshark 直接解密
+- IPv4/IPv6 支持
+
+**输出**：由 `-w`/`--pcapfile` 标志指定的文件。
+
+**示例**：
+```
+ecapture tls -m pcap -i eth0 -w capture.pcapng host 192.168.1.100 and tcp port 443
+```
+
+### Keylog 模式（`-m keylog`）
+
+仅提取 TLS 主密钥，不捕获数据有效负载。
+
+**特性**：
+- 以与 Wireshark/tshark 兼容的 SSLKEYLOGFILE 格式保存密钥
+- TLS 1.2：带主密钥的 `CLIENT_RANDOM`
+- TLS 1.3：多个密钥（早期、握手、流量）
+- 可与 tcpdump 结合用于离线解密
+
+**输出**：由 `-k`/`--keylogfile` 标志指定的文件。
+
+**示例**：
+```
+# 终端 1：捕获密钥
+ecapture tls -m keylog -k keys.log
+
+# 终端 2：使用 tshark 解密
+tshark -o tls.keylog_file:keys.log -Y http -T fields -e http.file_data -i eth0
+```
+
+来源：[cli/cmd/tls.go:53-56](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/tls.go#L53-L56), [README.md:171-247](https://github.com/gojue/ecapture/blob/ca085d05/README.md#L171-L247), [CHANGELOG.md:687-743](https://github.com/gojue/ecapture/blob/ca085d05/CHANGELOG.md#L687-L743)
+
+## 模块生命周期与执行流程
+
+**模块调用序列图**
 
 ```mermaid
 sequenceDiagram
-    participant User as "用户"
-    participant CLI as "Cobra CLI"
-    participant Cmd as "命令函数"
-    participant Run as "runModule()"
-    participant Registry as "模块注册表"
-    participant Module as "IModule 实现"
-    participant eBPF as "eBPF 管理器"
+    participant User as 用户
+    participant main["main.main()"]
+    participant cli["cli.Start()"]
+    participant cobra["rootCmd.Execute()"]
+    participant cmdFunc["openSSLCommandFunc()"]
+    participant runMod["runModule()"]
+    participant modReg["GetModuleFunc()"]
+    participant probe["MOpenSSLProbe"]
+    participant mgr["ebpfmanager"]
     
-    User->>CLI: ecapture tls -m pcap -i eth0
-    CLI->>Cmd: opensslCmd.RunE()
-    Cmd->>Cmd: 解析参数到 OpensslConfig
-    Cmd->>Run: runModule(ModuleNameOpenssl, oc)
-    Run->>Registry: GetModuleFunc(ModuleNameOpenssl)
-    Registry->>Module: NewOpenSSLProbe(oc)
-    Module->>Module: Init()
-    Module->>eBPF: 加载字节码，附加探针
-    Module->>Module: Start()
-    Module->>Module: Run() - 事件循环
-    Note over Module: 捕获和处理事件
-    User->>Module: Ctrl+C 信号
-    Module->>Module: Close()
-    Module->>eBPF: 分离探针
-    Module-->>User: 清理完成
+    User->>main: ./ecapture tls -m pcap -i eth0
+    main->>cli: Start()
+    cli->>cobra: Execute()
+    cobra->>cmdFunc: opensslCmd.RunE(cmd, args)
+    
+    cmdFunc->>cmdFunc: 解析 args → oc.PcapFilter
+    cmdFunc->>runMod: runModule(ModuleNameOpenssl, oc)
+    
+    runMod->>modReg: GetModuleFunc(ModuleNameOpenssl)
+    modReg->>probe: NewMOpenSSLProbe(oc)
+    
+    probe->>probe: Init()
+    Note over probe: • 检测 libssl.so 路径<br/>• 解析 ELF 获取版本<br/>• 选择字节码文件
+    
+    probe->>probe: Start()
+    probe->>mgr: InitManager()
+    mgr->>mgr: 加载 eBPF 程序
+    mgr->>mgr: 附加 uprobes/TC 钩子
+    
+    probe->>probe: Run()
+    loop 事件处理
+        probe->>probe: readEvents()
+        probe->>probe: Decode()
+        probe->>probe: Dispatcher()
+        Note over probe: 转发到 EventProcessor
+    end
+    
+    User->>probe: SIGINT (Ctrl+C)
+    probe->>probe: Close()
+    probe->>mgr: 分离探针
+    probe->>mgr: 关闭映射
+    probe-->>User: 退出
 ```
 
-**模块调用流程**：CLI 框架将子命令路由到各自的处理函数，这些函数创建模块特定的配置并调用 `runModule()` 来实例化和执行相应的模块实现。
+**执行步骤**：
 
-模块选择过程：
+1. **入口点**：`main.main()` 调用 `cli.Start()` → [main.go:9-11](https://github.com/gojue/ecapture/blob/ca085d05/main.go#L9-L11)
+2. **命令路由**：Cobra 框架执行匹配子命令的 `RunE` 函数
+3. **配置准备**：命令函数解析标志，创建配置对象（例如 `OpensslConfig`）
+4. **模块查找**：`runModule()` 从注册表中检索模块工厂函数
+5. **模块构造**：工厂创建模块实例（例如 `MOpenSSLProbe`）
+6. **初始化**：`Init()` 方法检测目标二进制文件，选择 eBPF 字节码
+7. **探针附加**：`Start()` 加载 eBPF 程序并附加到钩子点
+8. **事件循环**：`Run()` 处理事件直到收到信号
+9. **清理**：`Close()` 分离探针并释放资源
 
-1. **CLI 解析**：用户调用子命令（例如 `ecapture tls`）
-2. **配置创建**：命令处理程序创建模块特定的配置对象
-3. **模块实例化**：`runModule()` 通过名称常量查找模块
-4. **生命周期执行**：模块经历 Init → Start → Run → Close 阶段
-5. **事件处理**：模块处理事件直到被中断
+来源：[main.go:1-11](https://github.com/gojue/ecapture/blob/ca085d05/main.go#L1-L11), [cli/cmd/tls.go:62-67](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/tls.go#L62-L67), [cli/cmd/gotls.go:52-58](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/gotls.go#L52-L58)
 
-来源：[cli/cmd/tls.go:62-67](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/tls.go#L62-L67), [cli/cmd/gotls.go:52-58](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/gotls.go#L52-L58), [main.go:1-11](https://github.com/gojue/ecapture/blob/0766a93b/main.go#L1-L11)
+## 平台特定模块可用性
 
-## 模块构建配置
+模块使用 Go 构建标签控制平台编译：
 
-模块可以根据平台和功能要求有条件地编译：
+**构建标签：`//go:build !androidgki`**
 
-- **构建标签**：`//go:build !androidgki` 从 Android 内核构建中排除模块
-- **平台特定**：某些模块（bash、gnutls、nspr、mysqld、postgres、zsh）仅限 Linux
-- **通用模块**：OpenSSL 和 GoTLS 模块支持 Linux 和 Android
+五个模块从 Android GKI（通用内核映像）构建中排除：
 
-Android 排除的模块：
-- GnuTLS: [cli/cmd/gnutls.go:1-2](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/gnutls.go#L1-L2)
-- NSPR/NSS: [cli/cmd/nspr.go:1-2](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/nspr.go#L1-L2)
-- MySQL: [cli/cmd/mysqld.go:1-2](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/mysqld.go#L1-L2)
-- PostgreSQL: [cli/cmd/postgres.go:1-2](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/postgres.go#L1-L2)
-- Zsh: [cli/cmd/zsh.go:1-2](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/zsh.go#L1-L2)
+| 模块 | 文件 | 排除原因 |
+|--------|------|---------------------|
+| GnuTLS | [cli/cmd/gnutls.go:1-2](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/gnutls.go#L1-L2) | Android 上不可用该库 |
+| NSPR/NSS | [cli/cmd/nspr.go:1-2](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/nspr.go#L1-L2) | Android 上没有 Mozilla 库 |
+| MySQL | [cli/cmd/mysqld.go:1-2](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/mysqld.go#L1-L2) | Android 上没有服务器软件 |
+| PostgreSQL | [cli/cmd/postgres.go:1-2](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/postgres.go#L1-L2) | Android 上没有服务器软件 |
+| Zsh | [cli/cmd/zsh.go:1-2](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/zsh.go#L1-L2) | Android 上没有该 shell |
 
-来源：[cli/cmd/gnutls.go:1-2](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/gnutls.go#L1-L2), [cli/cmd/nspr.go:1-2](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/nspr.go#L1-L2), [cli/cmd/mysqld.go:1-2](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/mysqld.go#L1-L2), [cli/cmd/postgres.go:1-2](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/postgres.go#L1-L2), [cli/cmd/zsh.go:1-2](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/zsh.go#L1-L2)
+**通用模块**（Linux + Android）：
 
-## 版本历史与演进
+- OpenSSL/BoringSSL（`tls`）：在 Linux 上支持 OpenSSL，在 Android 上支持 BoringSSL
+- Go TLS（`gotls`）：Go 二进制文件在两个平台上运行
+- Bash（`bash`）：在 Linux 和 Android（通过 Termux）上均可用
 
-变更日志中记录的最近模块增强：
+**平台检测**：构建系统根据编译期间指定的目标平台自动选择适当的模块。
 
-- **v1.5.0**：OpenSSL 3.5.4 支持、Android 16 BoringSSL、HTTP/2 解析器改进
-- **v1.4.0**：WebSocket 事件转发、OpenSSL 版本降级逻辑
-- **v1.3.0**：GnuTLS 早期密钥支持、keylog 改进
-- **v1.2.0**：事件工作器双重生命周期管理
-- **v1.0.0**：稳定版本，支持多协议
-- **v0.9.0**：Zsh 命令捕获、连接清理改进
-- **v0.7.0**：模块拆分（OpenSSL/GnuTLS/NSPR 分离）、引入 keylog 模式
+来源：[cli/cmd/gnutls.go:1-2](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/gnutls.go#L1-L2), [cli/cmd/nspr.go:1-2](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/nspr.go#L1-L2), [cli/cmd/mysqld.go:1-2](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/mysqld.go#L1-L2), [cli/cmd/postgres.go:1-2](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/postgres.go#L1-L2), [cli/cmd/zsh.go:1-2](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/zsh.go#L1-L2)
 
-来源：[CHANGELOG.md:11-757](https://github.com/gojue/ecapture/blob/0766a93b/CHANGELOG.md#L11-L757)
+## 何时使用各模块
+
+**模块选择指南**
+
+| 使用场景 | 推荐模块 | 原因 |
+|----------|-------------------|---------|
+| 捕获 curl、nginx、Apache 的 HTTPS 流量 | `tls`（OpenSSL） | 大多数 Linux 应用程序动态使用 OpenSSL |
+| 捕获 Go HTTP 客户端/服务器的流量 | `gotls` | Go 使用内置 `crypto/tls`，而非 OpenSSL |
+| 在 Android 设备上捕获流量 | `tls` 带 `--ssl_version="boringssl 1.1.1"` | Android 系统库中使用 BoringSSL |
+| 捕获 Firefox/Thunderbird 流量 | `nspr` | Mozilla 应用使用 NSS/NSPR，而非 OpenSSL |
+| 在某些系统上捕获 wget 流量 | `gnutls` | 某些发行版使用 GnuTLS 编译 wget |
+| 审计 shell 命令以保障安全 | `bash` 或 `zsh` | 在执行前捕获所有命令 |
+| 审计数据库查询 | `mysqld` 或 `postgres` | 在协议调度层捕获 SQL |
+| 用提取的密钥解密现有 pcap | `tls -m keylog` + tshark | Keylog 模式用于离线分析 |
+
+**输出模式选择（TLS 模块）**
+
+| 输出模式 | 使用场景 | 输出格式 |
+|-------------|----------|---------------|
+| `-m text` | 实时监控、调试 | 解析的 HTTP/HTTP2（带标头）（stdout/文件） |
+| `-m pcap` | Wireshark 分析、数据包检查 | 带 TLS 密钥 DSB 的 PCAPNG |
+| `-m keylog` | 离线解密、最小开销 | SSLKEYLOGFILE 格式（仅主密钥） |
+
+来源：[README.md:152-161](https://github.com/gojue/ecapture/blob/ca085d05/README.md#L152-L161), [README.md:163-247](https://github.com/gojue/ecapture/blob/ca085d05/README.md#L163-L247), [cli/cmd/tls.go:32-46](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/tls.go#L32-L46)
+
+## 模块版本支持
+
+**TLS/SSL 库版本**
+
+| 模块 | 支持的版本 | 备注 |
+|--------|-------------------|-------|
+| OpenSSL | 1.0.2a-u、1.1.0a-l、1.1.1a-w、3.0.0-3.5.x | 通过 ELF 解析自动检测版本 |
+| BoringSSL | Android 12、13、14、15、16 | 使用 `--ssl_version="boringssl 1.1.1"` |
+| Go TLS | 所有 Go 版本（1.x 到 1.24+） | 支持栈和寄存器 ABI |
+| GnuTLS | 3.x 系列 | 使用 `--ssl_version` 指定确切版本 |
+| NSS/NSPR | 所有版本 | 仅限文本模式捕获 |
+
+**数据库版本**
+
+| 模块 | 支持的版本 |
+|--------|-------------------|
+| MySQL | 5.6、5.7、8.0 |
+| MariaDB | 10.5+ |
+| PostgreSQL | 10、11、12、13、14、15+ |
+
+大多数模块的版本检测和字节码选择是自动的。实现详情请参见 [2.6 - 版本检测与字节码选择]。
+
+来源：[CHANGELOG.md:14-108](https://github.com/gojue/ecapture/blob/ca085d05/CHANGELOG.md#L14-L108), [cli/cmd/tls.go:39-40](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/tls.go#L39-L40), [cli/cmd/mysqld.go:33-35](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/mysqld.go#L33-L35)

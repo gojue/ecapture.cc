@@ -1,665 +1,722 @@
 # 开发指南
 
-本指南面向希望为 eCapture 做出贡献、添加新捕获模块、修改现有功能或理解代码库架构的开发人员。它涵盖了开发环境设置、关键接口、构建系统和扩展点。
-
-有关特定开发任务的详细信息，请参阅：
-- [构建系统](5.1-build-system.md) - 全面的构建系统文档
-- [eBPF 程序开发](5.2-ebpf-program-development.md) - 编写 eBPF 程序
-- [添加新模块](5.3-adding-new-modules.md) - 创建新捕获模块
-- [事件处理与解析器](5.4-event-processing-and-parsers.md) - 事件处理和协议解析
+本文档为向 eCapture 项目贡献代码的开发者提供全面指导。内容涵盖构建系统、开发工作流、测试流程和发布过程。有关实现新捕获模块的信息，请参阅 [添加新模块](5.3-adding-new-modules.md)。有关 eBPF 程序开发的详细信息，请参阅 [eBPF 程序开发](5.2-ebpf-program-development.md)。
 
 ---
 
-## 开发环境要求
+## 开发环境设置
 
-eCapture 需要特定的工具和依赖项进行开发。该项目为基于 Ubuntu 的系统提供了自动化设置脚本。
+### 前置条件
 
-### 必需工具
+eCapture 开发需要以下工具和库：
 
-| 工具 | 最低版本 | 用途 |
-|------|----------------|---------|
-| `clang` | 9+（推荐 14） | eBPF 字节码编译 |
-| `llvm` | 9+（推荐 14） | eBPF 工具链 |
-| `golang` | 1.24+ | 应用程序编译 |
-| `gcc` | 任何最新版本 | 交叉编译支持 |
-| `linux-headers` | 匹配内核版本 | Non-CO-RE 编译 |
-| `libelf-dev` | - | ELF 文件解析 |
-| `bpftool` | - | eBPF 字节码生成 |
+| 组件 | 最低版本 | 用途 |
+|-----------|----------------|---------|
+| Go | 1.24 | 用户空间程序编译 |
+| Clang | 9+ (推荐 14) | eBPF 程序编译 |
+| LLVM | 9+ (推荐 14) | eBPF 字节码生成 |
+| Linux Kernel | 4.18+ | eBPF 支持 |
+| libelf-dev | - | ELF 文件解析 |
+| Linux headers | - | 内核结构定义 |
 
-### 自动化设置
+### 环境初始化脚本
 
-项目提供了 [builder/init_env.sh:1-106](https://github.com/gojue/ecapture/blob/0766a93b/builder/init_env.sh#L1-L106)，可在 Ubuntu 20.04-24.04 上为 x86_64 和 aarch64 架构自动安装依赖。它会：
+项目在 [builder/init_env.sh:1-106](https://github.com/gojue/ecapture/blob/ca085d05/builder/init_env.sh#L1-L106) 提供了自动化环境设置脚本。该脚本执行以下操作：
 
-1. 检测 Ubuntu 版本并选择适当的 clang 版本
-2. 安装编译工具链和交叉编译工具
-3. 提取并准备 Linux 内核头文件
-4. 安装 Go 1.24.6
-5. 克隆包含子模块的仓库
+1. 检测 Ubuntu 版本并选择适当的 Clang 版本 ([builder/init_env.sh:16-39](https://github.com/gojue/ecapture/blob/ca085d05/builder/init_env.sh#L16-L39))
+2. 通过 apt-get 安装所需的软件包 ([builder/init_env.sh:72-74](https://github.com/gojue/ecapture/blob/ca085d05/builder/init_env.sh#L72-L74))
+3. 配置交叉编译工具链 ([builder/init_env.sh:43-61](https://github.com/gojue/ecapture/blob/ca085d05/builder/init_env.sh#L43-L61))
+4. 为 eBPF 编译准备 Linux 内核源码 ([builder/init_env.sh:81-89](https://github.com/gojue/ecapture/blob/ca085d05/builder/init_env.sh#L81-L89))
+5. 下载并安装 Go ([builder/init_env.sh:94-97](https://github.com/gojue/ecapture/blob/ca085d05/builder/init_env.sh#L94-L97))
 
-**来源：** [builder/init_env.sh:1-106](https://github.com/gojue/ecapture/blob/0766a93b/builder/init_env.sh#L1-L106), [.github/workflows/go-c-cpp.yml:16-33](https://github.com/gojue/ecapture/blob/0766a93b/.github/workflows/go-c-cpp.yml#L16-L33)
+**架构检测：**
+脚本会自动检测主机架构并配置交叉编译：
+- 在 x86_64 上：设置 aarch64 交叉编译 ([builder/init_env.sh:48-52](https://github.com/gojue/ecapture/blob/ca085d05/builder/init_env.sh#L48-L52))
+- 在 aarch64 上：设置 x86_64 交叉编译 ([builder/init_env.sh:53-58](https://github.com/gojue/ecapture/blob/ca085d05/builder/init_env.sh#L53-L58))
 
----
-
-## 核心开发接口
-
-eCapture 的架构围绕三个关键接口构建，开发人员必须理解这些接口才能扩展功能。
-
-### IModule 接口
-
-`IModule` 接口定义了所有捕获模块的契约。每个模块（OpenSSL、GoTLS、Bash 等）都实现此接口。
-
-```mermaid
-graph TB
-    subgraph "IModule 接口定义"
-        IMODULE["IModule<br/>(user/module/imodule.go)"]
-        
-        INIT["Init()<br/>Context, Logger, Config, Writer"]
-        START["Start()<br/>附加 eBPF 探针"]
-        RUN["Run()<br/>事件循环"]
-        EVENTS["Events()<br/>返回 eBPF maps"]
-        DECODE["Decode()<br/>[]byte → IEventStruct"]
-        DECODEFUN["DecodeFun()<br/>Map → EventStruct 工厂"]
-        DISPATCH["Dispatcher()<br/>处理事件"]
-        CLOSE["Close()<br/>清理"]
-        
-        IMODULE --> INIT
-        IMODULE --> START
-        IMODULE --> RUN
-        IMODULE --> EVENTS
-        IMODULE --> DECODE
-        IMODULE --> DECODEFUN
-        IMODULE --> DISPATCH
-        IMODULE --> CLOSE
-    end
-    
-    subgraph "基础实现"
-        MODULE["Module struct<br/>(可嵌入的基类)"]
-        
-        READER["reader []IClose<br/>perf/ringbuf 读取器"]
-        PROCESSOR["processor *EventProcessor<br/>事件聚合"]
-        LOGGER["logger *zerolog.Logger"]
-        CTX["ctx context.Context"]
-        
-        MODULE --> READER
-        MODULE --> PROCESSOR
-        MODULE --> LOGGER
-        MODULE --> CTX
-    end
-    
-    subgraph "具体模块"
-        OPENSSL["MOpenSSLProbe<br/>user/module/probe_openssl.go"]
-        GOTLS["MGoTLSProbe"]
-        BASH["MBashProbe"]
-        
-        OPENSSL -.->|"嵌入"| MODULE
-        GOTLS -.->|"嵌入"| MODULE
-        BASH -.->|"嵌入"| MODULE
-        
-        OPENSSL -.->|"实现"| IMODULE
-        GOTLS -.->|"实现"| IMODULE
-        BASH -.->|"实现"| IMODULE
-    end
+**手动执行：**
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/gojue/ecapture/master/builder/init_env.sh)"
 ```
 
-#### IModule 方法契约
-
-| 方法 | 用途 | 典型实现 |
-|--------|---------|----------------------|
-| `Init()` | 初始化模块状态、解析配置、设置映射 | 加载 eBPF 字节码选择逻辑，初始化缓存 |
-| `Start()` | 将 eBPF 程序附加到钩子 | 调用 `bpfManager.Start()`，附加 uprobes/kprobes/TC |
-| `Run()` | 开始事件处理 | 启动事件读取器，运行处理器 |
-| `Events()` | 返回用于事件读取的 eBPF maps | 返回 perf/ringbuf maps |
-| `Decode()` | 将原始字节反序列化为事件结构体 | 解析事件类型，反序列化字段 |
-| `DecodeFun()` | 将 eBPF map 映射到事件解码器 | 返回适当的 `IEventStruct` 工厂 |
-| `Dispatcher()` | 处理已解码的事件 | 路由到输出、更新状态、保存密钥 |
-| `Close()` | 清理资源 | 停止读取器、关闭文件、分离探针 |
-
-**来源：** [user/module/imodule.go:47-75](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L47-L75), [user/module/imodule.go:83-108](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L83-L108)
-
-### IConfig 接口
-
-所有模块都通过 `IConfig` 接口接收配置，该接口提供通用设置和模块特定选项。
-
-```mermaid
-graph LR
-    subgraph "IConfig 接口"
-        ICONFIG["IConfig<br/>(user/config/iconfig.go)"]
-        
-        METHODS["GetPid()/SetPid()<br/>GetUid()/SetUid()<br/>GetBTF()/SetBTF()<br/>GetDebug()/SetDebug()<br/>GetHex()/SetHex()<br/>GetPerCpuMapSize()<br/>Check()"]
-        
-        ICONFIG --> METHODS
-    end
-    
-    subgraph "基础配置"
-        BASE["BaseConfig struct"]
-        FIELDS["Pid uint64<br/>Uid uint64<br/>BtfMode uint8<br/>Debug bool<br/>IsHex bool<br/>PerCpuMapSize int"]
-        
-        BASE --> FIELDS
-        BASE -.->|"实现"| ICONFIG
-    end
-    
-    subgraph "模块特定配置"
-        OPENSSLCONF["OpensslConfig<br/>(user/config/config_openssl.go)"]
-        GOTLSCONF["GoTLSConfig"]
-        BASHCONF["BashConfig"]
-        
-        OPENSSLCONF -.->|"嵌入"| BASE
-        GOTLSCONF -.->|"嵌入"| BASE
-        BASHCONF -.->|"嵌入"| BASE
-        
-        SSLFIELDS["SslVersion string<br/>Model string (text/pcap/keylog)<br/>PcapFile string<br/>KeylogFile string<br/>IsAndroid bool<br/>CGroupPath string"]
-        
-        OPENSSLCONF --> SSLFIELDS
-    end
-```
-
-#### 通用配置字段
-
-| 字段 | 类型 | 用途 | 示例 |
-|-------|------|---------|---------|
-| `Pid` | `uint64` | 目标进程 ID（0 = 全部） | `1234` |
-| `Uid` | `uint64` | 目标用户 ID（0 = 全部） | `1000` |
-| `BtfMode` | `uint8` | BTF 模式（0=自动, 1=core, 2=non-core） | `0` |
-| `Debug` | `bool` | 启用调试日志 | `true` |
-| `IsHex` | `bool` | 十六进制输出模式 | `false` |
-| `PerCpuMapSize` | `int` | 每个 CPU 的 eBPF map 大小（页） | `1024` |
-
-**来源：** [user/config/iconfig.go:24-70](https://github.com/gojue/ecapture/blob/0766a93b/user/config/iconfig.go#L24-L70), [user/config/iconfig.go:95-112](https://github.com/gojue/ecapture/blob/0766a93b/user/config/iconfig.go#L95-L112)
-
-### IEventStruct 接口
-
-从 eBPF 流向用户空间的事件实现 `IEventStruct`，启用多态事件处理。
-
-| 方法 | 返回类型 | 用途 |
-|--------|-------------|---------|
-| `Decode([]byte)` | `error` | 从原始字节反序列化 |
-| `String()` | `string` | 人类可读的文本格式 |
-| `StringHex()` | `string` | 十六进制文本格式 |
-| `Clone()` | `IEventStruct` | 创建新实例用于解码 |
-| `EventType()` | `EventType` | 事件分类 |
-| `ToProtobufEvent()` | `*pb.Event` | 转换为 protobuf |
-
-**来源：** [user/event/event.go](https://github.com/gojue/ecapture/blob/0766a93b/user/event/event.go)（在导入中引用）
-
----
-
-## 模块开发生命周期
-
-理解模块从初始化到关闭的生命周期对于开发至关重要。
-
-```mermaid
-stateDiagram-v2
-    [*] --> 注册: init() 调用 RegisteFunc()
-    
-    注册 --> 初始化: CLI 调用 GetModuleFunc()
-    
-    初始化 --> 配置: mod.Init(ctx, logger, config)
-    配置 --> 字节码选择: 检测版本/偏移量
-    字节码选择 --> 加载eBPF: 加载适当的 .o 文件
-    
-    加载eBPF --> 附加探针: mod.Start()
-    附加探针 --> 事件读取: mod.Run()
-    
-    事件读取 --> 事件循环: perfEventReader/ringbufEventReader
-    事件循环 --> 解码: mod.Decode(map, bytes)
-    解码 --> 分发: mod.Dispatcher(event)
-    
-    分发 --> 处理: EventProcessor.Write()
-    处理 --> 输出: eventCollector.Write()
-    
-    输出 --> 事件循环: 继续
-    
-    事件循环 --> 清理: ctx.Done() 或 信号
-    清理 --> 分离: mod.Close()
-    分离 --> [*]
-    
-    note right of 注册
-        user/module/probe_openssl.go:777-786
-        工厂函数注册
-    end note
-    
-    note right of 配置
-        user/module/probe_openssl.go:109-176
-        解析配置，设置状态
-    end note
-    
-    note right of 字节码选择
-        user/module/probe_openssl.go:179-278
-        getSslBpfFile(), detectOpenssl()
-    end note
-    
-    note right of 事件循环
-        user/module/imodule.go:285-306
-        readEvents() 分派读取器
-    end note
-    
-    note right of 处理
-        pkg/event_processor/
-        聚合、过滤、格式化
-    end note
-```
-
-### 生命周期阶段详情
-
-**1. 注册阶段**
-- 模块工厂函数通过 `init()` 中的 `RegisteFunc()` 注册
-- 示例：[user/module/probe_openssl.go:777-786](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl.go#L777-L786)
-- 工厂创建实现 `IModule` 的模块实例
-
-**2. 初始化阶段** 
-- CLI 调用 `Init(ctx, logger, config, eventCollector)`
-- 模块解析配置：[user/module/probe_openssl.go:109-176](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl.go#L109-L176)
-- 设置内部状态：连接映射、密钥缓存等
-- 确定 BTF 模式和内核版本
-
-**3. 字节码选择阶段**
-- 模块检测目标库版本（如 OpenSSL 1.0.x-3.5.x）
-- 选择适当的 eBPF 字节码：`_core.o` vs `_noncore.o` vs `_less52.o`
-- 示例：[user/module/probe_openssl.go:179-278](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl.go#L179-L278)
-
-**4. 探针附加阶段**
-- `Start()` 方法将 eBPF 程序附加到钩子
-- 使用 `ebpfmanager` 库进行生命周期管理
-- 配置常量编辑器用于 PID/UID 过滤
-
-**5. 事件读取阶段**
-- `Run()` 为每个 eBPF map 启动事件读取器
-- 读取器实现在 [user/module/imodule.go:308-350](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L308-L350)（perf）和 [user/module/imodule.go:353-391](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L353-L391)（ringbuf）
-- 每个事件触发 `Decode()` → `Dispatcher()` 管道
-
-**6. 事件处理阶段**
-- `EventProcessor` 聚合、过滤和格式化事件
-- 处理连接生命周期和协议解析
-- 输出到配置的目标（文件、websocket、stdout）
-
-**7. 清理阶段**
-- `Close()` 停止读取器、分离探针、关闭文件
-- 由 context 取消或 OS 信号触发
-
-**来源：** [user/module/imodule.go:110-171](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L110-L171), [user/module/imodule.go:236-262](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L236-L262), [user/module/probe_openssl.go:109-176](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl.go#L109-L176), [user/module/probe_openssl.go:280-350](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl.go#L280-L350)
-
----
-
-## 开发工作流
-
-eCapture 开发工作流集成了本地开发、测试和 CI/CD 自动化。
-
-```mermaid
-graph TB
-    subgraph "本地开发"
-        EDIT["编辑代码<br/>Go/C/eBPF"]
-        COMPILE["make env && make"]
-        TEST["make test-race<br/>或<br/>make e2e"]
-        DEBUG["使用 -d 标志运行<br/>检查日志"]
-        
-        EDIT --> COMPILE
-        COMPILE --> TEST
-        TEST --> DEBUG
-        DEBUG -.->|"迭代"| EDIT
-    end
-    
-    subgraph "构建变体"
-        CORE["make<br/>(CO-RE 模式)"]
-        NONCORE["make nocore<br/>(non-CO-RE)"]
-        CROSS["CROSS_ARCH=arm64 make<br/>(交叉编译)"]
-        ANDROID["ANDROID=1 CROSS_ARCH=arm64 make nocore"]
-        
-        COMPILE --> CORE
-        COMPILE --> NONCORE
-        COMPILE --> CROSS
-        COMPILE --> ANDROID
-    end
-    
-    subgraph "CI/CD 管道"
-        PR["Pull Request"]
-        CITEST["GitHub Actions<br/>go-c-cpp.yml"]
-        LINT["golangci-lint"]
-        MULTIARCH["构建 x86_64 & arm64<br/>构建 CO-RE & non-CO-RE"]
-        RELEASE["标签推送<br/>release.yml"]
-        ARTIFACTS["构建产物<br/>*.tar.gz, *.deb<br/>Docker 镜像"]
-        
-        PR --> CITEST
-        CITEST --> LINT
-        CITEST --> MULTIARCH
-        RELEASE --> ARTIFACTS
-    end
-    
-    subgraph "发布流程"
-        TAG["创建标签<br/>v0.x.y"]
-        BUILDRPM["make rpm<br/>(可选)"]
-        BUILDDEB["make deb"]
-        PUBLISH["make publish<br/>GitHub Release"]
-        DOCKER["Docker Hub<br/>多架构推送"]
-        
-        TAG --> BUILDDEB
-        TAG --> BUILDRPM
-        TAG --> DOCKER
-        BUILDDEB --> PUBLISH
-    end
-    
-    EDIT -.->|"就绪"| PR
-    ARTIFACTS --> DOCKER
-```
-
-### 本地构建命令
-
-| 命令 | 用途 | 输出 |
-|---------|---------|--------|
-| `make env` | 显示构建环境变量 | 配置信息 |
-| `make` 或 `make all` | 构建 CO-RE + non-CO-RE 字节码和二进制文件 | `bin/ecapture` |
-| `make nocore` | 仅构建 non-CO-RE 字节码 | `bin/ecapture`（non-CO-RE） |
-| `make clean` | 删除构建产物 | 清理工作区 |
-| `CROSS_ARCH=arm64 make` | 为 ARM64 交叉编译 | `bin/ecapture`（arm64） |
-| `DEBUG=1 make` | 使用调试符号构建 | 启用调试的二进制文件 |
-| `make test-race` | 使用竞态检测器运行测试 | 测试结果 |
-| `make e2e` | 运行端到端测试 | 集成测试结果 |
-| `make format` | 使用 clang-format 格式化 C 代码 | 格式化的代码 |
-
-### CI/CD 自动化
-
-项目使用 GitHub Actions 进行持续集成：
-
-**Pull Request 检查** [.github/workflows/go-c-cpp.yml:1-128](https://github.com/gojue/ecapture/blob/0766a93b/.github/workflows/go-c-cpp.yml#L1-L128)
-1. **在 Ubuntu 22.04 x86_64 上构建**
-   - 安装工具链（clang-14, gcc-aarch64-linux-gnu）
-   - 构建 CO-RE 模式
-   - 运行 golangci-lint
-   - 构建 non-CO-RE 模式
-   - 交叉编译到 arm64（CO-RE 和 Android non-CO-RE）
-   - 运行竞态检测器测试
-
-2. **在 Ubuntu 22.04 ARM64 上构建**
-   - x86_64 工作流的镜像
-   - 交叉编译到 x86_64
-
-**发布自动化** [.github/workflows/release.yml:1-129](https://github.com/gojue/ecapture/blob/0766a93b/.github/workflows/release.yml#L1-L129)
-1. 标签推送时触发（`v*`）
-2. 为 amd64 和 arm64 构建
-3. 从上一个标签生成发布说明
-4. 创建 tar.gz 存档和校验和
-5. 构建多架构 Docker 镜像
-6. 发布到 GitHub Releases 和 Docker Hub
-
-**来源：** [.github/workflows/go-c-cpp.yml:1-128](https://github.com/gojue/ecapture/blob/0766a93b/.github/workflows/go-c-cpp.yml#L1-L128), [.github/workflows/release.yml:1-129](https://github.com/gojue/ecapture/blob/0766a93b/.github/workflows/release.yml#L1-L129), [Makefile:1-269](https://github.com/gojue/ecapture/blob/0766a93b/Makefile#L1-L269)
+来源：[builder/init_env.sh:1-106](https://github.com/gojue/ecapture/blob/ca085d05/builder/init_env.sh#L1-L106)
 
 ---
 
 ## 构建系统架构
 
-eCapture 构建系统功能强大，处理多种架构、内核版本和编译模式。
+### Makefile 结构
+
+构建系统由三个主要文件组成：
 
 ```mermaid
 graph TB
-    subgraph "Makefile 结构"
-        MAIN["Makefile<br/>(编排)"]
-        VARS["variables.mk<br/>(检测 & 配置)"]
-        FUNCS["functions.mk<br/>(辅助函数)"]
-        RELEASE["builder/Makefile.release<br/>(打包)"]
-        
-        MAIN --> VARS
-        MAIN --> FUNCS
-        RELEASE --> VARS
-        RELEASE --> FUNCS
-    end
+    Main[Makefile]
+    Vars[variables.mk]
+    Funcs[functions.mk]
+    Release[builder/Makefile.release]
     
-    subgraph "variables.mk - 环境检测"
-        HOST_ARCH["HOST_ARCH<br/>uname -m"]
-        CROSS_ARCH["CROSS_ARCH<br/>来自参数"]
-        TARGET_ARCH["TARGET_ARCH<br/>计算得出"]
-        GOARCH["GOARCH<br/>(amd64/arm64)"]
-        LINUX_ARCH["LINUX_ARCH<br/>(x86/arm64)"]
-        CLANG_VER["CLANG_VERSION<br/>提取"]
-        GO_VER["GO_VERSION<br/>提取"]
-        
-        HOST_ARCH --> TARGET_ARCH
-        CROSS_ARCH --> TARGET_ARCH
-        TARGET_ARCH --> GOARCH
-        TARGET_ARCH --> LINUX_ARCH
-    end
+    Main -->|包含| Vars
+    Main -->|包含| Funcs
+    Release -->|包含| Vars
+    Release -->|包含| Funcs
     
-    subgraph "编译路径"
-        KERN_C["kern/*.c<br/>eBPF 程序"]
-        
-        CORE_COMPILE["clang -target bpfel<br/>-g -O2 -D__TARGET_ARCH_XXX<br/>→ *_core.o"]
-        
-        NONCORE_COMPILE["clang + llc<br/>-I kernel-headers<br/>→ *_noncore.o"]
-        
-        LESS52["KERNEL_LESS_5_2<br/>变体编译<br/>→ *_less52.o"]
-        
-        KERN_C --> CORE_COMPILE
-        KERN_C --> NONCORE_COMPILE
-        CORE_COMPILE --> LESS52
-        NONCORE_COMPILE --> LESS52
-    end
+    Vars -->|定义| BuildVars["构建变量<br/>GOARCH, LINUX_ARCH<br/>VERSION_NUM, CLANG_VERSION"]
+    Funcs -->|定义| BuildFuncs["构建函数<br/>gobuild, release_tar<br/>版本检查"]
     
-    subgraph "资源嵌入"
-        BYTECODE["user/bytecode/*.o<br/>27+ 变体"]
-        GOBINDATA["go-bindata<br/>嵌入字节码"]
-        ASSETS["assets/ebpf_probe.go<br/>Asset() 函数"]
-        
-        BYTECODE --> GOBINDATA
-        GOBINDATA --> ASSETS
-    end
-    
-    subgraph "Go 编译"
-        LIBPCAP["lib/libpcap<br/>静态构建"]
-        GOSRC["Go 源码<br/>user/*, cli/*, pkg/*"]
-        GOBUILD["CGO_ENABLED=1<br/>静态链接<br/>版本注入"]
-        BINARY["bin/ecapture<br/>自包含"]
-        
-        ASSETS --> GOBUILD
-        LIBPCAP --> GOBUILD
-        GOSRC --> GOBUILD
-        GOBUILD --> BINARY
-    end
-    
-    subgraph "发布产物"
-        TARBALL["*.tar.gz<br/>平台存档"]
-        DEB["*.deb<br/>Debian 包"]
-        CHECKSUM["checksum-*.txt<br/>SHA256 校验和"]
-        
-        BINARY --> TARBALL
-        BINARY --> DEB
-        TARBALL --> CHECKSUM
-        DEB --> CHECKSUM
-    end
+    Main -->|目标| CoreTargets["all, nocore<br/>ebpf, build<br/>clean, test"]
+    Release -->|目标| RelTargets["snapshot, build_deb<br/>publish"]
 ```
 
-### 关键构建概念
+**构建系统组件：**
+- `Makefile`：主构建编排 ([Makefile:1-245](https://github.com/gojue/ecapture/blob/ca085d05/Makefile#L1-L245))
+- `variables.mk`：环境检测和变量定义
+- `functions.mk`：可重用的构建函数 ([functions.mk:1-76](https://github.com/gojue/ecapture/blob/ca085d05/functions.mk#L1-L76))
+- `builder/Makefile.release`：发布打包和分发 ([builder/Makefile.release:1-151](https://github.com/gojue/ecapture/blob/ca085d05/builder/Makefile.release#L1-L151))
 
-**1. 双重编译模式**
-- **CO-RE（Compile Once - Run Everywhere）**：使用 BTF，可在任何启用 BTF 的内核上运行
-  - 使用 `clang -target bpfel` 编译为 `*_core.o`
-  - 跨内核版本可移植
-- **Non-CO-RE**：需要内核头文件，特定于内核版本
-  - 使用内核头文件编译为 `*_noncore.o`
-  - 对于没有 BTF 的内核或 Android 是必需的
+来源：[Makefile:1-11](https://github.com/gojue/ecapture/blob/ca085d05/Makefile#L1-L11)、[functions.mk:1-76](https://github.com/gojue/ecapture/blob/ca085d05/functions.mk#L1-L76)、[builder/Makefile.release:1-10](https://github.com/gojue/ecapture/blob/ca085d05/builder/Makefile.release#L1-L10)
 
-**2. 内核版本变体**
-- 内核 < 5.2 具有不同的 eBPF 辅助函数
-- 使用 `-DKERNEL_LESS_5_2` 编译单独的 `*_less52.o` 文件
-- 基于 `kernel.HostVersion()` 的运行时选择
+### 构建目标概览
 
-**3. 交叉编译支持**
-- `CROSS_ARCH` 变量触发交叉编译
-- 需要交叉工具链：`gcc-aarch64-linux-gnu` 或 `gcc-x86-64-linux-gnu`
-- 目标架构的内核头文件：`/usr/src/linux-source-*/arch/{x86,arm64}`
+| 目标 | 用途 | 包含的字节码 |
+|--------|---------|-------------------|
+| `all` | 完整构建（CO-RE 和 non-CO-RE） | 两者都包含 |
+| `nocore` | 仅构建 non-CO-RE | 仅 non-CO-RE |
+| `ebpf` | 编译 CO-RE eBPF 字节码 | CO-RE |
+| `ebpf_noncore` | 编译 non-CO-RE eBPF 字节码 | non-CO-RE |
+| `assets` | 生成 Go 嵌入式字节码 | 两者都包含 |
+| `build` | 编译 Go 二进制文件 | - |
+| `clean` | 删除构建产物 | - |
+| `test-race` | 运行带竞态检测器的单元测试 | - |
+| `e2e` | 运行端到端测试 | - |
 
-**4. 资源嵌入**
-- 所有 eBPF 字节码通过 `go-bindata` 嵌入到 Go 二进制文件中
-- 运行时不依赖 `.o` 文件
-- 运行时从 `assets.Asset()` 选择适当的字节码
-
-**5. 版本注入**
-- 通过 ldflags 注入 Git 版本：[functions.mk:47-54](https://github.com/gojue/ecapture/blob/0766a93b/functions.mk#L47-L54)
-- 格式：`os_arch:vX.Y.Z-date-commit:kernel_version`
-- 注入字节码模式：`ByteCodeFiles=core|noncore|all`
-
-**来源：** [Makefile:1-269](https://github.com/gojue/ecapture/blob/0766a93b/Makefile#L1-L269), [variables.mk:1-200](https://github.com/gojue/ecapture/blob/0766a93b/variables.mk#L1-L200), [functions.mk:1-76](https://github.com/gojue/ecapture/blob/0766a93b/functions.mk#L1-L76), [builder/Makefile.release:1-151](https://github.com/gojue/ecapture/blob/0766a93b/builder/Makefile.release#L1-L151)
+来源：[Makefile:4-14](https://github.com/gojue/ecapture/blob/ca085d05/Makefile#L4-L14)、[Makefile:106-245](https://github.com/gojue/ecapture/blob/ca085d05/Makefile#L106-L245)
 
 ---
 
-## 开发人员的关键代码模式
+## 构建流程
 
-### 模式 1：模块注册
+### 完整构建流水线
 
-所有模块在 `init()` 中使用工厂模式注册自己：
-
-```go
-// user/module/probe_openssl.go:777-786
-func init() {
-    RegisteFunc(NewOpenSSLProbe)
-}
-
-func NewOpenSSLProbe() IModule {
-    mod := &MOpenSSLProbe{}
-    mod.name = ModuleNameOpenssl
-    mod.mType = ProbeTypeUprobe
-    return mod
-}
+```mermaid
+graph TB
+    Start[make all]
+    
+    subgraph "阶段 1：eBPF 编译"
+        AutoGen[autogen<br/>生成 vmlinux.h]
+        CheckClang[.checkver_clang<br/>验证 clang >= 9]
+        CheckGo[.checkver_go<br/>验证 go >= 1.24]
+        
+        CoreCompile[CO-RE 编译<br/>kern/*.c → *_core.o]
+        NonCoreCompile[Non-CO-RE 编译<br/>kern/*.c → *_noncore.o]
+    end
+    
+    subgraph "阶段 2：资源嵌入"
+        Bindata[go-bindata<br/>嵌入 *.o 文件]
+        AssetsGo[assets/ebpf_probe.go<br/>生成的 Go 代码]
+    end
+    
+    subgraph "阶段 3：Go 编译"
+        LibPcap[构建 libpcap<br/>lib/libpcap/libpcap.a]
+        GoBuild[go build<br/>静态链接]
+        Binary[bin/ecapture<br/>最终可执行文件]
+    end
+    
+    Start --> CheckClang
+    Start --> CheckGo
+    CheckClang --> AutoGen
+    CheckGo --> AutoGen
+    
+    AutoGen --> CoreCompile
+    AutoGen --> NonCoreCompile
+    
+    CoreCompile --> Bindata
+    NonCoreCompile --> Bindata
+    
+    Bindata --> AssetsGo
+    
+    AssetsGo --> LibPcap
+    LibPcap --> GoBuild
+    GoBuild --> Binary
 ```
 
-CLI 通过 `GetModuleFunc(modName)` 检索模块。
+来源：[Makefile:6-11](https://github.com/gojue/ecapture/blob/ca085d05/Makefile#L6-L11)、[Makefile:133-201](https://github.com/gojue/ecapture/blob/ca085d05/Makefile#L133-L201)
 
-### 模式 2：eBPF 字节码选择
+### CO-RE 与 Non-CO-RE 编译
 
-模块实现版本检测和字节码选择：
-
-```go
-// 1. 检测库版本
-verString, err := m.detectOpenssl(soPath)
-
-// 2. 将版本映射到字节码文件
-bpfFile, found := m.sslVersionBpfMap[verString]
-
-// 3. 应用 CO-RE/non-CO-RE 后缀
-filename := m.geteBPFName("user/bytecode/" + bpfFile)
-// 结果：user/bytecode/openssl_3_0_kern_core.o
-
-// 4. 从嵌入资源加载
-byteBuf, err := assets.Asset(filename)
+**CO-RE（一次编译，到处运行）：**
+```bash
+clang -D__TARGET_ARCH_x86 \
+  -target bpfel \
+  -c kern/openssl.c \
+  -o user/bytecode/openssl_kern_core.o \
+  -g -fno-ident
 ```
 
-参考：[user/module/probe_openssl.go:179-278](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl.go#L179-L278), [user/module/imodule.go:191-214](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L191-L214)
+- 生成与内核无关的字节码 ([Makefile:122-127](https://github.com/gojue/ecapture/blob/ca085d05/Makefile#L122-L127))
+- 需要支持 BTF（BPF 类型格式）的内核
+- 使用 `bpftool btf dump` 生成的 `vmlinux.h` ([Makefile:130-131](https://github.com/gojue/ecapture/blob/ca085d05/Makefile#L130-L131))
+- 文件大小更小，可跨内核版本移植
 
-### 模式 3：事件分发
-
-事件通过类型切换分发器流动：
-
-```go
-// user/module/probe_openssl.go:733-754
-func (m *MOpenSSLProbe) Dispatcher(eventStruct event.IEventStruct) {
-    switch ev := eventStruct.(type) {
-    case *event.ConnDataEvent:
-        if ev.IsDestroy == 0 {
-            m.AddConn(ev.Pid, ev.Fd, ev.Tuple, ev.Sock)
-        } else {
-            m.DelConn(ev.Sock)
-        }
-    case *event.MasterSecretEvent:
-        m.saveMasterSecret(ev)
-    case *event.TcSkbEvent:
-        m.dumpTcSkb(ev)
-    case *event.SSLDataEvent:
-        m.dumpSslData(ev)
-    }
-}
+**Non-CO-RE（特定内核）：**
+```bash
+clang -I /usr/src/linux-source/arch/x86/include \
+  -c kern/openssl.c -o - | \
+llc -march=bpf -filetype=obj \
+  -o user/bytecode/openssl_kern_noncore.o
 ```
 
-### 模式 4：eBPF 管理器设置
+- 需要目标内核的内核头文件 ([Makefile:144-159](https://github.com/gojue/ecapture/blob/ca085d05/Makefile#L144-L159))
+- 可在不支持 BTF 的旧内核上工作
+- 针对特定内核，不同内核版本需要重新构建
+- 由于包含内核结构定义，文件大小更大
 
-模块使用 `ebpfmanager` 进行探针生命周期管理：
+**构建变量：**
+- `KERN_SRC_PATH`：内核源码路径 ([Makefile:147-154](https://github.com/gojue/ecapture/blob/ca085d05/Makefile#L147-L154))
+- `KERN_BUILD_PATH`：内核构建路径 ([Makefile:148-152](https://github.com/gojue/ecapture/blob/ca085d05/Makefile#L148-L152))
+- `LINUX_ARCH`：目标架构（x86、arm64）([Makefile:122](https://github.com/gojue/ecapture/blob/ca085d05/Makefile#L122))
 
-```go
-m.bpfManager = &manager.Manager{
-    Probes: []*manager.Probe{
-        {Section: "uprobe/SSL_write", ElfFuncName: "SSL_write"},
-        {Section: "uretprobe/SSL_write", ElfFuncName: "SSL_write"},
-        // ... 更多探针
-    },
-    Maps: []*manager.Map{
-        {Name: "events"},
-        {Name: "mastersecret_events"},
-    },
-}
+来源：[Makefile:117-159](https://github.com/gojue/ecapture/blob/ca085d05/Makefile#L117-L159)
 
-m.bpfManagerOptions = manager.Options{
-    ConstantEditors: m.constantEditor(), // PID/UID 过滤
-}
+### 资源嵌入流程
 
-// 加载并启动
-byteBuf, _ := assets.Asset(bpfFileName)
-m.bpfManager.InitWithOptions(bytes.NewReader(byteBuf), m.bpfManagerOptions)
-m.bpfManager.Start()
-```
+构建系统使用 `go-bindata` 将所有 eBPF 字节码文件嵌入到 Go 二进制文件中：
 
-**来源：** [user/module/probe_openssl.go:733-754](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl.go#L733-L754), [user/module/imodule.go:191-214](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L191-L214)
+1. **编译 eBPF 程序**：在 `user/bytecode/` 中生成 `*.o` 文件
+2. **生成 Go 代码**：`go-bindata` 读取所有 `.o` 文件 ([Makefile:164](https://github.com/gojue/ecapture/blob/ca085d05/Makefile#L164))
+3. **创建资源包**：生成 `assets/ebpf_probe.go` ([Makefile:164](https://github.com/gojue/ecapture/blob/ca085d05/Makefile#L164))
+4. **嵌入到二进制文件**：Go 构建包含嵌入的资源
+
+这种方法消除了在二进制文件旁分发单独字节码文件的需要。
+
+来源：[Makefile:162-171](https://github.com/gojue/ecapture/blob/ca085d05/Makefile#L162-L171)
 
 ---
 
-## 测试与调试
+## 构建 eCapture
+
+### 标准构建（本地架构）
+
+**完整构建，包含 CO-RE 和 non-CO-RE：**
+```bash
+make clean
+make env          # 显示构建环境
+make all          # 构建所有内容
+```
+
+**仅 non-CO-RE（用于旧内核）：**
+```bash
+make clean
+make nocore
+```
+
+`nocore` 目标适用于以下情况：
+- 目标系统缺少 BTF 支持
+- 部署到特定内核版本
+- 通过排除 CO-RE 字节码来减少二进制大小
+
+来源：[Makefile:4-14](https://github.com/gojue/ecapture/blob/ca085d05/Makefile#L4-L14)
+
+### 交叉编译
+
+**在 x86_64 上为 ARM64 构建：**
+```bash
+make clean
+CROSS_ARCH=arm64 make env
+CROSS_ARCH=arm64 make all
+```
+
+**在 ARM64 上为 x86_64 构建：**
+```bash
+make clean
+CROSS_ARCH=amd64 make env
+CROSS_ARCH=amd64 make all
+```
+
+**交叉编译要求：**
+- 已安装交叉编译工具链 ([.github/workflows/go-c-cpp.yml:19](https://github.com/gojue/ecapture/blob/ca085d05/.github/workflows/go-c-cpp.yml#L19))
+  - 对于 ARM64：`gcc-aarch64-linux-gnu`
+  - 对于 x86_64：`gcc-x86-64-linux-gnu`
+- 已准备目标架构的内核头文件 ([.github/workflows/go-c-cpp.yml:31](https://github.com/gojue/ecapture/blob/ca085d05/.github/workflows/go-c-cpp.yml#L31))
+
+**libpcap 交叉编译：**
+构建系统自动为交叉编译配置 libpcap：
+```bash
+CC=aarch64-linux-gnu-gcc AR=aarch64-linux-gnu-ar \
+  ./configure --host=aarch64-linux-gnu
+```
+
+来源：[Makefile:56-65](https://github.com/gojue/ecapture/blob/ca085d05/Makefile#L56-L65)、[Makefile:176-184](https://github.com/gojue/ecapture/blob/ca085d05/Makefile#L176-L184)、[.github/workflows/go-c-cpp.yml:56-65](https://github.com/gojue/ecapture/blob/ca085d05/.github/workflows/go-c-cpp.yml#L56-L65)
+
+### Android 构建
+
+**为 Android 构建（ARM64）：**
+```bash
+make clean
+CROSS_ARCH=arm64 make env
+ANDROID=1 CROSS_ARCH=arm64 make nocore
+```
+
+**Android 特定注意事项：**
+- Android 构建仅使用 non-CO-RE ([.github/workflows/go-c-cpp.yml:61-65](https://github.com/gojue/ecapture/blob/ca085d05/.github/workflows/go-c-cpp.yml#L61-L65))
+- 特殊处理 BoringSSL 版本（Android 12-16）
+- ARM 架构的网络字节序调整
+
+来源：[Makefile:95](https://github.com/gojue/ecapture/blob/ca085d05/Makefile#L95)、[.github/workflows/go-c-cpp.yml:61-65](https://github.com/gojue/ecapture/blob/ca085d05/.github/workflows/go-c-cpp.yml#L61-L65)
+
+### 构建环境变量
+
+| 变量 | 说明 | 示例 |
+|----------|-------------|---------|
+| `CROSS_ARCH` | 目标架构 | `arm64`、`amd64` |
+| `ANDROID` | Android 构建标志 | `1`（启用）|
+| `DEBUG` | 调试构建标志 | `1`（启用调试符号）|
+| `SNAPSHOT_VERSION` | 覆盖版本字符串 | `v0.8.0` |
+
+**环境显示：**
+```bash
+make env
+```
+
+此命令显示所有构建变量，包括：
+- 主机架构检测
+- 内核版本
+- 编译器版本
+- 目标架构设置
+- 版本信息
+
+来源：[Makefile:19-63](https://github.com/gojue/ecapture/blob/ca085d05/Makefile#L19-L63)
+
+---
+
+## 测试
 
 ### 单元测试
 
-使用竞态检测运行单元测试：
+**运行单元测试：**
+```bash
+go test -v ./...
+```
+
+**使用竞态检测器运行：**
 ```bash
 make test-race
 ```
 
-这将执行带有 libpcap 正确 CGO 标志的 `go test -v -race ./...`。
+竞态检测器构建 ([Makefile:216-224](https://github.com/gojue/ecapture/blob/ca085d05/Makefile#L216-L224))：
+- 启用 `CGO_ENABLED=1` 以实现 C 集成
+- 与 libpcap 静态链接
+- 使用竞态检测器识别数据竞争
+
+来源：[Makefile:216-224](https://github.com/gojue/ecapture/blob/ca085d05/Makefile#L216-L224)
 
 ### 端到端测试
 
-运行模块特定的 E2E 测试：
-```bash
-make e2e-tls      # TLS 模块测试
-make e2e-gnutls   # GnuTLS 模块测试
-make e2e-gotls    # GoTLS 模块测试
-make e2e          # 所有 E2E 测试
+项目为每个主要模块提供 E2E 测试脚本：
+
+```mermaid
+graph LR
+    E2E[make e2e]
+    
+    TLS[e2e-tls<br/>test/e2e/tls_e2e_test.sh]
+    GnuTLS[e2e-gnutls<br/>test/e2e/gnutls_e2e_test.sh]
+    GoTLS[e2e-gotls<br/>test/e2e/gotls_e2e_test.sh]
+    
+    E2E --> TLS
+    E2E --> GnuTLS
+    E2E --> GoTLS
+    
+    TLS --> TestOpenSSL["测试 OpenSSL<br/>版本 1.0.x - 3.x"]
+    GnuTLS --> TestGnuTLS["测试 GnuTLS<br/>库钩子"]
+    GoTLS --> TestGo["测试 Go TLS<br/>ABI 检测"]
 ```
 
-参考：[Makefile:240-268](https://github.com/gojue/ecapture/blob/0766a93b/Makefile#L240-L268)
-
-### 调试模式
-
-启用调试日志：
+**运行特定 E2E 测试：**
 ```bash
-./ecapture tls -d          # 调试到标准输出
-./ecapture tls -d -l /tmp/debug.log  # 调试到文件
+make e2e-tls       # 测试 TLS/SSL 捕获
+make e2e-gnutls    # 测试 GnuTLS 捕获
+make e2e-gotls     # 测试 Go TLS 捕获
 ```
 
-调试模式启用：
-- 详细的 eBPF 验证器输出
-- 连接跟踪日志
-- 事件解码详情
-- 处理器状态信息
+**运行所有 E2E 测试：**
+```bash
+make e2e
+```
 
-### 常见开发问题
-
-| 问题 | 原因 | 解决方案 |
-|-------|-------|----------|
-| eBPF 验证器错误 | 字节码与内核不兼容 | 检查内核版本，尝试 `-b 2` 使用 non-CO-RE |
-| 模块未找到 | 工厂未注册 | 添加带有 `RegisteFunc()` 调用的 `init()` |
-| 事件未捕获 | 钩子/偏移量错误 | 验证库版本检测逻辑 |
-| 编译错误 | 缺少头文件 | 运行 `make env` 检查 KERN_SRC_PATH |
-| 交叉编译失败 | 缺少工具链 | 安装 `gcc-aarch64-linux-gnu` 或 `gcc-x86-64-linux-gnu` |
-
-**来源：** [Makefile:240-268](https://github.com/gojue/ecapture/blob/0766a93b/Makefile#L240-L268), [user/module/imodule.go:110-171](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L110-L171)
+来源：[Makefile:226-244](https://github.com/gojue/ecapture/blob/ca085d05/Makefile#L226-L244)
 
 ---
 
-## 开发人员的后续步骤
+## CI/CD 流水线
 
-有关特定开发任务的详细信息：
+### GitHub Actions 工作流架构
 
-- **[构建系统](5.1-build-system.md)**：深入了解 Makefile 结构、变量、交叉编译和资源嵌入
-- **[eBPF 程序开发](5.2-ebpf-program-development.md)**：编写 eBPF C 程序、使用辅助函数、映射操作和调试
-- **[添加新模块](5.3-adding-new-modules.md)**：创建新捕获模块的分步指南，包含完整的生命周期实现
-- **[事件处理与解析器](5.4-event-processing-and-parsers.md)**：实现事件结构体、协议解析器和输出格式化
+```mermaid
+graph TB
+    subgraph "触发事件"
+        Push[推送到 master]
+        PR[Pull Request]
+        Tag[标签推送 v*]
+    end
+    
+    subgraph "go-c-cpp.yml 工作流"
+        Job1[build-on-ubuntu2204<br/>x86_64 运行器]
+        Job2[build-on-ubuntu2204-arm64<br/>arm64 运行器]
+        
+        Job1Steps["1. 安装编译器<br/>2. 构建 CO-RE<br/>3. golangci-lint<br/>4. 构建 non-CO-RE<br/>5. 交叉编译 arm64<br/>6. Android 构建<br/>7. 运行测试"]
+        
+        Job2Steps["1. 安装编译器<br/>2. 构建 CO-RE<br/>3. golangci-lint<br/>4. 构建 non-CO-RE<br/>5. 交叉编译 amd64<br/>6. Android 构建<br/>7. 运行测试"]
+        
+        Job1 --> Job1Steps
+        Job2 --> Job2Steps
+    end
+    
+    subgraph "release.yml 工作流"
+        ReleaseJob1[build-on-ubuntu2204<br/>发布产物]
+        ReleaseJob2[build-docker-image<br/>多架构镜像]
+        
+        ReleaseSteps["1. 构建 amd64<br/>2. 构建 arm64<br/>3. 创建 DEB 包<br/>4. 生成校验和<br/>5. 创建 GitHub 发布"]
+        
+        DockerSteps["1. 构建 amd64 镜像<br/>2. 构建 arm64 镜像<br/>3. 推送到 Docker Hub"]
+        
+        ReleaseJob1 --> ReleaseSteps
+        ReleaseJob2 --> DockerSteps
+    end
+    
+    Push --> Job1
+    Push --> Job2
+    PR --> Job1
+    PR --> Job2
+    Tag --> ReleaseJob1
+    Tag --> ReleaseJob2
+```
 
-其他资源：
-- [架构设计](../2-architecture/index.md)：高级系统架构和组件交互
-- [命令行界面](../1-overview/1.2-command-line-interface.md)：CLI 结构和命令模式
-- [配置系统](../2-architecture/2.3-configuration-system.md)：IConfig 实现和运行时更新
+来源：[.github/workflows/go-c-cpp.yml:1-128](https://github.com/gojue/ecapture/blob/ca085d05/.github/workflows/go-c-cpp.yml#L1-L128)、[.github/workflows/release.yml:1-129](https://github.com/gojue/ecapture/blob/ca085d05/.github/workflows/release.yml#L1-L129)
 
-**来源：** [cli/cmd/root.go:80-403](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/root.go#L80-L403), [user/module/imodule.go:47-480](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L47-L480), [user/config/iconfig.go:1-212](https://github.com/gojue/ecapture/blob/0766a93b/user/config/iconfig.go#L1-L212), [Makefile:1-269](https://github.com/gojue/ecapture/blob/0766a93b/Makefile#L1-L269)
+### CI 构建矩阵
+
+CI 系统构建并测试多种配置：
+
+| 架构 | 本地构建 | 交叉编译 | Android |
+|--------------|--------------|-------------------|---------|
+| x86_64 | ✓ CO-RE + non-CO-RE | ✓ arm64 目标 | ✓ arm64 |
+| arm64 | ✓ CO-RE + non-CO-RE | ✓ amd64 目标 | ✓ amd64 |
+
+**CI 构建步骤：**
+
+1. **设置环境** ([.github/workflows/go-c-cpp.yml:16-33](https://github.com/gojue/ecapture/blob/ca085d05/.github/workflows/go-c-cpp.yml#L16-L33)):
+   - 安装 Go 1.24.6
+   - 安装 Clang 14、LLVM 工具
+   - 提取并准备 Linux 内核源码
+
+2. **本地 CO-RE 构建** ([.github/workflows/go-c-cpp.yml:38-44](https://github.com/gojue/ecapture/blob/ca085d05/.github/workflows/go-c-cpp.yml#L38-L44)):
+   ```bash
+   make clean
+   make env
+   DEBUG=1 make -j8
+   ```
+
+3. **代码质量检查** ([.github/workflows/go-c-cpp.yml:45-50](https://github.com/gojue/ecapture/blob/ca085d05/.github/workflows/go-c-cpp.yml#L45-L50)):
+   - 对 Go 代码运行 `golangci-lint`
+   - 版本：v2.1
+
+4. **Non-CO-RE 构建** ([.github/workflows/go-c-cpp.yml:51-55](https://github.com/gojue/ecapture/blob/ca085d05/.github/workflows/go-c-cpp.yml#L51-L55)):
+   ```bash
+   make clean
+   make nocore
+   ```
+
+5. **交叉编译** ([.github/workflows/go-c-cpp.yml:56-65](https://github.com/gojue/ecapture/blob/ca085d05/.github/workflows/go-c-cpp.yml#L56-L65)):
+   ```bash
+   CROSS_ARCH=arm64 make env
+   CROSS_ARCH=arm64 make -j8
+   ANDROID=1 CROSS_ARCH=arm64 make nocore -j8
+   ```
+
+6. **测试执行** ([.github/workflows/go-c-cpp.yml:66-67](https://github.com/gojue/ecapture/blob/ca085d05/.github/workflows/go-c-cpp.yml#L66-L67)):
+   ```bash
+   go test -v -race ./...
+   ```
+
+来源：[.github/workflows/go-c-cpp.yml:9-127](https://github.com/gojue/ecapture/blob/ca085d05/.github/workflows/go-c-cpp.yml#L9-L127)
+
+### 编译器版本管理
+
+CI 系统确保一致的编译器版本：
+
+**Clang/LLVM 设置：**
+```bash
+for tool in "clang" "llc" "llvm-strip"
+do
+  sudo rm -f /usr/bin/$tool
+  sudo ln -s /usr/bin/$tool-14 /usr/bin/$tool
+done
+```
+
+这会创建符号链接以强制使用 Clang 14 ([.github/workflows/go-c-cpp.yml:20-24](https://github.com/gojue/ecapture/blob/ca085d05/.github/workflows/go-c-cpp.yml#L20-L24))。
+
+**内核源码准备：**
+```bash
+cd /usr/src
+source_file=$(find . -maxdepth 1 -name "*linux-source*.tar.bz2")
+sudo tar -xf $source_file
+cd $source_dir
+sudo make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- prepare V=0
+```
+
+为交叉编译准备内核头文件 ([.github/workflows/go-c-cpp.yml:25-32](https://github.com/gojue/ecapture/blob/ca085d05/.github/workflows/go-c-cpp.yml#L25-L32))。
+
+来源：[.github/workflows/go-c-cpp.yml:16-33](https://github.com/gojue/ecapture/blob/ca085d05/.github/workflows/go-c-cpp.yml#L16-L33)
+
+---
+
+## 发布流程
+
+### 发布工作流
+
+```mermaid
+graph TB
+    Start[创建 git 标签 v*]
+    
+    subgraph "构建阶段"
+        Build1[构建 amd64 产物<br/>make release]
+        Build2[构建 arm64 产物<br/>CROSS_ARCH=arm64]
+        
+        Build1 --> Archive1[ecapture-v*.tar.gz]
+        Build1 --> DEB1[ecapture-v*.deb]
+        
+        Build2 --> Archive2[ecapture-v*-arm64.tar.gz]
+        Build2 --> DEB2[ecapture-v*-arm64.deb]
+    end
+    
+    subgraph "Docker 阶段"
+        Docker[docker buildx build]
+        Docker --> ImageAMD64[linux/amd64 镜像]
+        Docker --> ImageARM64[linux/arm64 镜像]
+        
+        ImageAMD64 --> DockerHub
+        ImageARM64 --> DockerHub
+    end
+    
+    subgraph "发布阶段"
+        GenChecksum[生成校验和<br/>sha256sum]
+        GenNotes[生成发布说明<br/>GitHub API]
+        
+        Archive1 --> GenChecksum
+        Archive2 --> GenChecksum
+        DEB1 --> GenChecksum
+        DEB2 --> GenChecksum
+        
+        GenChecksum --> Release[创建 GitHub 发布]
+        GenNotes --> Release
+    end
+    
+    Start --> Build1
+    Start --> Build2
+    Start --> Docker
+    
+    Build1 --> GenChecksum
+    Build2 --> GenChecksum
+```
+
+来源：[.github/workflows/release.yml:1-129](https://github.com/gojue/ecapture/blob/ca085d05/.github/workflows/release.yml#L1-L129)、[builder/Makefile.release:1-151](https://github.com/gojue/ecapture/blob/ca085d05/builder/Makefile.release#L1-L151)
+
+### 发布目标
+
+**创建快照（开发构建）：**
+```bash
+make -f builder/Makefile.release snapshot
+```
+
+**创建发布（特定版本）：**
+```bash
+SNAPSHOT_VERSION=v0.8.0 make -f builder/Makefile.release release
+```
+
+**发布到 GitHub：**
+```bash
+SNAPSHOT_VERSION=v0.8.0 make -f builder/Makefile.release publish
+```
+
+`release` 目标编排 ([builder/Makefile.release:10](https://github.com/gojue/ecapture/blob/ca085d05/builder/Makefile.release#L10))：
+1. `snapshot`：构建 Linux 产物
+2. `build_deb`：创建 DEB 包
+3. `snapshot_android`：构建 Android 产物
+
+来源：[builder/Makefile.release:10-151](https://github.com/gojue/ecapture/blob/ca085d05/builder/Makefile.release#L10-L151)
+
+### 打包格式
+
+#### TAR.GZ 归档文件
+
+**归档内容：**
+- `ecapture` 二进制文件
+- `LICENSE`
+- `CHANGELOG.md`
+- `README.md` 和 `README_CN.md`
+
+**命名约定：**
+```
+ecapture-{VERSION}-{OS}-{ARCH}[-nocore].tar.gz
+```
+
+示例：
+- `ecapture-v0.8.0-linux-amd64.tar.gz`（CO-RE + non-CO-RE）
+- `ecapture-v0.8.0-android-arm64-nocore.tar.gz`（仅 non-CO-RE）
+
+**归档创建** ([builder/Makefile.release:62-76](https://github.com/gojue/ecapture/blob/ca085d05/builder/Makefile.release#L62-L76)):
+```bash
+$(CMD_MKDIR) -p $(TAR_DIR)
+$(CMD_CP) LICENSE $(TAR_DIR)/LICENSE
+$(CMD_CP) bin/ecapture $(TAR_DIR)/ecapture
+$(CMD_TAR) -czf $(OUT_ARCHIVE) $(TAR_DIR)
+```
+
+来源：[builder/Makefile.release:62-76](https://github.com/gojue/ecapture/blob/ca085d05/builder/Makefile.release#L62-L76)、[functions.mk:62-76](https://github.com/gojue/ecapture/blob/ca085d05/functions.mk#L62-L76)
+
+#### DEB 包
+
+**包结构：**
+```
+ecapture-v0.8.0-amd64.deb
+├── DEBIAN/
+│   └── control
+└── usr/
+    └── local/
+        └── bin/
+            └── ecapture
+```
+
+**控制文件字段** ([builder/Makefile.release:143-149](https://github.com/gojue/ecapture/blob/ca085d05/builder/Makefile.release#L143-L149)):
+- Package: ecapture
+- Version: 从 git 标签提取
+- Architecture: amd64 或 arm64
+- Maintainer: CFC4N <cfc4ncs@gmail.com>
+- Description: capture SSL/TLS text content without CA cert by eBPF
+
+**构建过程：**
+```bash
+make -f builder/Makefile.release deb
+```
+
+使用 `dpkg-deb --build` 创建 DEB 包 ([builder/Makefile.release:151](https://github.com/gojue/ecapture/blob/ca085d05/builder/Makefile.release#L151))。
+
+来源：[builder/Makefile.release:132-151](https://github.com/gojue/ecapture/blob/ca085d05/builder/Makefile.release#L132-L151)
+
+#### Docker 镜像
+
+**多架构构建：**
+```bash
+docker buildx build \
+  --platform linux/amd64,linux/arm64 \
+  --build-arg VERSION=v0.8.0 \
+  -t ecapture:v0.8.0 \
+  -t ecapture:latest \
+  --push .
+```
+
+**Dockerfile 阶段** ([builder/Dockerfile:1-39](https://github.com/gojue/ecapture/blob/ca085d05/builder/Dockerfile#L1-L39)):
+
+1. **构建器阶段**：Ubuntu 22.04 基础镜像
+   - 安装编译器（Clang 14、Go 1.24.6）
+   - 使用 `make all` 构建 eCapture
+   
+2. **运行时阶段**：Alpine Linux
+   - 仅复制 `ecapture` 二进制文件
+   - 设置 ENTRYPOINT 为 `/ecapture`
+
+**镜像标签：**
+- `{username}/ecapture:v{VERSION}`（特定版本）
+- `{username}/ecapture:latest`（最新发布）
+
+来源：[.github/workflows/release.yml:101-129](https://github.com/gojue/ecapture/blob/ca085d05/.github/workflows/release.yml#L101-L129)、[builder/Dockerfile:1-39](https://github.com/gojue/ecapture/blob/ca085d05/builder/Dockerfile#L1-L39)
+
+### 发布说明生成
+
+发布工作流自动生成发布说明：
+
+1. **获取前一个标签** ([.github/workflows/release.yml:63-67](https://github.com/gojue/ecapture/blob/ca085d05/.github/workflows/release.yml#L63-L67)):
+   ```bash
+   PREVIOUS=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+   ```
+
+2. **通过 GitHub API 生成说明** ([.github/workflows/release.yml:68-80](https://github.com/gojue/ecapture/blob/ca085d05/.github/workflows/release.yml#L68-L80)):
+   ```bash
+   gh api --method POST \
+     /repos/$REPO/releases/generate-notes \
+     -f tag_name=$TAG \
+     -f previous_tag_name=$PREVIOUS_TAG
+   ```
+
+3. **创建发布** ([builder/Makefile.release:124](https://github.com/gojue/ecapture/blob/ca085d05/builder/Makefile.release#L124)):
+   ```bash
+   gh release create $(VERSION) $$FILES \
+     --title "eCapture $(VERSION)" \
+     --notes-file $(RELEASE_NOTES)
+   ```
+
+来源：[.github/workflows/release.yml:63-87](https://github.com/gojue/ecapture/blob/ca085d05/.github/workflows/release.yml#L63-L87)、[builder/Makefile.release:114-124](https://github.com/gojue/ecapture/blob/ca085d05/builder/Makefile.release#L114-L124)
+
+---
+
+## 开发工作流总结
+
+### 典型开发周期
+
+1. **设置环境：**
+   ```bash
+   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/gojue/ecapture/master/builder/init_env.sh)"
+   ```
+
+2. **克隆并构建：**
+   ```bash
+   git clone https://github.com/gojue/ecapture.git
+   cd ecapture
+   make env          # 验证环境
+   make all          # 构建所有内容
+   ```
+
+3. **进行修改：**
+   - 在 `kern/` 中修改 eBPF 程序
+   - 在 `cli/`、`user/` 或其他包中修改 Go 代码
+
+4. **测试：**
+   ```bash
+   make clean
+   make all
+   go test -v ./...
+   make e2e          # 如果测试模块
+   ```
+
+5. **格式化代码：**
+   ```bash
+   make format       # 使用 clang-format 格式化 C 代码
+   ```
+
+6. **提交并推送：**
+   ```bash
+   git add .
+   git commit -m "Your change description"
+   git push origin your-branch
+   ```
+
+7. **创建 Pull Request：**
+   - CI 自动在 x86_64 和 arm64 上运行
+   - 测试本地和交叉编译构建
+   - 使用 golangci-lint 检查代码质量
+
+### 关键构建命令参考
+
+| 命令 | 用途 | 使用场景 |
+|---------|---------|----------|
+| `make env` | 显示构建环境 | 验证配置 |
+| `make all` | 完整构建（CO-RE + non-CO-RE）| 开发 |
+| `make nocore` | 仅 non-CO-RE 构建 | 旧内核 |
+| `make clean` | 删除构建产物 | 清理重建 |
+| `make test-race` | 使用竞态检测器运行测试 | 查找并发问题 |
+| `make e2e` | 运行 E2E 测试 | 集成测试 |
+| `make format` | 格式化 C 代码 | 代码风格 |
+| `CROSS_ARCH=arm64 make` | 为 ARM64 交叉编译 | ARM 目标 |
+| `ANDROID=1 make nocore` | 为 Android 构建 | 移动部署 |
+
+来源：[Makefile:1-245](https://github.com/gojue/ecapture/blob/ca085d05/Makefile#L1-L245)、[builder/Makefile.release:1-151](https://github.com/gojue/ecapture/blob/ca085d05/builder/Makefile.release#L1-L151)

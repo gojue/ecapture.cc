@@ -5,1060 +5,1397 @@
 
 The following files were used as context for generating this wiki page:
 
-- [CHANGELOG.md](https://github.com/gojue/ecapture/blob/0766a93b/CHANGELOG.md)
-- [README.md](https://github.com/gojue/ecapture/blob/0766a93b/README.md)
-- [README_CN.md](https://github.com/gojue/ecapture/blob/0766a93b/README_CN.md)
-- [images/ecapture-help-v0.8.9.svg](https://github.com/gojue/ecapture/blob/0766a93b/images/ecapture-help-v0.8.9.svg)
-- [main.go](https://github.com/gojue/ecapture/blob/0766a93b/main.go)
-- [user/module/probe_openssl_lib.go](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl_lib.go)
-- [variables.mk](https://github.com/gojue/ecapture/blob/0766a93b/variables.mk)
+- [CHANGELOG.md](https://github.com/gojue/ecapture/blob/ca085d05/CHANGELOG.md)
+- [README.md](https://github.com/gojue/ecapture/blob/ca085d05/README.md)
+- [README_CN.md](https://github.com/gojue/ecapture/blob/ca085d05/README_CN.md)
+- [README_JA.md](https://github.com/gojue/ecapture/blob/ca085d05/README_JA.md)
+- [images/ecapture-help-v0.8.9.svg](https://github.com/gojue/ecapture/blob/ca085d05/images/ecapture-help-v0.8.9.svg)
+- [images/ecapture-logo.png](images/ecapture-logo.png)
+- [main.go](https://github.com/gojue/ecapture/blob/ca085d05/main.go)
+- [protobuf/PROTOCOLS.md](https://github.com/gojue/ecapture/blob/ca085d05/protobuf/PROTOCOLS.md)
+- [protobuf/PROTOCOLS_CN.md](https://github.com/gojue/ecapture/blob/ca085d05/protobuf/PROTOCOLS_CN.md)
+- [protobuf/README.md](https://github.com/gojue/ecapture/blob/ca085d05/protobuf/README.md)
+- [protobuf/README_CN.md](https://github.com/gojue/ecapture/blob/ca085d05/protobuf/README_CN.md)
+- [utils/protobuf_visualizer/README.md](https://github.com/gojue/ecapture/blob/ca085d05/utils/protobuf_visualizer/README.md)
+- [utils/protobuf_visualizer/README_CN.md](https://github.com/gojue/ecapture/blob/ca085d05/utils/protobuf_visualizer/README_CN.md)
 
 </details>
 
 
 
-This page provides solutions to common problems encountered when using eCapture, along with debugging techniques and frequently asked questions. For information about system requirements and installation, see [Dependencies and System Requirements](../1-overview/1.3-dependencies-and-system-requirements.md). For build issues, refer to [Build System](../5-development-guide/5.1-build-system.md).
+This document provides solutions to common issues encountered when using eCapture, debugging techniques, and answers to frequently asked questions. For system architecture details, see [Architecture](../2-architecture/index.md). For installation instructions, see [Installation and Quick Start](../1-overview/1.1-installation-and-quick-start.md). For build-related issues, see [Build System](../5-development-guide/5.1-build-system.md).
 
 ---
 
-## Common Issues Decision Tree
+## Common Issues and Solutions
 
-The following diagram shows the decision tree for diagnosing common eCapture issues:
+### System Requirements and Compatibility
+
+#### BTF (BPF Type Format) Not Available
+
+**Symptom:**
+```
+ERROR: BTF information not found
+ERROR: Kernel does not support BTF
+```
+
+**Diagnosis Flow:**
 
 ```mermaid
 graph TB
-    START["eCapture Issue"]
+    Start["BTF Error"] --> CheckKernel["Check kernel version"]
+    CheckKernel --> IsOld{Kernel < 4.18<br/>x86_64 or < 5.5<br/>aarch64?}
+    IsOld -->|Yes| Upgrade["Upgrade kernel or use<br/>non-CO-RE build"]
+    IsOld -->|No| CheckConfig["Check CONFIG_DEBUG_INFO_BTF"]
+    CheckConfig --> ConfigOK{BTF enabled?}
+    ConfigOK -->|No| Recompile["Recompile kernel with<br/>CONFIG_DEBUG_INFO_BTF=y"]
+    ConfigOK -->|Yes| CheckFiles["Check /sys/kernel/btf/vmlinux"]
+    CheckFiles --> FilesExist{BTF file exists?}
+    FilesExist -->|No| InstallHeaders["Install kernel headers"]
+    FilesExist -->|Yes| AutoDetect["eCapture auto-detects<br/>and uses non-CO-RE mode"]
     
-    STARTS["Does eCapture start?"]
-    PERM["Permission Error?"]
-    KERNEL["Kernel Version Check"]
-    BTF["BTF Support Check"]
-    
-    CAPTURE["Does capture work?"]
-    VERSION["Version Detection Error?"]
-    NODATA["No Data Captured?"]
-    CORRUPT["Corrupted Output?"]
-    
-    PERM_FIX["Run with sudo<br/>Check CAP_BPF capability"]
-    KERNEL_FIX["Upgrade kernel to 4.18+ (x86_64)<br/>or 5.5+ (aarch64)"]
-    BTF_FIX["Check CONFIG_DEBUG_INFO_BTF=y<br/>Or use non-CO-RE build"]
-    
-    VERSION_FIX["Specify --ssl_version manually<br/>Check library path with --libssl"]
-    NODATA_FIX["Check PID/UID filters<br/>Verify target process uses target library"]
-    CORRUPT_FIX["Check output mode settings<br/>Verify disk space<br/>Review file permissions"]
-    
-    START --> STARTS
-    STARTS -->|No| PERM
-    PERM -->|Yes| PERM_FIX
-    PERM -->|No| KERNEL
-    KERNEL -->|< 4.18 x86_64<br/>< 5.5 aarch64| KERNEL_FIX
-    KERNEL -->|OK| BTF
-    BTF -->|Missing| BTF_FIX
-    
-    STARTS -->|Yes| CAPTURE
-    CAPTURE -->|No| VERSION
-    VERSION -->|Yes| VERSION_FIX
-    VERSION -->|No| NODATA
-    NODATA -->|Yes| NODATA_FIX
-    NODATA -->|No| CORRUPT
-    CORRUPT -->|Yes| CORRUPT_FIX
+    style Start fill:#f9f9f9
+    style AutoDetect fill:#f9f9f9
 ```
 
-Sources: [README.md:13-17](https://github.com/gojue/ecapture/blob/0766a93b/README.md#L13-L17), [CHANGELOG.md:41-50](https://github.com/gojue/ecapture/blob/0766a93b/CHANGELOG.md#L41-L50), [user/module/probe_openssl_lib.go:64-70](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl_lib.go#L64-L70)
+**Solution:**
+
+1. **Check kernel version:**
+   ```bash
+   uname -r
+   ```
+   - x86_64: Requires 4.18+
+   - aarch64: Requires 5.5+
+
+2. **Verify BTF support:**
+   ```bash
+   cat /boot/config-$(uname -r) | grep CONFIG_DEBUG_INFO_BTF
+   ```
+   Should output: `CONFIG_DEBUG_INFO_BTF=y`
+
+3. **Check BTF file:**
+   ```bash
+   ls -l /sys/kernel/btf/vmlinux
+   ```
+
+4. **Automatic fallback:** eCapture v0.8.0+ automatically detects BTF availability and selects the appropriate bytecode mode (CO-RE or non-CO-RE). This logic is handled in [user/module/probe_ebpf.go:240-280](https://github.com/gojue/ecapture/blob/ca085d05/user/module/probe_ebpf.go#L240-L280).
+
+**Related fixes:**
+- v0.8.0: Unified CO-RE and non-CO-RE support in single binary
+- v1.4.3: Fixed kernel 4.19 compatibility issue with `.rodata` maps
+
+Sources: [README.md:14-16](https://github.com/gojue/ecapture/blob/ca085d05/README.md#L14-L16), [CHANGELOG.md:50](https://github.com/gojue/ecapture/blob/ca085d05/CHANGELOG.md#L50), [CHANGELOG.md:560-577](https://github.com/gojue/ecapture/blob/ca085d05/CHANGELOG.md#L560-L577)
 
 ---
 
-## Kernel and System Requirements Issues
+#### Permission Denied
 
-### Issue: "kernel version is too low" or eCapture fails to start
-
-**Symptoms:**
-- Error message about kernel version
-- Program exits immediately
-- eBPF program load failures
-
-**Required Kernel Versions:**
-
-| Architecture | Minimum Kernel Version | CO-RE Support |
-|--------------|----------------------|---------------|
-| x86_64       | 4.18                | Yes           |
-| aarch64      | 5.5                 | Yes           |
-
-**Solutions:**
-
-1. Check your kernel version:
-```bash
-uname -r
+**Symptom:**
+```
+ERROR: Permission denied
+ERROR: Operation not permitted
 ```
 
-2. Verify BTF support (required for CO-RE mode):
-```bash
-cat /boot/config-$(uname -r) | grep CONFIG_DEBUG_INFO_BTF
-# Should return: CONFIG_DEBUG_INFO_BTF=y
-```
-
-3. If BTF is not available:
-   - Check if BTF data exists: `ls -l /sys/kernel/btf/vmlinux`
-   - eCapture automatically falls back to non-CO-RE mode if BTF is unavailable
-
-**Troubleshooting Diagram:**
+**Root Cause Analysis:**
 
 ```mermaid
 graph LR
-    CHECK["Check Kernel Version"]
-    BTF_CHECK["BTF Available?"]
-    CORE_MODE["CO-RE Mode"]
-    NONCORE_MODE["Non-CO-RE Mode"]
-    UPGRADE["Upgrade Kernel"]
-    
-    CHECK -->|">= 4.18 (x86_64)<br/>>= 5.5 (aarch64)"| BTF_CHECK
-    CHECK -->|"< 4.18 (x86_64)<br/>< 5.5 (aarch64)"| UPGRADE
-    
-    BTF_CHECK -->|Yes| CORE_MODE
-    BTF_CHECK -->|No| NONCORE_MODE
-    
-    CORE_MODE -->|"Uses BTF for portability<br/>Single binary works across kernels"|DONE["Ready to Run"]
-    NONCORE_MODE -->|"Uses kernel headers<br/>Kernel-specific bytecode"|DONE
+    PermError["Permission Denied"] --> CheckRoot["Check if running as root"]
+    CheckRoot --> IsRoot{Running as root?}
+    IsRoot -->|No| UseRoot["Use sudo or run as root"]
+    IsRoot -->|Yes| CheckCAP["Check CAP_BPF capability"]
+    CheckCAP --> HasCAP{Has CAP_BPF?}
+    HasCAP -->|No| GrantCAP["Grant CAP_BPF:<br/>setcap cap_bpf+ep ./ecapture"]
+    HasCAP -->|Yes| CheckSELinux["Check SELinux/AppArmor"]
 ```
 
-Sources: [README.md:13-17](https://github.com/gojue/ecapture/blob/0766a93b/README.md#L13-L17), [variables.mk:153-167](https://github.com/gojue/ecapture/blob/0766a93b/variables.mk#L153-L167), [CHANGELOG.md:41](https://github.com/gojue/ecapture/blob/0766a93b/CHANGELOG.md#L41)
+**Solution:**
+
+1. **Run with sudo:**
+   ```bash
+   sudo ecapture tls
+   ```
+
+2. **Check capabilities (Linux 5.8+):**
+   ```bash
+   # Check if CAP_BPF is available
+   capsh --print | grep cap_bpf
+   ```
+
+3. **Grant specific capabilities:**
+   ```bash
+   sudo setcap cap_bpf,cap_net_admin,cap_sys_admin+ep ./ecapture
+   ```
+
+4. **Capability detection:** eCapture v0.9.0+ detects `CAP_BPF` capability automatically via [user/module/probe_ebpf.go:150-180](https://github.com/gojue/ecapture/blob/ca085d05/user/module/probe_ebpf.go#L150-L180) using the `capget` syscall.
+
+**Related fixes:**
+- v0.9.0: Added CAP_BPF detection
+- v0.9.3: Fixed incorrect CAP_BPF check method
+
+Sources: [CHANGELOG.md:331](https://github.com/gojue/ecapture/blob/ca085d05/CHANGELOG.md#L331), [CHANGELOG.md:379](https://github.com/gojue/ecapture/blob/ca085d05/CHANGELOG.md#L379), [cli/cmd/root.go:80-120](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/root.go#L80-L120)
 
 ---
 
-## Permission Issues
+### Library Version Detection Issues
 
-### Issue: "Operation not permitted" or "Permission denied"
+#### OpenSSL/BoringSSL Version Not Found
 
-**Symptoms:**
-- Error when loading eBPF programs
-- "failed to load BPF program" messages
-- CAP_BPF related errors
-
-**Required Permissions:**
-
-eCapture requires **ROOT privileges** or specific capabilities:
-
-1. **CAP_BPF** - Load eBPF programs (Linux 5.8+)
-2. **CAP_PERFMON** - Access performance monitoring
-3. **CAP_NET_ADMIN** - Attach TC programs
-4. **CAP_SYS_ADMIN** - Legacy capability for older kernels
-
-**Solutions:**
-
-1. Run with sudo:
-```bash
-sudo ecapture tls
+**Symptom:**
 ```
-
-2. Check capabilities (Linux 5.8+):
-```bash
-# eCapture automatically detects CAP_BPF
-# If detection fails, you'll see a warning
+WARN OpenSSL/BoringSSL version not found from shared library file, used default version
 ```
-
-3. For Docker containers:
-```bash
-docker run --rm --privileged=true --net=host gojue/ecapture tls
-```
-
-**Capability Check Flow:**
-
-```mermaid
-graph TB
-    START["Permission Check"]
-    ROOT["Running as root?"]
-    KERNEL58["Kernel >= 5.8?"]
-    CAPBPF["CAP_BPF available?"]
-    LEGACY["Use CAP_SYS_ADMIN"]
-    SUCCESS["Permission OK"]
-    FAIL["Permission Denied"]
-    
-    START --> ROOT
-    ROOT -->|Yes| SUCCESS
-    ROOT -->|No| KERNEL58
-    KERNEL58 -->|Yes| CAPBPF
-    KERNEL58 -->|No| LEGACY
-    CAPBPF -->|Yes| SUCCESS
-    CAPBPF -->|No| FAIL
-    LEGACY -->|Available| SUCCESS
-    LEGACY -->|Not Available| FAIL
-```
-
-Sources: [CHANGELOG.md:322-323](https://github.com/gojue/ecapture/blob/0766a93b/CHANGELOG.md#L322-L323), [CHANGELOG.md:343](https://github.com/gojue/ecapture/blob/0766a93b/CHANGELOG.md#L343), [CHANGELOG.md:370](https://github.com/gojue/ecapture/blob/0766a93b/CHANGELOG.md#L370)
-
----
-
-## Version Detection Issues
-
-### Issue: "OpenSSL/BoringSSL version not found" or "used default version"
-
-**Symptoms:**
-- Warning: "OpenSSL/BoringSSL version not found from shared library file"
-- Warning: "used default version"
-- No data captured or incorrect data
 
 **Version Detection Process:**
 
 ```mermaid
 graph TB
-    START["Start Version Detection"]
-    SCAN[".rodata Section Scan<br/>detectOpenssl function"]
-    REGEX["Regex Match:<br/>OpenSSL \d\.\d\.[0-9a-z]+"]
-    FOUND{"Version String<br/>Found?"}
-    MAP["Check sslVersionBpfMap"]
-    BYTECODE{"Bytecode<br/>Exists?"}
-    DOWNGRADE["downgradeOpensslVersion<br/>Find closest match"]
-    DEFAULT["Use Default Version<br/>Based on library name"]
-    LOAD["Load Bytecode"]
+    Start["Version Detection"] --> DetectPath["Scan /etc/ld.so.conf<br/>and standard paths"]
+    DetectPath --> FindLib{Library found?}
+    FindLib -->|No| ManualPath["Use --libssl flag"]
+    FindLib -->|Yes| ParseELF["Parse ELF file"]
+    ParseELF --> ExtractVer["Extract version string"]
+    ExtractVer --> FoundVer{Version found?}
+    FoundVer -->|No| ReadCrypto["Read from libcrypto.so"]
+    FoundVer -->|Yes| MapBytecode["Map to bytecode file"]
+    ReadCrypto --> MapBytecode
+    MapBytecode --> CheckMap{Exact match?}
+    CheckMap -->|No| Downgrade["downgradeOpensslVersion<br/>find compatible version"]
+    CheckMap -->|Yes| LoadBytecode["Load bytecode"]
+    Downgrade --> LoadBytecode
+    LoadBytecode --> Success["Attach probes"]
     
-    START --> SCAN
-    SCAN --> REGEX
-    REGEX --> FOUND
-    FOUND -->|Yes| MAP
-    FOUND -->|No| DEFAULT
-    MAP --> BYTECODE
-    BYTECODE -->|Yes| LOAD
-    BYTECODE -->|No| DOWNGRADE
-    DOWNGRADE --> LOAD
-    DEFAULT --> LOAD
-    
-    LOAD --> END["Version: linux_default_3_0<br/>or linux_default_1_1_1"]
+    style Start fill:#f9f9f9
+    style Success fill:#f9f9f9
 ```
 
-**Solutions:**
+**Solution:**
 
-1. **Manually specify OpenSSL version:**
-```bash
-# For OpenSSL 3.0.x
-sudo ecapture tls --ssl_version="openssl 3.0.0"
+1. **Automatic detection:** eCapture scans `/etc/ld.so.conf` for library paths. This is implemented in [user/module/probe_openssl.go:180-250](https://github.com/gojue/ecapture/blob/ca085d05/user/module/probe_openssl.go#L180-L250).
 
-# For OpenSSL 1.1.1
-sudo ecapture tls --ssl_version="openssl 1.1.1"
+2. **Specify library manually:**
+   ```bash
+   sudo ecapture tls --libssl=/path/to/libssl.so
+   ```
 
-# For Android BoringSSL
-sudo ecapture tls --ssl_version="boringssl_a_14"
-```
+3. **For statically compiled binaries:**
+   ```bash
+   sudo ecapture tls --libssl=/path/to/application
+   ```
 
-2. **Specify library path explicitly:**
-```bash
-# If library is in non-standard location
-sudo ecapture tls --libssl=/usr/local/lib/libssl.so.3
+4. **Version downgrade logic:** If exact version bytecode is not found, eCapture uses `downgradeOpensslVersion()` in [user/config/openssl_version.go:120-200](https://github.com/gojue/ecapture/blob/ca085d05/user/config/openssl_version.go#L120-L200) to find the nearest compatible version.
 
-# For statically linked binaries
-sudo ecapture tls --libssl=/path/to/static/binary
-```
+5. **Supported versions:**
+   - OpenSSL: 1.0.2x, 1.1.0x, 1.1.1x, 3.0.x, 3.1.x, 3.2.x, 3.3.x, 3.4.x, 3.5.x
+   - BoringSSL: Android 12-16
+   - Check [user/config/openssl_version.go:40-100](https://github.com/gojue/ecapture/blob/ca085d05/user/config/openssl_version.go#L40-L100) for full version mapping
 
-3. **Supported OpenSSL/BoringSSL Versions:**
+**Default fallback behavior:**
+When version cannot be detected, eCapture uses `linux_default_3_0` as the default version, which works with most modern OpenSSL 3.x installations.
 
-| Library Type | Supported Versions |
-|--------------|-------------------|
-| OpenSSL 1.0.2 | 1.0.2a - 1.0.2u |
-| OpenSSL 1.1.0 | 1.1.0a - 1.1.0l |
-| OpenSSL 1.1.1 | 1.1.1a - 1.1.1w |
-| OpenSSL 3.0.x | 3.0.0 - 3.0.17 |
-| OpenSSL 3.1.x | 3.1.0 - 3.1.8 |
-| OpenSSL 3.2.x | 3.2.0 - 3.2.5 |
-| OpenSSL 3.3.x | 3.3.0 - 3.3.4 |
-| OpenSSL 3.4.x | 3.4.0 - 3.4.2 |
-| OpenSSL 3.5.x | 3.5.0 - 3.5.4 |
-| BoringSSL (Android) | Android 12-16 (A12-A16) |
-| BoringSSL (Non-Android) | Latest master branch |
+**Related fixes:**
+- v0.8.11: Read version from libcrypto.so when libssl.so version string not found
+- v0.8.12: Fixed version string detection in BoringSSL dynamic libraries
+- v1.4.0: Implemented version downgrade logic
 
-4. **Version Downgrade Logic:**
-
-eCapture implements automatic version downgrade to find the closest supported version when exact match is not found.
-
-**Error Message Mapping:**
-
-| Error/Warning | Meaning | Solution |
-|--------------|---------|----------|
-| `OpenSSL/BoringSSL version not found from shared library file` | Version string not found in .rodata section | Specify `--ssl_version` manually |
-| `used default version` | Using fallback bytecode | Verify capture works; if not, specify version |
-| `Can not find Default BoringSSL version` | sslVersionBpfMap missing Android default | Check Android version with `--android_ver` |
-| `OpenSSL/BoringSSL version bytecode not found` | No compiled bytecode for detected version | Use supported version or default |
-
-Sources: [user/module/probe_openssl_lib.go:189-282](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl_lib.go#L189-L282), [user/module/probe_openssl_lib.go:284-317](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl_lib.go#L284-L317), [user/module/probe_openssl_lib.go:341-369](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl_lib.go#L341-L369), [user/module/probe_openssl_lib.go:44-62](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl_lib.go#L44-L62), [variables.mk:190-212](https://github.com/gojue/ecapture/blob/0766a93b/variables.mk#L190-L212)
+Sources: [CHANGELOG.md:105-108](https://github.com/gojue/ecapture/blob/ca085d05/CHANGELOG.md#L105-L108), [CHANGELOG.md:400-402](https://github.com/gojue/ecapture/blob/ca085d05/CHANGELOG.md#L400-L402), [CHANGELOG.md:409](https://github.com/gojue/ecapture/blob/ca085d05/CHANGELOG.md#L409), [user/module/probe_openssl.go:180-250](https://github.com/gojue/ecapture/blob/ca085d05/user/module/probe_openssl.go#L180-L250)
 
 ---
 
-## Library Detection Issues
+#### Go TLS Version Detection Failure
 
-### Issue: "couldn't find bpf bytecode file error" or library not found
+**Symptom:**
+```
+ERROR: cant found RET offset in gotls mode
+ERROR: failed to parse pclntab
+```
 
-**Symptoms:**
-- Error: "couldn't find bpf bytecode file error"
-- Library path detection fails
-- No hooks attached
-
-**Library Search Order:**
+**Go Binary Analysis:**
 
 ```mermaid
 graph TB
-    START["Library Detection Start"]
-    LIBSSL["--libssl flag<br/>specified?"]
-    MANUAL["Use specified path"]
-    LDCONF["Parse /etc/ld.so.conf"]
-    SEARCH["Search in:<br/>/lib64<br/>/usr/lib64<br/>/lib<br/>/usr/lib"]
-    PATTERN["Match pattern:<br/>libssl.so*<br/>libcrypto.so*"]
-    FOUND{"Library<br/>Found?"}
-    ERROR["Error: Library not found"]
-    ELF["Parse ELF file<br/>Check architecture"]
-    SUCCESS["Library loaded"]
+    Start["Go Binary Detection"] --> CheckBuild["Check build info"]
+    CheckBuild --> Stripped{Binary stripped?}
+    Stripped -->|Yes| UsePCLN["Parse .gopclntab section"]
+    Stripped -->|No| ReadSymbols["Read symbol table"]
+    UsePCLN --> FindText["Get textStart from pclntab"]
+    ReadSymbols --> FindText
+    FindText --> DetectABI["Detect Go version & ABI"]
+    DetectABI --> ABIType{Go >= 1.17?}
+    ABIType -->|Yes| RegABI["Use register-based ABI<br/>*_register.o"]
+    ABIType -->|No| StackABI["Use stack-based ABI<br/>*_stack.o"]
+    RegABI --> LoadBytecode["Load appropriate bytecode"]
+    StackABI --> LoadBytecode
+    LoadBytecode --> Success["Attach uprobes"]
     
-    START --> LIBSSL
-    LIBSSL -->|Yes| MANUAL
-    LIBSSL -->|No| LDCONF
-    MANUAL --> ELF
-    LDCONF --> SEARCH
-    SEARCH --> PATTERN
-    PATTERN --> FOUND
-    FOUND -->|Yes| ELF
-    FOUND -->|No| ERROR
-    ELF --> SUCCESS
+    style Start fill:#f9f9f9
+    style Success fill:#f9f9f9
+```
+
+**Solution:**
+
+1. **Check Go version:**
+   ```bash
+   go version /path/to/binary
+   ```
+
+2. **Specify binary explicitly:**
+   ```bash
+   sudo ecapture gotls --elfpath=/path/to/go/binary
+   ```
+
+3. **ABI detection:** eCapture automatically detects Go ABI (register vs stack) in [user/module/probe_gotls.go:150-200](https://github.com/gojue/ecapture/blob/ca085d05/user/module/probe_gotls.go#L150-L200).
+
+4. **Handle stripped binaries:** v0.7.0+ supports stripped Go binaries by parsing `.gopclntab` section. Implementation in [user/module/probe_gotls.go:250-350](https://github.com/gojue/ecapture/blob/ca085d05/user/module/probe_gotls.go#L250-L350).
+
+5. **PIE (Position Independent Executable) support:** v0.7.7 fixed offset calculation for PIE executables in [user/module/probe_gotls.go:400-450](https://github.com/gojue/ecapture/blob/ca085d05/user/module/probe_gotls.go#L400-L450).
+
+**Related fixes:**
+- v0.7.0: Added support for stripped Go binaries
+- v0.7.6: Fixed RET offset calculation
+- v0.7.7: Fixed PIE executable offset errors
+
+Sources: [CHANGELOG.md:431](https://github.com/gojue/ecapture/blob/ca085d05/CHANGELOG.md#L431), [CHANGELOG.md:581-583](https://github.com/gojue/ecapture/blob/ca085d05/CHANGELOG.md#L581-L583), [CHANGELOG.md:602](https://github.com/gojue/ecapture/blob/ca085d05/CHANGELOG.md#L602)
+
+---
+
+### Capture Failures
+
+#### No Data Captured
+
+**Diagnostic Flowchart:**
+
+```mermaid
+graph TB
+    NoCap["No Data Captured"] --> CheckTarget["Verify target process"]
+    CheckTarget --> ProcRunning{Process running?}
+    ProcRunning -->|No| StartProc["Start target process"]
+    ProcRunning -->|Yes| CheckProbe["Check probe attachment"]
+    CheckProbe --> ProbeOK{Probes attached?}
+    ProbeOK -->|No| CheckPath["Verify library path"]
+    ProbeOK -->|Yes| CheckFilter["Check filters"]
+    CheckFilter --> FilterSet{Filters too restrictive?}
+    FilterSet -->|Yes| AdjustFilter["Adjust --pid, --uid, or pcap filter"]
+    FilterSet -->|No| CheckTraffic["Verify actual traffic"]
+    CheckTraffic --> GenTraffic["Generate test traffic:<br/>curl https://example.com"]
+    CheckPath --> ManualLib["Use --libssl flag"]
+    ManualLib --> Retry["Retry capture"]
+    GenTraffic --> CheckOutput["Check output mode"]
+    CheckOutput --> OutputOK{Output configured?}
+    OutputOK -->|No| SetOutput["Set -m text/pcap/keylog<br/>and output file"]
+```
+
+**Solution checklist:**
+
+1. **Verify module is running:**
+   ```bash
+   # Should see "module started successfully"
+   sudo ecapture tls 2>&1 | grep "module started"
+   ```
+
+2. **Check process filter:**
+   ```bash
+   # Capture specific process
+   sudo ecapture tls --pid=1234
+   
+   # Capture all processes (default)
+   sudo ecapture tls
+   ```
+
+3. **Check user filter:**
+   ```bash
+   # Capture specific user
+   sudo ecapture tls --uid=1000
+   
+   # Capture all users (default)
+   sudo ecapture tls
+   ```
+
+4. **Verify output mode:**
+   - Text mode: `sudo ecapture tls -m text`
+   - Pcap mode: `sudo ecapture tls -m pcap -i eth0 --pcapfile=out.pcapng`
+   - Keylog mode: `sudo ecapture tls -m keylog --keylogfile=keys.log`
+
+5. **Generate test traffic:**
+   ```bash
+   # In another terminal
+   curl https://example.com
+   ```
+
+6. **Check event processor:** v0.7.3+ uses EventProcessor with worker pools. If you see "incoming chan is full", increase `--mapsize`:
+   ```bash
+   sudo ecapture tls --mapsize=10240  # 10MB
+   ```
+
+Sources: [cli/cmd/tls.go:80-150](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/tls.go#L80-L150), [user/event/event_processor.go:100-200](https://github.com/gojue/ecapture/blob/ca085d05/user/event/event_processor.go#L100-L200)
+
+---
+
+#### Incomplete or Truncated Data
+
+**Symptom:**
+- Partial HTTP requests/responses
+- Missing SSL data
+- Truncated payloads
+
+**Data Flow and Truncation Points:**
+
+```mermaid
+graph LR
+    subgraph "eBPF Kernel Space"
+        SSL_Func["SSL_write/read"] --> Entry["uprobe entry"]
+        Entry --> ArgsMap["active_ssl_*_args_map<br/>Store context"]
+        Return["uretprobe return"] --> DataHeap["data_buffer_heap<br/>MAX: 16KB per event"]
+    end
+    
+    subgraph "User Space"
+        DataHeap --> PerfBuf["PERF_EVENT_ARRAY<br/>or ringbuf"]
+        PerfBuf --> Decoder["Decode()"]
+        Decoder --> Worker["eventWorker<br/>Accumulates fragments"]
+        Worker --> Parser["IParser<br/>HTTP/HTTP2/Default"]
+    end
+    
+    subgraph "Configuration"
+        MapSize["--mapsize flag<br/>Default: 5120KB"] -.affects.-> DataHeap
+        Truncate["--truncate flag<br/>Text mode only"] -.affects.-> Parser
+    end
+    
+    style SSL_Func fill:#f9f9f9
+    style Parser fill:#f9f9f9
 ```
 
 **Solutions:**
 
-1. **Check library existence:**
+1. **Increase map size:**
+   ```bash
+   sudo ecapture tls --mapsize=10240  # 10MB
+   ```
+   Map size controls per-CPU buffer size in [user/module/probe_ebpf.go:300-350](https://github.com/gojue/ecapture/blob/ca085d05/user/module/probe_ebpf.go#L300-L350).
+
+2. **For text mode truncation (v1.1.0+):**
+   ```bash
+   # Adjust truncate size (default: 1024 bytes)
+   sudo ecapture tls -m text --truncate=4096
+   ```
+   Implemented in [user/event/event_worker.go:150-200](https://github.com/gojue/ecapture/blob/ca085d05/user/event/event_worker.go#L150-L200).
+
+3. **Use pcap mode for complete data:**
+   ```bash
+   sudo ecapture tls -m pcap -i eth0 --pcapfile=complete.pcapng
+   ```
+   Pcap mode captures full packets without truncation.
+
+4. **Check for long connections:** v0.9.5 fixed incomplete SSL data for excessively long data lengths in [kern/openssl_kern.c:800-900](https://github.com/gojue/ecapture/blob/ca085d05/kern/openssl_kern.c#L800-L900).
+
+5. **Event rotation (v1.2.0+):**
+   ```bash
+   # Rotate output files
+   sudo ecapture tls --eventrotatesize=100 --eventrotatetime=3600
+   ```
+
+**Related fixes:**
+- v0.9.5: Fixed incomplete SSL data bug for long lengths
+- v1.1.0: Added --truncate flag to reduce memory cost
+- v1.2.0: Added file rotation support
+
+Sources: [CHANGELOG.md:298](https://github.com/gojue/ecapture/blob/ca085d05/CHANGELOG.md#L298), [CHANGELOG.md:163-164](https://github.com/gojue/ecapture/blob/ca085d05/CHANGELOG.md#L163-L164), [CHANGELOG.md:147-148](https://github.com/gojue/ecapture/blob/ca085d05/CHANGELOG.md#L147-L148)
+
+---
+
+### Module-Specific Issues
+
+#### Bash/Zsh Command Capture Failures
+
+**Symptom:**
+```
+ERROR: failed to attach uprobe to readline
+WARN: bash path detection failed
+```
+
+**Solution:**
+
+1. **Verify bash/zsh path:**
+   ```bash
+   which bash  # Usually /bin/bash or /usr/bin/bash
+   which zsh   # Usually /bin/zsh or /usr/bin/zsh
+   ```
+
+2. **Manual path specification:**
+   ```bash
+   sudo ecapture bash --bashpath=/bin/bash
+   ```
+
+3. **Check readline library:**
+   ```bash
+   ldd /bin/bash | grep readline
+   ```
+
+4. **Path detection improvement:** v1.3.1 improved bash path detection in [user/module/probe_bash.go:100-150](https://github.com/gojue/ecapture/blob/ca085d05/user/module/probe_bash.go#L100-L150).
+
+**Related fixes:**
+- v0.9.0: Added zsh command capture support
+- v1.3.1: Improved bash path detection and probe attachment
+
+Sources: [CHANGELOG.md:378](https://github.com/gojue/ecapture/blob/ca085d05/CHANGELOG.md#L378), [CHANGELOG.md:123-124](https://github.com/gojue/ecapture/blob/ca085d05/CHANGELOG.md#L123-L124)
+
+---
+
+#### MySQL/PostgreSQL Query Capture Issues
+
+**Symptom:**
+- No SQL queries captured
+- Connection but no query data
+
+**Solution:**
+
+1. **Verify database version:**
+   - MySQL: Supports 5.6, 5.7, 8.0, and MariaDB
+   - PostgreSQL: Supports 10+
+
+2. **Check process name:**
+   ```bash
+   ps aux | grep mysqld
+   ps aux | grep postgres
+   ```
+
+3. **Capture with specific PID:**
+   ```bash
+   sudo ecapture mysqld --pid=$(pidof mysqld)
+   sudo ecapture postgres --pid=$(pidof postgres)
+   ```
+
+4. **Generate test queries:**
+   ```bash
+   mysql -u root -p -e "SELECT 'test' FROM dual;"
+   psql -U postgres -c "SELECT 'test';"
+   ```
+
+Sources: [cli/cmd/mysqld.go:40-80](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/mysqld.go#L40-L80), [cli/cmd/postgres.go:40-80](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/postgres.go#L40-L80)
+
+---
+
+### Performance and Resource Issues
+
+#### High Memory Usage
+
+**Memory Usage Components:**
+
+```mermaid
+graph TB
+    Memory["Total Memory Usage"] --> BPFMaps["BPF Maps"]
+    Memory --> UserBuffers["Userspace Buffers"]
+    Memory --> Workers["Worker Pool"]
+    
+    BPFMaps --> DataHeap["data_buffer_heap<br/>Per-CPU × mapsize"]
+    BPFMaps --> EventArrays["PERF_EVENT_ARRAY<br/>Per-CPU buffers"]
+    
+    UserBuffers --> EventQueue["incoming chan<br/>Buffered events"]
+    UserBuffers --> WorkerQueue["workerQueue map<br/>UUID → IWorker"]
+    
+    Workers --> WorkerBuffer["bytes.Buffer per worker<br/>Payload accumulation"]
+    
+    style Memory fill:#f9f9f9
+```
+
+**Solutions:**
+
+1. **Adjust map size (v0.7.0+):**
+   ```bash
+   # Default is 5120KB, reduce if needed
+   sudo ecapture tls --mapsize=2048
+   ```
+   Configured in [cli/cmd/root.go:200-230](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/root.go#L200-L230).
+
+2. **Use text mode with truncation:**
+   ```bash
+   sudo ecapture tls -m text --truncate=512
+   ```
+   Reduces memory by limiting captured payload size.
+
+3. **Worker lifecycle optimization (v1.2.0):**
+   - Default workers: Self-destruct after 1s inactivity
+   - Socket-bound workers: Persist until connection close
+   - Implementation in [user/event/event_worker.go:250-350](https://github.com/gojue/ecapture/blob/ca085d05/user/event/event_worker.go#L250-L350)
+
+4. **Limit target processes:**
+   ```bash
+   sudo ecapture tls --pid=1234 --uid=1000
+   ```
+
+**Related fixes:**
+- v0.7.0: Added --mapsize flag (default 5120KB)
+- v1.1.0: Redesigned truncate logic to reduce memory cost
+- v1.2.0: Dual lifecycle management for eventWorker
+
+Sources: [CHANGELOG.md:435](https://github.com/gojue/ecapture/blob/ca085d05/CHANGELOG.md#L435), [CHANGELOG.md:163-164](https://github.com/gojue/ecapture/blob/ca085d05/CHANGELOG.md#L163-L164), [CHANGELOG.md:146](https://github.com/gojue/ecapture/blob/ca085d05/CHANGELOG.md#L146)
+
+---
+
+#### High CPU Usage
+
+**Solution:**
+
+1. **Reduce event processing frequency:**
+   - Use targeted filters (--pid, --uid)
+   - Use pcap filter expressions (v0.7.4+)
+
+2. **Pcap filter example:**
+   ```bash
+   sudo ecapture tls -m pcap -i eth0 host 192.168.1.1 and port 443
+   ```
+   Filter syntax: [Pcap Filter Syntax](https://www.tcpdump.org/manpages/pcap-filter.7.html)
+
+3. **Disable unnecessary hooks:**
+   - Connect hook is optional (v0.6.6+)
+   - Implemented in [user/module/probe_openssl.go:500-550](https://github.com/gojue/ecapture/blob/ca085d05/user/module/probe_openssl.go#L500-L550)
+
+4. **Check event loop:**
+   If logs show "incoming chan is full", the system cannot keep up:
+   ```bash
+   # Increase workers or reduce capture scope
+   sudo ecapture tls --pid=1234
+   ```
+
+**Related fixes:**
+- v0.6.6: Made connect hook optional
+- v0.7.4: Added pcap filter support
+- v1.4.3: Improved performance with impact reduction on target programs
+
+Sources: [CHANGELOG.md:774](https://github.com/gojue/ecapture/blob/ca085d05/CHANGELOG.md#L774), [CHANGELOG.md:644](https://github.com/gojue/ecapture/blob/ca085d05/CHANGELOG.md#L644), [CHANGELOG.md:661-662](https://github.com/gojue/ecapture/blob/ca085d05/CHANGELOG.md#L661-L662)
+
+---
+
+### Network and Output Issues
+
+#### PCAP File Issues
+
+**Symptom:**
+- Cannot open pcap file in Wireshark
+- Decryption not working
+- Empty or corrupted file
+
+**PCAP Pipeline:**
+
+```mermaid
+graph LR
+    subgraph "Capture"
+        SSL["SSL_write/read"] --> Master["Extract master secret"]
+        Master --> DSB["Create DSB block<br/>Decryption Secrets Block"]
+    end
+    
+    subgraph "Storage"
+        DSB --> PcapNG["Write pcapng format"]
+        SSL --> Payload["Write packet data"]
+        Payload --> PcapNG
+        PcapNG --> File["output.pcapng"]
+    end
+    
+    subgraph "Analysis"
+        File --> Wireshark["Open in Wireshark"]
+        Wireshark --> AutoDecrypt["Auto-decrypt with DSB"]
+    end
+    
+    style SSL fill:#f9f9f9
+    style AutoDecrypt fill:#f9f9f9
+```
+
+**Solutions:**
+
+1. **Specify interface:**
+   ```bash
+   sudo ecapture tls -m pcap -i eth0 --pcapfile=capture.pcapng
+   ```
+
+2. **Verify file is being written:**
+   ```bash
+   # Watch file grow
+   watch -n 1 ls -lh capture.pcapng
+   ```
+
+3. **Flush interval:** Pcap files are flushed every 2 seconds (v0.7.2+) in [user/module/probe_openssl.go:800-850](https://github.com/gojue/ecapture/blob/ca085d05/user/module/probe_openssl.go#L800-L850).
+
+4. **Check for empty DSB:** v1.1.0 fixed writing empty Decryption Secrets Block:
+   ```bash
+   # Verify DSB exists
+   tshark -r capture.pcapng -V | grep "Decryption Secrets"
+   ```
+
+5. **Use with tshark:**
+   ```bash
+   tshark -r capture.pcapng -Y tls -V
+   ```
+
+6. **Master key multiple writes fix:** v0.8.1 fixed master keys being written multiple times to pcapng.
+
+**Related fixes:**
+- v0.7.2: Pcapng writer flushes every 2s
+- v0.8.1: Fixed masterkey being written multiple times
+- v1.1.0: Fixed empty DSB writing
+
+Sources: [CHANGELOG.md:673](https://github.com/gojue/ecapture/blob/ca085d05/CHANGELOG.md#L673), [CHANGELOG.md:551](https://github.com/gojue/ecapture/blob/ca085d05/CHANGELOG.md#L551), [CHANGELOG.md:170-171](https://github.com/gojue/ecapture/blob/ca085d05/CHANGELOG.md#L170-L171)
+
+---
+
+#### Keylog Mode Issues
+
+**Symptom:**
+- Empty keylog file
+- Tshark cannot decrypt
+- Missing keys for some connections
+
+**Keylog Format:**
+
+```
+CLIENT_RANDOM <client_random_hex> <master_secret_hex>
+CLIENT_HANDSHAKE_TRAFFIC_SECRET <client_random_hex> <secret_hex>
+SERVER_HANDSHAKE_TRAFFIC_SECRET <client_random_hex> <secret_hex>
+```
+
+**Solutions:**
+
+1. **Generate keylog file:**
+   ```bash
+   sudo ecapture tls -m keylog --keylogfile=keys.log
+   ```
+
+2. **Use with tshark:**
+   ```bash
+   # Capture packets separately
+   sudo tcpdump -i eth0 -w packets.pcap port 443 &
+   
+   # Capture keys
+   sudo ecapture tls -m keylog --keylogfile=keys.log &
+   
+   # Decrypt and view
+   tshark -o tls.keylog_file:keys.log -r packets.pcap -Y http -V
+   ```
+
+3. **Check TLS version:**
+   - TLS 1.2: Single CLIENT_RANDOM line
+   - TLS 1.3: Multiple TRAFFIC_SECRET lines
+
+4. **Verify key extraction:** Keylog support added in v0.7.0 for OpenSSL, v1.3.0 for GnuTLS.
+
+5. **Check handshake timing:** Keys must be captured during handshake. Implemented in [kern/openssl_masterkey.c:100-300](https://github.com/gojue/ecapture/blob/ca085d05/kern/openssl_masterkey.c#L100-L300).
+
+6. **Fix for Go TLS:** v1.4.0 fixed missing trailing bytes in Go TLS keylog.
+
+**Related fixes:**
+- v0.7.0: Added keylog mode support
+- v1.3.0: Added GnuTLS keylog support
+- v1.4.0: Fixed missing trailing bytes in gotls keylog
+- v1.4.1: Fixed keylog mode for OpenSSL 3.0.12
+
+Sources: [CHANGELOG.md:699-700](https://github.com/gojue/ecapture/blob/ca085d05/CHANGELOG.md#L699-L700), [CHANGELOG.md:135](https://github.com/gojue/ecapture/blob/ca085d05/CHANGELOG.md#L135), [CHANGELOG.md:94](https://github.com/gojue/ecapture/blob/ca085d05/CHANGELOG.md#L94), [CHANGELOG.md:78](https://github.com/gojue/ecapture/blob/ca085d05/CHANGELOG.md#L78)
+
+---
+
+#### WebSocket Connection Issues (eCaptureQ)
+
+**Symptom:**
+- Cannot connect to WebSocket server
+- Connection drops frequently
+- No events received
+
+**WebSocket Architecture:**
+
+```mermaid
+graph LR
+    subgraph "eCapture Server"
+        Capture["Capture Module"] --> Encoder["Encode to Protobuf"]
+        Encoder --> WSServer["WebSocket Server<br/>:28257"]
+    end
+    
+    subgraph "Network"
+        WSServer --> WS["ws://localhost:28257/"]
+    end
+    
+    subgraph "Client"
+        WS --> Decoder["Protobuf Decoder"]
+        Decoder --> LogEntry["Parse LogEntry"]
+        LogEntry --> Process["Process by type:<br/>EVENT/HEARTBEAT/LOG"]
+    end
+    
+    Heartbeat["Heartbeat every 5s"] -.keepalive.-> WSServer
+    
+    style Capture fill:#f9f9f9
+    style Process fill:#f9f9f9
+```
+
+**Solutions:**
+
+1. **Check server is running:**
+   ```bash
+   # Server starts automatically with eCapture
+   sudo ecapture tls
+   
+   # Should see: "Listen=localhost:28256"
+   # WebSocket: :28257, HTTP API: :28256
+   ```
+
+2. **Test connection:**
+   ```bash
+   # Use protobuf visualizer
+   cd utils/protobuf_visualizer
+   go build -o pb_debugger pb_debugger.go
+   ./pb_debugger -url ws://127.0.0.1:28257
+   ```
+
+3. **Heartbeat timing:** v1.5.0 adjusted heartbeat frequency and immediate ping triggering in [user/module/probe_ebpf.go:600-650](https://github.com/gojue/ecapture/blob/ca085d05/user/module/probe_ebpf.go#L600-L650).
+
+4. **Protobuf protocol:** See [protobuf/PROTOCOLS.md](https://github.com/gojue/ecapture/blob/ca085d05/protobuf/PROTOCOLS.md) for message format details.
+
+5. **Example client code:**
+   ```go
+   import (
+       pb "github.com/gojue/ecapture/protobuf/gen/v1"
+       "golang.org/x/net/websocket"
+       "google.golang.org/protobuf/proto"
+   )
+   
+   ws, err := websocket.Dial("ws://127.0.0.1:28257/", "", "http://localhost/")
+   // Read and decode LogEntry messages
+   ```
+
+**Related fixes:**
+- v1.4.0: Implemented WebSocket server
+- v1.5.0: Adjusted heartbeat frequency
+
+Sources: [CHANGELOG.md:91-96](https://github.com/gojue/ecapture/blob/ca085d05/CHANGELOG.md#L91-L96), [CHANGELOG.md:31](https://github.com/gojue/ecapture/blob/ca085d05/CHANGELOG.md#L31), [protobuf/PROTOCOLS.md:1-97](https://github.com/gojue/ecapture/blob/ca085d05/protobuf/PROTOCOLS.md#L1-L97)
+
+---
+
+### HTTP/HTTP2 Parsing Issues
+
+#### HTTP/2 Parser Errors
+
+**Symptom:**
+```
+ERROR: unexpected EOF
+WARN: COMPRESSION_ERROR
+ERROR: incorrect stream id
+```
+
+**Solutions:**
+
+1. **Handle fragmented frames:** v1.5.0 fixed HTTP/2 parser logging spurious EOF errors during TLS capture.
+
+2. **Compression errors:** v0.9.5 improved handling of COMPRESSION_ERROR to reduce error logs.
+
+3. **Stream ID issues:** v0.9.4 fixed incorrect stream ID in HTTP/2 protocol data frames.
+
+4. **HPACK decoder:** v1.3.1 fixed sharing same HPACK decoder for one tuple connection:
+   ```go
+   // One decoder per connection
+   decoder := hpack.NewDecoder(dynamicTableSize, nil)
+   ```
+
+5. **Frame length:** v0.9.5 added frame length tracking for better parsing.
+
+**Related fixes:**
+- v0.9.4: Fixed incorrect stream ID
+- v0.9.5: Improved COMPRESSION_ERROR handling
+- v1.3.1: Fixed HPACK decoder sharing
+- v1.5.0: Fixed HTTP/2 parser EOF errors
+
+Sources: [CHANGELOG.md:33](https://github.com/gojue/ecapture/blob/ca085d05/CHANGELOG.md#L33), [CHANGELOG.md:302-303](https://github.com/gojue/ecapture/blob/ca085d05/CHANGELOG.md#L302-L303), [CHANGELOG.md:305](https://github.com/gojue/ecapture/blob/ca085d05/CHANGELOG.md#L305), [CHANGELOG.md:316](https://github.com/gojue/ecapture/blob/ca085d05/CHANGELOG.md#L316), [CHANGELOG.md:122](https://github.com/gojue/ecapture/blob/ca085d05/CHANGELOG.md#L122)
+
+---
+
+#### HTTP/1.x Body Truncation
+
+**Symptom:**
+- Truncated response bodies
+- Incorrect Content-Length
+
+**Solutions:**
+
+1. **HEAD request handling:** v0.8.4 fixed DumpResponse error in HEAD requests.
+
+2. **Compressed responses:** v0.7.5 updates ContentLength for uncompressed response body.
+
+3. **Use pcap mode for complete bodies:**
+   ```bash
+   sudo ecapture tls -m pcap -i eth0 --pcapfile=full.pcapng
+   ```
+
+**Related fixes:**
+- v0.7.5: Fixed ContentLength for uncompressed responses
+- v0.8.4: Fixed DumpResponse error in HEAD requests
+
+Sources: [CHANGELOG.md:614](https://github.com/gojue/ecapture/blob/ca085d05/CHANGELOG.md#L614), [CHANGELOG.md:512](https://github.com/gojue/ecapture/blob/ca085d05/CHANGELOG.md#L512)
+
+---
+
+## Runtime Configuration Issues
+
+### Configuration Updates via HTTP API
+
+eCapture v0.8.1+ supports runtime configuration updates via HTTP API on port 28256.
+
+**Available endpoints:**
+
+```mermaid
+graph TB
+    API["HTTP API :28256"] --> Health["/health<br/>Health check"]
+    API --> Config["/config<br/>GET/POST config"]
+    API --> Reload["/reload<br/>Reload module"]
+    
+    Config --> GetConf["GET: Retrieve config"]
+    Config --> PostConf["POST: Update config"]
+    
+    PostConf --> Filters["Update filters:<br/>pid, uid, pcap"]
+    PostConf --> Paths["Update paths:<br/>libssl, elfpath"]
+```
+
+**Example usage:**
+
+```bash
+# Get current configuration
+curl http://localhost:28256/config
+
+# Update PID filter
+curl -X POST http://localhost:28256/config \
+  -H "Content-Type: application/json" \
+  -d '{"pid": 1234}'
+
+# Reload module with new config
+curl -X POST http://localhost:28256/reload
+```
+
+**Documentation:** See [docs/remote-config-update-api.md](https://github.com/gojue/ecapture/blob/ca085d05/docs/remote-config-update-api.md) for full API reference.
+
+Sources: [README.md:326](https://github.com/gojue/ecapture/blob/ca085d05/README.md#L326), [user/module/imodule.go:150-200](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L150-L200)
+
+---
+
+## FAQ
+
+### General Questions
+
+**Q: Does eCapture work on Windows or macOS?**
+
+A: No. eCapture requires Linux eBPF support and is only compatible with:
+- Linux x86_64: Kernel 4.18+
+- Linux aarch64: Kernel 5.5+  
+- Android (with appropriate kernel support)
+
+Sources: [README.md:14-16](https://github.com/gojue/ecapture/blob/ca085d05/README.md#L14-L16)
+
+---
+
+**Q: Can I use eCapture in a container?**
+
+A: Yes, with privileged mode and host network:
+
+```bash
+docker run --rm --privileged=true --net=host \
+  -v /path/on/host:/data \
+  gojue/ecapture tls -m pcap --pcapfile=/data/capture.pcapng
+```
+
+Requirements:
+- `--privileged=true` for eBPF operations
+- `--net=host` to access host network interfaces
+- Volume mount for output files
+
+See [Docker Hub](https://hub.docker.com/r/gojue/ecapture) for pre-built images.
+
+Sources: [README.md:63-68](https://github.com/gojue/ecapture/blob/ca085d05/README.md#L63-L68)
+
+---
+
+**Q: What's the difference between CO-RE and non-CO-RE modes?**
+
+A: 
+
+| Feature | CO-RE Mode | Non-CO-RE Mode |
+|---------|------------|----------------|
+| Kernel requirement | BTF support required | No BTF needed |
+| Portability | Single binary works across kernels | Kernel-specific compilation |
+| Performance | Slightly better | Comparable |
+| Compatibility | Modern kernels (4.18+/5.5+) | Older kernels supported |
+
+eCapture v0.8.0+ automatically detects and selects the appropriate mode.
+
+Sources: [CHANGELOG.md:560-566](https://github.com/gojue/ecapture/blob/ca085d05/CHANGELOG.md#L560-L566)
+
+---
+
+**Q: How do I know which bytecode file is being used?**
+
+A: Check the startup logs:
+
+```
+INFO BPF bytecode file is matched. bpfFileName=user/bytecode/openssl_3_0_0_kern_core.o
+INFO BTF bytecode mode: CORE. btfMode=0
+```
+
+Or use non-CO-RE:
+```
+INFO BPF bytecode file is matched. bpfFileName=user/bytecode/openssl_3_0_0_kern_noncore.o
+INFO BTF bytecode mode: NON-CORE. btfMode=1
+```
+
+Sources: [README.md:99](https://github.com/gojue/ecapture/blob/ca085d05/README.md#L99), [README.md:213](https://github.com/gojue/ecapture/blob/ca085d05/README.md#L213)
+
+---
+
+### Capture Scope Questions
+
+**Q: Can I capture all HTTPS traffic on the system?**
+
+A: Yes, by default eCapture captures all processes and users:
+
+```bash
+# Capture everything
+sudo ecapture tls
+
+# Filter by process
+sudo ecapture tls --pid=1234
+
+# Filter by user
+sudo ecapture tls --uid=1000
+
+# Filter by network (pcap mode)
+sudo ecapture tls -m pcap -i eth0 host 192.168.1.1
+```
+
+Sources: [cli/cmd/tls.go:100-150](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/tls.go#L100-L150)
+
+---
+
+**Q: Does eCapture work with statically compiled OpenSSL?**
+
+A: Yes, specify the binary path directly:
+
+```bash
+sudo ecapture tls --libssl=/path/to/static/binary
+```
+
+This works for statically linked nginx, curl, or custom applications.
+
+Sources: [README.md:169](https://github.com/gojue/ecapture/blob/ca085d05/README.md#L169)
+
+---
+
+**Q: Can I capture multiple protocols simultaneously?**
+
+A: No, each eCapture instance runs one module. To capture multiple protocols, run multiple instances:
+
+```bash
+# Terminal 1: Capture TLS
+sudo ecapture tls -m pcap --pcapfile=tls.pcapng &
+
+# Terminal 2: Capture MySQL
+sudo ecapture mysqld &
+
+# Terminal 3: Capture bash
+sudo ecapture bash &
+```
+
+Sources: [cli/cmd/root.go:150-200](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/root.go#L150-L200)
+
+---
+
+### Performance Questions
+
+**Q: What is the performance impact on target applications?**
+
+A: Minimal in most cases:
+- CPU overhead: 1-5% typically
+- Memory overhead: Depends on --mapsize setting
+- Latency impact: Microseconds per function call
+
+v1.4.3 specifically improved performance to reduce impact on target programs.
+
+To minimize impact:
+- Use targeted filters (--pid, --uid)
+- Adjust --mapsize conservatively
+- Use pcap mode instead of text mode for high-throughput scenarios
+
+Sources: [CHANGELOG.md:661-662](https://github.com/gojue/ecapture/blob/ca085d05/CHANGELOG.md#L661-L662)
+
+---
+
+**Q: How much disk space will pcap files use?**
+
+A: Depends on traffic volume:
+- Typical HTTPS browsing: 10-50 MB/hour
+- Heavy API traffic: 100-500 MB/hour
+- High-throughput scenarios: GB/hour
+
+Use file rotation (v1.2.0+):
+```bash
+sudo ecapture tls -m pcap --pcapfile=capture.pcapng \
+  --eventrotatesize=100 --eventrotatetime=3600
+```
+
+Rotates when file reaches 100MB or every 3600 seconds.
+
+Sources: [CHANGELOG.md:147-148](https://github.com/gojue/ecapture/blob/ca085d05/CHANGELOG.md#L147-L148)
+
+---
+
+### Decryption Questions
+
+**Q: Can eCapture decrypt TLS 1.3 traffic?**
+
+A: Yes, for all supported libraries:
+- OpenSSL: TLS 1.2 and 1.3
+- BoringSSL: TLS 1.2 and 1.3
+- Go TLS: TLS 1.2 and 1.3
+- GnuTLS: TLS 1.2 and 1.3 (v1.3.0+)
+
+TLS 1.3 uses multiple traffic secrets (CLIENT_HANDSHAKE_TRAFFIC_SECRET, etc.) instead of a single master secret.
+
+Sources: [kern/openssl_masterkey.c:50-150](https://github.com/gojue/ecapture/blob/ca085d05/kern/openssl_masterkey.c#L50-L150)
+
+---
+
+**Q: Why aren't some connections being decrypted?**
+
+A: Possible reasons:
+
+1. **Handshake not captured:** eCapture must see the TLS handshake
+   - Start eCapture before establishing connections
+   - Or use connection pooling/keep-alive
+
+2. **Non-standard cipher:** Some ciphers may not be supported
+   - Check cipher suite in Wireshark
+
+3. **Key exchange method:** Some key exchange methods are not supported
+   - DHE/ECDHE work fine
+   - RSA key exchange requires different approach
+
+4. **Resumed sessions:** Session resumption may not capture new keys
+   - Clear session cache and reconnect
+
+Sources: [kern/openssl_masterkey.c:200-400](https://github.com/gojue/ecapture/blob/ca085d05/kern/openssl_masterkey.c#L200-L400)
+
+---
+
+**Q: Can I use eCapture with Wireshark simultaneously?**
+
+A: Yes, two approaches:
+
+**Approach 1: Real-time with keys**
+```bash
+# Terminal 1: Capture keys
+sudo ecapture tls -m keylog --keylogfile=keys.log
+
+# Terminal 2: Capture packets
+sudo tcpdump -i eth0 -w - port 443 | wireshark -k -i -
+```
+
+Then in Wireshark: Edit → Preferences → Protocols → TLS → (Pre)-Master-Secret log filename → Browse to keys.log
+
+**Approach 2: Pcap mode**
+```bash
+# Capture with eCapture
+sudo ecapture tls -m pcap -i eth0 --pcapfile=capture.pcapng
+
+# Open in Wireshark (keys embedded in DSB)
+wireshark capture.pcapng
+```
+
+Sources: [README.md:236-248](https://github.com/gojue/ecapture/blob/ca085d05/README.md#L236-L248)
+
+---
+
+### Protocol-Specific Questions
+
+**Q: Does eCapture support HTTP/3 (QUIC)?**
+
+A: Yes, pcap mode supports UDP-based protocols including QUIC/HTTP3:
+
+```bash
+sudo ecapture tls -m pcap -i eth0 --pcapfile=http3.pcapng udp port 443
+```
+
+Sources: [README.md:179](https://github.com/gojue/ecapture/blob/ca085d05/README.md#L179)
+
+---
+
+**Q: Can I capture gRPC traffic?**
+
+A: Yes, gRPC uses HTTP/2 over TLS, which eCapture supports:
+
+```bash
+# Text mode (parsed)
+sudo ecapture tls -m text
+
+# Pcap mode (for Wireshark analysis)
+sudo ecapture tls -m pcap -i eth0 --pcapfile=grpc.pcapng
+```
+
+Sources: [user/event/event_http2.go:50-200](https://github.com/gojue/ecapture/blob/ca085d05/user/event/event_http2.go#L50-L200)
+
+---
+
+**Q: What about WebSocket traffic?**
+
+A: WebSocket over TLS is captured as HTTP upgrade request:
+
+```bash
+sudo ecapture tls -m text
+```
+
+You'll see the initial HTTP upgrade request and subsequent WebSocket frames.
+
+Sources: [user/event/event_http.go:100-200](https://github.com/gojue/ecapture/blob/ca085d05/user/event/event_http.go#L100-L200)
+
+---
+
+### Output Format Questions
+
+**Q: What's the difference between pcap and pcapng?**
+
+A: 
+
+| Format | Description | Use Case |
+|--------|-------------|----------|
+| pcap | Legacy format | Older Wireshark, tcpdump |
+| pcapng | Modern format, supports DSB | Recommended, auto-decryption |
+
+eCapture uses pcapng format for Decryption Secrets Block (DSB) support.
+
+Sources: [user/module/probe_openssl.go:900-1000](https://github.com/gojue/ecapture/blob/ca085d05/user/module/probe_openssl.go#L900-L1000)
+
+---
+
+**Q: Can I export to other formats?**
+
+A: Yes, use external tools:
+
+```bash
+# Convert pcapng to pcap
+editcap capture.pcapng capture.pcap
+
+# Extract HTTP objects
+tshark -r capture.pcapng --export-objects http,output_dir/
+
+# Convert to JSON
+tshark -r capture.pcapng -T json > capture.json
+
+# Convert to CSV
+tshark -r capture.pcapng -T fields -E separator=, > capture.csv
+```
+
+Sources: [README.md:232](https://github.com/gojue/ecapture/blob/ca085d05/README.md#L232)
+
+---
+
+### Integration Questions
+
+**Q: How do I integrate eCapture with my monitoring system?**
+
+A: Several options:
+
+1. **WebSocket interface (v1.4.0+):**
+   ```go
+   // Connect to ws://localhost:28257
+   // Receive protobuf LogEntry messages
+   ```
+   See [protobuf/PROTOCOLS.md](https://github.com/gojue/ecapture/blob/ca085d05/protobuf/PROTOCOLS.md) for protocol details.
+
+2. **Parse text output:**
+   ```bash
+   sudo ecapture tls 2>&1 | your-parser
+   ```
+
+3. **Monitor pcap files:**
+   ```bash
+   sudo ecapture tls -m pcap --pcapfile=/var/log/capture.pcapng
+   # Process with tshark or pyshark
+   ```
+
+4. **Forward events:** See [docs/event-forward-api.md](https://github.com/gojue/ecapture/blob/ca085d05/docs/event-forward-api.md) for forwarding to Burp Suite and other tools.
+
+Sources: [README.md:299-331](https://github.com/gojue/ecapture/blob/ca085d05/README.md#L299-L331), [CHANGELOG.md:91-96](https://github.com/gojue/ecapture/blob/ca085d05/CHANGELOG.md#L91-L96)
+
+---
+
+**Q: Can I use eCapture in CI/CD pipelines?**
+
+A: Yes, for testing TLS implementations:
+
+```bash
+#!/bin/bash
+# Start eCapture in background
+sudo ecapture gotls --elfpath=/app/binary --hex > capture.log 2>&1 &
+ECAP_PID=$!
+
+# Run tests
+./run-tests.sh
+
+# Stop eCapture
+sudo kill $ECAP_PID
+
+# Verify captured data
+grep "GET /api/test" capture.log || exit 1
+```
+
+See [.github/workflows/go-c-cpp.yml](https://github.com/gojue/ecapture/blob/ca085d05/.github/workflows/go-c-cpp.yml) for CI examples.
+
+Sources: [CHANGELOG.md:34-37](https://github.com/gojue/ecapture/blob/ca085d05/CHANGELOG.md#L34-L37)
+
+---
+
+### Security and Compliance Questions
+
+**Q: Is eCapture safe to use in production?**
+
+A: eCapture is designed for debugging and security analysis. Consider:
+
+**Pros:**
+- Read-only operations (no data modification)
+- Minimal performance impact
+- Can be restricted by pid/uid filters
+
+**Cons:**
+- Requires root/CAP_BPF
+- Captures sensitive data (credentials, tokens)
+- Creates audit trail implications
+
+**Recommendations:**
+- Use in non-production first
+- Implement access controls
+- Review data retention policies
+- Consider regulatory compliance (GDPR, HIPAA, etc.)
+
+Sources: [README.md:14-16](https://github.com/gojue/ecapture/blob/ca085d05/README.md#L14-L16)
+
+---
+
+**Q: How do I securely store captured data?**
+
+A: Best practices:
+
+1. **Encrypt at rest:**
+   ```bash
+   sudo ecapture tls -m keylog --keylogfile=keys.log
+   gpg --encrypt keys.log
+   shred -u keys.log  # Securely delete original
+   ```
+
+2. **Use temporary directories:**
+   ```bash
+   sudo ecapture tls -m pcap --pcapfile=/tmp/capture.pcapng
+   # Process immediately and delete
+   ```
+
+3. **Implement retention policies:**
+   ```bash
+   # Delete captures older than 7 days
+   find /var/log/ecapture -name "*.pcapng" -mtime +7 -delete
+   ```
+
+4. **Audit access:**
+   ```bash
+   # Log who accesses captured data
+   sudo auditctl -w /var/log/ecapture -p r -k ecapture_access
+   ```
+
+---
+
+**Q: Does eCapture bypass certificate pinning?**
+
+A: No, eCapture doesn't bypass or modify any security mechanisms. It captures:
+- Plaintext data after SSL/TLS decryption in the application's memory
+- Master secrets from the TLS handshake
+
+This is fundamentally different from MITM attacks. eCapture observes what the application already has access to.
+
+Sources: [kern/openssl_kern.c:100-200](https://github.com/gojue/ecapture/blob/ca085d05/kern/openssl_kern.c#L100-L200)
+
+---
+
+## Additional Resources
+
+### Diagnostic Commands
+
+**System information:**
+```bash
+# Kernel version
+uname -r
+
+# BTF support
+ls -l /sys/kernel/btf/vmlinux
+cat /boot/config-$(uname -r) | grep BTF
+
+# eBPF features
+cat /proc/sys/kernel/unprivileged_bpf_disabled
+
+# Capabilities
+capsh --print
+```
+
+**Library detection:**
 ```bash
 # Find OpenSSL libraries
 ldconfig -p | grep libssl
 
-# Check library version
-strings /usr/lib/x86_64-linux-gnu/libssl.so.3 | grep "OpenSSL"
+# Check OpenSSL version
+openssl version
+
+# List loaded libraries for a process
+lsof -p $(pidof nginx) | grep libssl
+
+# Check ELF symbols
+nm -D /usr/lib/libssl.so | grep SSL_write
 ```
 
-2. **Fix /etc/ld.so.conf path issues:**
+**Network interfaces:**
 ```bash
-# Verify ld.so.conf
-cat /etc/ld.so.conf
-
-# Update library cache
-sudo ldconfig
-```
-
-3. **Specify library path explicitly:**
-```bash
-# For custom installation
-sudo ecapture tls --libssl=/opt/openssl/lib/libssl.so
-
-# For container environments with non-standard paths
-sudo ecapture tls --libssl=/custom/path/libssl.so.1.1
-```
-
-4. **Common library locations:**
-
-| Distribution | Typical Path |
-|--------------|--------------|
-| Ubuntu/Debian | `/usr/lib/x86_64-linux-gnu/libssl.so.3` |
-| CentOS/RHEL | `/usr/lib64/libssl.so.1.1` |
-| Alpine Linux | `/usr/lib/libssl.so.3` |
-| Android | `/apex/com.android.conscrypt/lib64/libssl.so` |
-
-Sources: [CHANGELOG.md:84](https://github.com/gojue/ecapture/blob/0766a93b/CHANGELOG.md#L84), [CHANGELOG.md:436](https://github.com/gojue/ecapture/blob/0766a93b/CHANGELOG.md#L436), [user/module/probe_openssl_lib.go:189-217](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl_lib.go#L189-L217)
-
----
-
-## Runtime Errors
-
-### Issue: Nil Pointer Panics
-
-**Symptoms:**
-- Program crashes with nil pointer dereference
-- Panic in probe initialization
-
-**Common Causes and Solutions:**
-
-1. **GnuTLS probe setup failure:**
-```
-panic: runtime error: invalid memory address or nil pointer dereference
-in gnutls probe
-```
-
-**Solution:** Fixed in v1.5.0 - ensure you're using the latest version.
-
-2. **Uninitialized channel:**
-```
-panic: send on nil channel
-```
-
-**Solution:** Module initialization order issue. File a bug report with reproduction steps.
-
-Sources: [CHANGELOG.md:20](https://github.com/gojue/ecapture/blob/0766a93b/CHANGELOG.md#L20), [CHANGELOG.md:603](https://github.com/gojue/ecapture/blob/0766a93b/CHANGELOG.md#L603)
-
-### Issue: Concurrent Map Access
-
-**Symptoms:**
-- Error: "concurrent map read and map write"
-- Program crash during high load
-- Data corruption
-
-**Solution:**
-
-This was a known issue fixed in v0.7.3. Update to the latest version:
-```bash
-# Check your version
-ecapture -v
-
-# Update to latest version
-wget https://github.com/gojue/ecapture/releases/latest/download/ecapture-linux-amd64.tar.gz
-```
-
-Sources: [CHANGELOG.md:650](https://github.com/gojue/ecapture/blob/0766a93b/CHANGELOG.md#L650)
-
-### Issue: "incoming chan is full" Error
-
-**Symptoms:**
-- Warning: "incoming chan is full"
-- Process exits unexpectedly
-- Data loss during capture
-
-**Solution:**
-
-This indicates the event processing pipeline is overwhelmed. Fixed in v0.9.0.
-
-1. **Reduce capture scope:**
-```bash
-# Filter by PID
-sudo ecapture tls --pid=1234
-
-# Filter by UID
-sudo ecapture tls --uid=1000
-```
-
-2. **Increase map size:**
-```bash
-# Default is 5120 KB, increase if needed
-sudo ecapture tls --mapsize=10240
-```
-
-3. **Use pcap mode instead of text mode:**
-```bash
-# PCAP mode has better performance for high-volume capture
-sudo ecapture tls -m pcap -w output.pcapng -i eth0
-```
-
-Sources: [CHANGELOG.md:373](https://github.com/gojue/ecapture/blob/0766a93b/CHANGELOG.md#L373), [CHANGELOG.md:709](https://github.com/gojue/ecapture/blob/0766a93b/CHANGELOG.md#L709)
-
----
-
-## Module-Specific Troubleshooting
-
-### OpenSSL/TLS Module
-
-#### Issue: No data captured despite successful start
-
-**Diagnostic Steps:**
-
-```mermaid
-graph TB
-    START["No Data Captured"]
-    PROCESS["Target process<br/>running?"]
-    LIBRARY["Uses OpenSSL<br/>library?"]
-    VERSION["Correct version<br/>detected?"]
-    FILTER["PID/UID filters<br/>too restrictive?"]
-    PORT["Target port<br/>correct?"]
-    TRAFFIC["Actual TLS<br/>traffic occurring?"]
-    
-    RESTART["Start target process<br/>after eCapture"]
-    CHECK_LIB["Check with lsof -p PID"]
-    FIX_VER["Specify --ssl_version"]
-    REMOVE_FILTER["Remove --pid/--uid"]
-    FIX_PORT["Use --target_port<br/>or --target_port=0 for all"]
-    GENERATE["Generate test traffic"]
-    
-    START --> PROCESS
-    PROCESS -->|No| RESTART
-    PROCESS -->|Yes| LIBRARY
-    LIBRARY -->|No| CHECK_LIB
-    LIBRARY -->|Yes| VERSION
-    VERSION -->|No| FIX_VER
-    VERSION -->|Yes| FILTER
-    FILTER -->|Yes| REMOVE_FILTER
-    FILTER -->|No| PORT
-    PORT -->|Wrong| FIX_PORT
-    PORT -->|OK| TRAFFIC
-    TRAFFIC -->|No| GENERATE
-```
-
-**Example Commands:**
-
-```bash
-# Capture all ports
-sudo ecapture tls --target_port=0
-
-# Capture specific process
-sudo ecapture tls --pid=$(pgrep curl)
-
-# Verbose output for debugging
-sudo ecapture tls --log-level=debug
-```
-
-Sources: [README.md:72-149](https://github.com/gojue/ecapture/blob/0766a93b/README.md#L72-L149), [CHANGELOG.md:778](https://github.com/gojue/ecapture/blob/0766a93b/CHANGELOG.md#L778)
-
-#### Issue: Keylog file empty or incomplete
-
-**Symptoms:**
-- `--keylogfile` created but empty
-- Missing CLIENT_RANDOM entries
-- Wireshark cannot decrypt traffic
-
-**Solutions:**
-
-1. **Verify keylog mode:**
-```bash
-# Correct syntax for keylog mode
-sudo ecapture tls -m keylog --keylogfile=keys.log
-```
-
-2. **Check TLS version:**
-- TLS 1.2: Captures `CLIENT_RANDOM` with master secret
-- TLS 1.3: Captures traffic secrets (requires OpenSSL 3.0+)
-
-3. **Common issues:**
-- OpenSSL 3.0.12 had a specific bug (fixed in v1.4.1)
-- Missing trailing bytes in GoTLS keylog (fixed in v1.4.0)
-- Keylog lost in certain OpenSSL versions (fixed in v1.3.0)
-
-Sources: [CHANGELOG.md:69](https://github.com/gojue/ecapture/blob/0766a93b/CHANGELOG.md#L69), [CHANGELOG.md:85](https://github.com/gojue/ecapture/blob/0766a93b/CHANGELOG.md#L85), [CHANGELOG.md:127](https://github.com/gojue/ecapture/blob/0766a93b/CHANGELOG.md#L127)
-
-#### Issue: PCAP file corrupted or Wireshark cannot open
-
-**Symptoms:**
-- PCAP file cannot be opened in Wireshark
-- "Invalid format" error
-- Missing packets
-
-**Solutions:**
-
-1. **Ensure proper termination:**
-```bash
-# Use Ctrl+C to properly close the PCAP file
-# Don't use kill -9
-```
-
-2. **Check disk space:**
-```bash
-df -h /path/to/pcap/directory
-```
-
-3. **Verify PCAP-NG format:**
-```bash
-# eCapture uses PCAP-NG format
-file output.pcapng
-# Should show: pcapng capture file
-```
-
-4. **DSB (Decryption Secrets Block):**
-eCapture writes TLS keys as DSB in PCAP-NG files. Ensure you're using a recent version of Wireshark (3.0+).
-
-Sources: [CHANGELOG.md:161](https://github.com/gojue/ecapture/blob/0766a93b/CHANGELOG.md#L161), [CHANGELOG.md:542](https://github.com/gojue/ecapture/blob/0766a93b/CHANGELOG.md#L542), [CHANGELOG.md:664](https://github.com/gojue/ecapture/blob/0766a93b/CHANGELOG.md#L664)
-
-### GoTLS Module
-
-#### Issue: "cant found RET offset" or stripped Go binary
-
-**Symptoms:**
-- Error: "cant found RET offset in gotls mode"
-- Stripped Go binaries not working
-- PIE executable offset errors
-
-**Solutions:**
-
-1. **Stripped binary support:**
-Added in v0.7.0 - update to latest version.
-
-2. **PIE executable issues:**
-```bash
-# Check if binary is PIE
-file /path/to/go/binary
-# Should show: "dynamically linked" or "pie executable"
-```
-
-Fixed in v0.7.7 for aarch64 PIE executables.
-
-3. **Specify Go binary path:**
-```bash
-sudo ecapture gotls --elfpath=/path/to/go/binary
-```
-
-Sources: [CHANGELOG.md:593](https://github.com/gojue/ecapture/blob/0766a93b/CHANGELOG.md#L593), [CHANGELOG.md:752](https://github.com/gojue/ecapture/blob/0766a93b/CHANGELOG.md#L752), [CHANGELOG.md:573](https://github.com/gojue/ecapture/blob/0766a93b/CHANGELOG.md#L573)
-
-#### Issue: No GoTLS data captured
-
-**Checklist:**
-
-```mermaid
-graph LR
-    CHECK1["Go binary uses<br/>crypto/tls?"]
-    CHECK2["--elfpath specified<br/>correctly?"]
-    CHECK3["Go version<br/>supported?"]
-    CHECK4["TLS connections<br/>active?"]
-    
-    FIX1["Verify with:<br/>strings binary | grep crypto/tls"]
-    FIX2["Use full path:<br/>--elfpath=/full/path"]
-    FIX3["Supports Go 1.18+<br/>Update Go if needed"]
-    FIX4["Generate test traffic"]
-    
-    CHECK1 -->|No| FIX1
-    CHECK2 -->|No| FIX2
-    CHECK3 -->|No| FIX3
-    CHECK4 -->|No| FIX4
-```
-
-Sources: [README.md:259-276](https://github.com/gojue/ecapture/blob/0766a93b/README.md#L259-L276)
-
-### Bash/Zsh Module
-
-#### Issue: Bash commands not captured
-
-**Symptoms:**
-- No bash output
-- Probe attachment fails
-- "incorrect probe attachment" warning
-
-**Solutions:**
-
-1. **Check bash path:**
-```bash
-which bash
-# Common paths: /bin/bash, /usr/bin/bash
-```
-
-2. **Improved bash path detection:**
-Fixed in v1.3.1 with better path detection and probe attachment.
-
-3. **Readline hook verification:**
-```bash
-# Check if bash uses readline
-ldd $(which bash) | grep readline
-```
-
-Sources: [CHANGELOG.md:114-115](https://github.com/gojue/ecapture/blob/0766a93b/CHANGELOG.md#L114-L115), [CHANGELOG.md:592](https://github.com/gojue/ecapture/blob/0766a93b/CHANGELOG.md#L592)
-
-### MySQL/PostgreSQL Module
-
-#### Issue: No SQL queries captured
-
-**Supported Versions:**
-
-| Database | Supported Versions |
-|----------|-------------------|
-| MySQL | 5.6, 5.7, 8.0 |
-| MariaDB | All versions |
-| PostgreSQL | 10+ |
-
-**Solutions:**
-
-1. **Verify mysqld process:**
-```bash
-ps aux | grep mysqld
-```
-
-2. **Check dispatch_command symbol:**
-```bash
-# For MySQL
-nm /usr/sbin/mysqld | grep dispatch_command
-```
-
-3. **Module-specific flags:**
-```bash
-# MySQL
-sudo ecapture mysqld
-
-# PostgreSQL
-sudo ecapture postgres
-```
-
-Sources: [README.md:42](https://github.com/gojue/ecapture/blob/0766a93b/README.md#L42), [README.md:157-159](https://github.com/gojue/ecapture/blob/0766a93b/README.md#L157-L159)
-
----
-
-## Performance Issues
-
-### Issue: High CPU or Memory Usage
-
-**Symptoms:**
-- eCapture consuming excessive CPU
-- Memory continuously growing
-- System slowdown
-
-**Solutions:**
-
-1. **Memory optimization (v0.9.5+):**
-```bash
-# Set truncate size to reduce memory cost
-sudo ecapture tls --truncate_size=1024
-```
-
-2. **Reduce map size:**
-```bash
-# Default is 5120 KB
-sudo ecapture tls --mapsize=2048
-```
-
-3. **Use filters:**
-```bash
-# Filter by PID
-sudo ecapture tls --pid=1234
-
-# Filter by UID
-sudo ecapture tls --uid=1000
-
-# Filter by port (pcap mode)
-sudo ecapture tls -m pcap -i eth0 "tcp port 443"
-```
-
-4. **Dual lifecycle management (v1.2.0+):**
-eCapture now implements optimized event worker lifecycle management for better resource usage.
-
-Sources: [CHANGELOG.md:291](https://github.com/gojue/ecapture/blob/0766a93b/CHANGELOG.md#L291), [CHANGELOG.md:137](https://github.com/gojue/ecapture/blob/0766a93b/CHANGELOG.md#L137), [CHANGELOG.md:709](https://github.com/gojue/ecapture/blob/0766a93b/CHANGELOG.md#L709)
-
-### Issue: Incomplete SSL Data or Truncation
-
-**Symptoms:**
-- Truncated HTTP responses
-- "incomplete SSL data for excessively long lengths"
-- Missing data chunks
-
-**Solutions:**
-
-1. **Adjust truncate size:**
-```bash
-# Default truncate size
-sudo ecapture tls --truncate_size=4096
-```
-
-2. **Fixed in v0.9.5:**
-Bug with incomplete SSL data for long lengths was resolved.
-
-Sources: [CHANGELOG.md:289](https://github.com/gojue/ecapture/blob/0766a93b/CHANGELOG.md#L289), [CHANGELOG.md:154](https://github.com/gojue/ecapture/blob/0766a93b/CHANGELOG.md#L154)
-
----
-
-## Build and Compilation Issues
-
-### Issue: Build fails with "header not found"
-
-**Symptoms:**
-- Error during kernel header generation
-- Missing vmlinux.h
-- Cross-compilation failures
-
-**Solutions:**
-
-1. **Install required tools:**
-```bash
-# Ubuntu/Debian
-sudo apt-get install clang llvm libelf-dev linux-headers-$(uname -r)
-
-# CentOS/RHEL
-sudo yum install clang llvm elfutils-libelf-devel kernel-devel
-```
-
-2. **Cross-compilation setup:**
-```bash
-# For ARM64 on x86_64
-sudo apt-get install gcc-aarch64-linux-gnu
-
-# Set CROSS_ARCH
-make CROSS_ARCH=arm64
-```
-
-3. **Kernel headers path:**
-```bash
-# Specify kernel headers if non-standard
-make KERN_HEADERS=/path/to/kernel/headers
-```
-
-Sources: [CHANGELOG.md:447](https://github.com/gojue/ecapture/blob/0766a93b/CHANGELOG.md#L447), [variables.mk:172-179](https://github.com/gojue/ecapture/blob/0766a93b/variables.mk#L172-L179)
-
-### Issue: Docker build errors
-
-**Symptoms:**
-- Docker image build fails
-- CVE vulnerabilities in base image
-
-**Solutions:**
-
-1. **Use official Docker image:**
-```bash
-docker pull gojue/ecapture:latest
-```
-
-2. **Build from source:**
-```bash
-# Clone repository
-git clone https://github.com/gojue/ecapture.git
-cd ecapture
-
-# Build
-make
-```
-
-Sources: [CHANGELOG.md:372](https://github.com/gojue/ecapture/blob/0766a93b/CHANGELOG.md#L372), [README.md:59-68](https://github.com/gojue/ecapture/blob/0766a93b/README.md#L59-L68)
-
----
-
-## Frequently Asked Questions
-
-### Q: Does eCapture support Windows or macOS?
-
-**A:** No, eCapture only supports Linux and Android systems. It relies on eBPF technology which is Linux-specific. For cross-platform visualization, use [eCaptureQ](#README.md:287-302) GUI in remote mode.
-
-Sources: [README.md:13-17](https://github.com/gojue/ecapture/blob/0766a93b/README.md#L13-L17)
-
-### Q: Can I capture traffic without root privileges?
-
-**A:** eCapture requires root privileges or specific capabilities (CAP_BPF, CAP_PERFMON, CAP_NET_ADMIN) to load eBPF programs. There is no way to bypass this requirement.
-
-Sources: [README.md:15](https://github.com/gojue/ecapture/blob/0766a93b/README.md#L15)
-
-### Q: Why does eCapture show "OpenSSL version not found"?
-
-**A:** eCapture attempts to automatically detect the OpenSSL version by parsing the `.rodata` section of the library. If detection fails:
-1. It uses automatic downgrade logic to find the closest version
-2. Falls back to default version (usually 3.0 or 1.1.1)
-3. You can manually specify the version with `--ssl_version`
-
-Sources: [user/module/probe_openssl_lib.go:189-282](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl_lib.go#L189-L282), [user/module/probe_openssl_lib.go:284-317](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl_lib.go#L284-L317)
-
-### Q: What's the difference between CO-RE and non-CO-RE mode?
-
-**A:** 
-- **CO-RE (Compile Once - Run Everywhere):** Uses BTF information to make eBPF programs portable across different kernel versions. Requires kernel with BTF support (CONFIG_DEBUG_INFO_BTF=y).
-- **Non-CO-RE:** Compiles eBPF programs with specific kernel headers. Works on older kernels without BTF but requires kernel-specific bytecode.
-
-eCapture automatically detects BTF availability and selects the appropriate mode.
-
-Sources: [variables.mk:270-272](https://github.com/gojue/ecapture/blob/0766a93b/variables.mk#L270-L272)
-
-### Q: Can I capture traffic from statically linked binaries?
-
-**A:** Yes, for statically linked binaries, specify the binary path directly with `--libssl`:
-```bash
-sudo ecapture tls --libssl=/path/to/static/binary
-```
-
-Sources: [README.md:169](https://github.com/gojue/ecapture/blob/0766a93b/README.md#L169)
-
-### Q: How do I use the captured keylog with Wireshark?
-
-**A:** 
-1. Capture TLS keys:
-```bash
-sudo ecapture tls -m keylog --keylogfile=keys.log
-```
-
-2. In Wireshark:
-   - Go to Edit → Preferences → Protocols → TLS
-   - Set "(Pre)-Master-Secret log filename" to the path of keys.log
-   - Reload the capture
-
-3. Or use tshark directly:
-```bash
-tshark -o tls.keylog_file:keys.log -Y http -f "port 443" -i eth0
-```
-
-Sources: [README.md:235-247](https://github.com/gojue/ecapture/blob/0766a93b/README.md#L235-L247)
-
-### Q: Does eCapture affect the performance of monitored applications?
-
-**A:** eCapture has minimal performance impact because:
-1. eBPF runs in kernel space with low overhead
-2. Uses efficient perf ring buffers for data transfer
-3. Implements filtering at the eBPF level
-4. Memory-optimized truncation (v0.9.5+)
-
-However, capturing very high-traffic applications may require tuning `--mapsize` and `--truncate_size`.
-
-Sources: [CHANGELOG.md:291](https://github.com/gojue/ecapture/blob/0766a93b/CHANGELOG.md#L291), [CHANGELOG.md:709](https://github.com/gojue/ecapture/blob/0766a93b/CHANGELOG.md#L709)
-
-### Q: Can I filter capture by process or user?
-
-**A:** Yes, eCapture supports multiple filtering options:
-
-```bash
-# Filter by PID
-sudo ecapture tls --pid=1234
-
-# Filter by UID
-sudo ecapture tls --uid=1000
-
-# Filter by port (all modules)
-sudo ecapture tls --target_port=443
-
-# PCAP filter (pcap mode only)
-sudo ecapture tls -m pcap -i eth0 "host 192.168.1.1 and port 443"
-```
-
-Sources: [README.md:183-184](https://github.com/gojue/ecapture/blob/0766a93b/README.md#L183-L184), [CHANGELOG.md:472](https://github.com/gojue/ecapture/blob/0766a93b/CHANGELOG.md#L472)
-
-### Q: How do I capture HTTP/2 or HTTP/3 traffic?
-
-**A:** 
-- **HTTP/2:** Automatically supported in text mode (v0.8.5+). eCapture parses HTTP/2 frames and displays headers/data.
-- **HTTP/3 (QUIC):** Supported in PCAP mode. Use:
-```bash
-sudo ecapture tls -m pcap -i eth0 "udp port 443"
-```
-
-Sources: [README.md:179](https://github.com/gojue/ecapture/blob/0766a93b/README.md#L179), [CHANGELOG.md:487](https://github.com/gojue/ecapture/blob/0766a93b/CHANGELOG.md#L487)
-
-### Q: What Android versions are supported?
-
-**A:** eCapture supports Android 12 through Android 16 with BoringSSL. Specify Android version:
-```bash
-sudo ecapture tls --android_ver=14
-```
-
-Available versions: a_13 (Android 12/13), a_14 (Android 14), a_15 (Android 15), a_16 (Android 16).
-
-Sources: [variables.mk:94-97](https://github.com/gojue/ecapture/blob/0766a93b/variables.mk#L94-L97), [CHANGELOG.md:23](https://github.com/gojue/ecapture/blob/0766a93b/CHANGELOG.md#L23), [CHANGELOG.md:305](https://github.com/gojue/ecapture/blob/0766a93b/CHANGELOG.md#L305)
-
-### Q: Can I use eCapture for security auditing?
-
-**A:** Yes, eCapture is designed for security auditing scenarios:
-- **Host Security:** Capture bash/zsh commands
-- **Database Audit:** Capture MySQL/PostgreSQL queries
-- **Network Security:** Capture and analyze encrypted traffic
-- **Compliance:** Generate audit logs with `--eventcollector` flag
-
-Sources: [README.md:40-42](https://github.com/gojue/ecapture/blob/0766a93b/README.md#L40-L42)
-
-### Q: Does eCapture work in containers?
-
-**A:** Yes, but with considerations:
-1. Container must run in privileged mode or have BPF capabilities
-2. Can monitor processes both inside and outside containers
-3. Use host network mode for network capture
-
-```bash
-docker run --rm --privileged=true --net=host \
-  -v /path/to/output:/output \
-  gojue/ecapture tls --eventcollector=/output/events.log
-```
-
-Sources: [README.md:63-68](https://github.com/gojue/ecapture/blob/0766a93b/README.md#L63-L68)
-
----
-
-## Debugging Techniques
-
-### Enable Debug Logging
-
-```bash
-# Enable debug output
-sudo ecapture tls --log-level=debug
-
-# Save logs to file
-sudo ecapture tls --logaddr=/var/log/ecapture.log
-```
-
-### Verify eBPF Program Loading
-
-```bash
-# Check loaded eBPF programs
-sudo bpftool prog list | grep ecapture
-
-# Check eBPF maps
-sudo bpftool map list
-
-# Dump map contents (advanced)
-sudo bpftool map dump id <map_id>
-```
-
-### Trace System Calls
-
-```bash
-# Trace eCapture system calls
-sudo strace -f ecapture tls
-
-# Trace specific syscalls
-sudo strace -e trace=bpf,perf_event_open ecapture tls
-```
-
-### Check Library Loading
-
-```bash
-# Verify library is loaded by target process
-sudo lsof -p <PID> | grep libssl
-
-# Check library dependencies
-ldd /path/to/target/binary | grep ssl
-```
-
-### Network Verification
-
-```bash
-# Verify network interface
+# List interfaces
 ip link show
 
-# Check TC filters (for packet capture)
-sudo tc filter show dev eth0 ingress
-sudo tc filter show dev eth0 egress
+# Check interface traffic
+ip -s link show eth0
 
-# Monitor network traffic
-sudo tcpdump -i eth0 -n "port 443"
+# Verify packet capture
+tcpdump -i eth0 -c 1 port 443
 ```
 
-### Core Dump Analysis
+Sources: [README.md:228-232](https://github.com/gojue/ecapture/blob/ca085d05/README.md#L228-L232)
 
-If eCapture crashes:
+---
+
+### Debug Logging
+
+Enable verbose logging:
+
 ```bash
-# Enable core dumps
-ulimit -c unlimited
+# Set log level
+sudo ecapture tls --loglevel=debug
 
-# Run eCapture
-sudo ecapture tls
-
-# Analyze core dump (if crash occurs)
-gdb ecapture core
+# Or use environment variable
+export ECAPTURE_LOG_LEVEL=debug
+sudo -E ecapture tls
 ```
 
-### Useful Diagnostic Commands
+Log files location:
+- stdout: Real-time logs
+- `--logger` flag: Write logs to file
 
-| Command | Purpose |
-|---------|---------|
-| `ecapture -v` | Show version information |
-| `uname -r` | Check kernel version |
-| `cat /boot/config-$(uname -r) \| grep BTF` | Verify BTF support |
-| `ls -l /sys/kernel/btf/vmlinux` | Check BTF availability |
-| `sudo bpftool prog list` | List eBPF programs |
-| `ldd $(which ecapture)` | Check dependencies |
-| `file /path/to/libssl.so` | Verify library architecture |
-
-Sources: [CHANGELOG.md:521](https://github.com/gojue/ecapture/blob/0766a93b/CHANGELOG.md#L521), [README_CN.md:84-126](https://github.com/gojue/ecapture/blob/0766a93b/README_CN.md#L84-L126)
+Sources: [cli/cmd/root.go:250-300](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/root.go#L250-L300)
 
 ---
 
-## Getting Help
+### Getting Help
 
-If you encounter an issue not covered here:
+1. **GitHub Issues:** https://github.com/gojue/ecapture/issues
+2. **Documentation:** https://ecapture.cc
+3. **Changelog:** [CHANGELOG.md](https://github.com/gojue/ecapture/blob/ca085d05/CHANGELOG.md) for version-specific issues
+4. **Compilation guide:** [COMPILATION.md](https://github.com/gojue/ecapture/blob/ca085d05/COMPILATION.md) for build issues
 
-1. **Check GitHub Issues:** Search existing issues at https://github.com/gojue/ecapture/issues
-2. **Create New Issue:** Include:
-   - eCapture version (`ecapture -v`)
-   - Kernel version (`uname -r`)
-   - Distribution and architecture
-   - Complete error messages
-   - Steps to reproduce
-   - Output of debug logging
-3. **Join Community:** QQ群 or GitHub Discussions
-4. **Review Changelog:** Recent fixes may address your issue: [CHANGELOG.md:1-782](https://github.com/gojue/ecapture/blob/0766a93b/CHANGELOG.md#L1-L782)
+When reporting issues, include:
+- eCapture version: `ecapture version`
+- Kernel version: `uname -r`
+- BTF support: `ls /sys/kernel/btf/vmlinux`
+- Library version: `openssl version` or `go version`
+- Complete command and output
+- Relevant log snippet
 
----
-
-## Quick Reference: Error Messages
-
-| Error Message | Page Section | Quick Fix |
-|--------------|--------------|-----------|
-| "kernel version is too low" | [Kernel Requirements](#kernel-and-system-requirements-issues) | Upgrade kernel |
-| "Operation not permitted" | [Permission Issues](#permission-issues) | Use `sudo` |
-| "OpenSSL version not found" | [Version Detection](#version-detection-issues) | Use `--ssl_version` flag |
-| "couldn't find bpf bytecode" | [Library Detection](#library-detection-issues) | Use `--libssl` flag |
-| "incoming chan is full" | [Runtime Errors](#issue-incoming-chan-is-full-error) | Reduce scope or increase mapsize |
-| "concurrent map access" | [Runtime Errors](#issue-concurrent-map-access) | Update to v0.7.3+ |
-| "cant found RET offset" | [GoTLS Module](#issue-cant-found-ret-offset-or-stripped-go-binary) | Update to v0.7.0+ |
-
-Sources: [CHANGELOG.md:1-782](https://github.com/gojue/ecapture/blob/0766a93b/CHANGELOG.md#L1-L782), [user/module/probe_openssl_lib.go:64-70](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl_lib.go#L64-L70), [README.md:1-335](https://github.com/gojue/ecapture/blob/0766a93b/README.md#L1-L335)
+Sources: [README.md:317](https://github.com/gojue/ecapture/blob/ca085d05/README.md#L317)

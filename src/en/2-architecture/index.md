@@ -5,987 +5,519 @@
 
 The following files were used as context for generating this wiki page:
 
-- [CHANGELOG.md](https://github.com/gojue/ecapture/blob/0766a93b/CHANGELOG.md)
-- [README.md](https://github.com/gojue/ecapture/blob/0766a93b/README.md)
-- [README_CN.md](https://github.com/gojue/ecapture/blob/0766a93b/README_CN.md)
-- [cli/cmd/root.go](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/root.go)
-- [images/ecapture-help-v0.8.9.svg](https://github.com/gojue/ecapture/blob/0766a93b/images/ecapture-help-v0.8.9.svg)
-- [main.go](https://github.com/gojue/ecapture/blob/0766a93b/main.go)
-- [user/config/iconfig.go](https://github.com/gojue/ecapture/blob/0766a93b/user/config/iconfig.go)
-- [user/module/imodule.go](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go)
-- [user/module/probe_openssl.go](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl.go)
+- [CHANGELOG.md](https://github.com/gojue/ecapture/blob/ca085d05/CHANGELOG.md)
+- [README.md](https://github.com/gojue/ecapture/blob/ca085d05/README.md)
+- [README_CN.md](https://github.com/gojue/ecapture/blob/ca085d05/README_CN.md)
+- [cli/cmd/root.go](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/root.go)
+- [images/ecapture-help-v0.8.9.svg](https://github.com/gojue/ecapture/blob/ca085d05/images/ecapture-help-v0.8.9.svg)
+- [main.go](https://github.com/gojue/ecapture/blob/ca085d05/main.go)
+- [user/config/iconfig.go](https://github.com/gojue/ecapture/blob/ca085d05/user/config/iconfig.go)
+- [user/module/imodule.go](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go)
+- [user/module/probe_openssl.go](https://github.com/gojue/ecapture/blob/ca085d05/user/module/probe_openssl.go)
 
 </details>
 
 
 
-This document describes the overall system architecture of eCapture, explaining how different layers and components interact to capture and decrypt SSL/TLS traffic without requiring CA certificates. The architecture follows a clear separation of concerns across six major layers, from user interface through eBPF execution to formatted output.
+This document describes the overall architecture of eCapture, explaining how the system is structured into layers and how data flows from the command-line interface through eBPF probes to final output. The architecture follows a five-layer design: **CLI Layer → Module Orchestration → eBPF Execution → Event Processing → Output**.
 
-For information about specific capture modules and their implementation details, see [Capture Modules](../3-capture-modules/index.md). For eBPF program development details, see [eBPF Program Development](../5-development-guide/5.2-ebpf-program-development.md). For build system details, see [Build System](../5-development-guide/5.1-build-system.md).
+For details on specific capture modules (OpenSSL, GoTLS, etc.), see [Capture Modules](../3-capture-modules/index.md). For information about the eBPF implementation, see [eBPF Engine](2.1-ebpf-engine.md). For event processing internals, see [Event Processing Pipeline](2.2-event-processing-pipeline.md).
 
-## Layered Architecture Overview
+---
 
-eCapture implements a layered architecture where each layer has distinct responsibilities. The system processes data from user commands through kernel-space eBPF programs to formatted output files or real-time streams.
+## System Overview
 
-**Diagram: eCapture Layered Architecture**
+eCapture is organized as a modular eBPF-based capture system. The architecture separates concerns into distinct layers, allowing new capture modules to be added without modifying core infrastructure. Each module implements the `IModule` interface and manages its own eBPF programs, while sharing common event processing and output mechanisms.
 
-## System Architecture Overview
+**Sources:** [README.md:36-44](https://github.com/gojue/ecapture/blob/ca085d05/README.md#L36-L44), [cli/cmd/root.go:44-51](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/root.go#L44-L51), [user/module/imodule.go:47-75](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L47-L75)
 
-eCapture implements a five-layer architecture with clear separation of concerns. Data flows from monitored applications through kernel-space eBPF hooks to userspace event processing, ultimately producing formatted output in multiple formats (text, PCAP-NG, keylog files, or protobuf streams).
+---
 
-**Diagram: Five-Layer Architecture**
+## Five-Layer Architecture
 
 ```mermaid
 graph TB
-    subgraph Layer1["1. User Interface Layer"]
-        CLI["rootCmd<br/>cli/cmd/root.go:81<br/>cobra.Command"]
-        HTTPServer["http.NewHttpServer<br/>cli/http/server.go<br/>localhost:28256"]
-        eCaptureQ["eCaptureQ Mode<br/>ecaptureq.NewServer<br/>Tauri/React GUI"]
+    subgraph CLI["CLI Layer"]
+        RootCmd["rootCmd<br/>(cobra.Command)"]
+        SubCommands["Subcommands<br/>tls, gotls, bash, etc."]
+        GlobalConf["globalConf<br/>(BaseConfig)"]
     end
     
-    subgraph Layer2["2. Capture Module Layer"]
-        ModuleFactory["module.GetModuleFunc<br/>user/module/imodule.go"]
-        
-        TLSModule["MOpenSSLProbe<br/>user/module/probe_openssl.go:83<br/>OpenSSL/BoringSSL/NSS/GnuTLS"]
-        GoTLSModule["MGoTLSProbe<br/>Go crypto/tls"]
-        AuditModules["Bash/Zsh/MySQL/PostgreSQL<br/>System audit modules"]
+    subgraph ModuleOrch["Module Orchestration Layer"]
+        RunModule["runModule()<br/>cli/cmd/root.go"]
+        IModule["IModule Interface<br/>user/module/imodule.go"]
+        ModuleImpl["Module Implementations<br/>MOpenSSLProbe<br/>GoTLSProbe, etc."]
     end
     
-    subgraph Layer3["3. eBPF Runtime Layer"]
-        VersionDetect["getSslBpfFile<br/>detectOpenssl<br/>user/module/probe_openssl.go:179"]
-        BytecodeSelect["geteBPFName<br/>user/module/imodule.go:191<br/>CO-RE/_core.o vs non-CO-RE/_noncore.o"]
-        Manager["manager.Manager<br/>ebpfmanager.InitWithOptions<br/>ebpfmanager.Start"]
-        
-        Uprobes["Uprobe Programs<br/>SSL_read/SSL_write<br/>SSL_do_handshake"]
-        TCProgs["TC Programs<br/>capture_packets<br/>ingress/egress"]
-        Kprobes["Kprobe Programs<br/>tcp_sendmsg<br/>udp_sendmsg"]
+    subgraph eBPFExec["eBPF Execution Layer"]
+        BPFManager["bpfManager<br/>(ebpfmanager.Manager)"]
+        BytecodeAssets["Bytecode Assets<br/>user/bytecode/*.o"]
+        Probes["Probes<br/>uprobes, kprobes, TC"]
     end
     
-    subgraph Layer4["4. Event Processing Layer"]
-        Readers["Event Readers<br/>perf.NewReader<br/>ringbuf.NewReader<br/>user/module/imodule.go:308"]
-        Processor["EventProcessor<br/>event_processor.EventProcessor<br/>pkg/event_processor"]
-        Workers["eventWorker<br/>UUID-based lifecycle<br/>Socket vs Default"]
-        Parsers["Protocol Parsers<br/>IParser interface<br/>HTTP/HTTP2/H2C"]
+    subgraph EventProc["Event Processing Layer"]
+        EventProcessor["EventProcessor<br/>event_processor.EventProcessor"]
+        IWorker["IWorker Pool<br/>eventWorker instances"]
+        IParser["IParser<br/>Protocol Parsers"]
     end
     
-    subgraph Layer5["5. Output Layer"]
-        TextOut["Text Mode<br/>TlsCaptureModelTypeText<br/>Direct console output"]
-        PcapOut["PCAP Mode<br/>TlsCaptureModelTypePcap<br/>savePcapngSslKeyLog"]
-        KeylogOut["Keylog Mode<br/>TlsCaptureModelTypeKeylog<br/>saveMasterSecret"]
-        ProtobufOut["Protobuf Stream<br/>pb.LogEntry<br/>WebSocket/TCP"]
+    subgraph Output["Output Layer"]
+        CollectorWriter["CollectorWriter<br/>(zerolog)"]
+        ProtobufWriter["ProtobufWriter<br/>(protobuf)"]
+        Writers["Output Writers<br/>stdout, file, websocket"]
     end
     
-    CLI --> ModuleFactory
-    HTTPServer -.->|runtime config| ModuleFactory
-    eCaptureQ -.->|remote mode| ProtobufOut
+    RootCmd --> SubCommands
+    SubCommands --> RunModule
+    RunModule --> GlobalConf
+    RunModule --> IModule
+    IModule --> ModuleImpl
     
-    ModuleFactory --> TLSModule
-    ModuleFactory --> GoTLSModule
-    ModuleFactory --> AuditModules
+    ModuleImpl --> BPFManager
+    BPFManager --> BytecodeAssets
+    BPFManager --> Probes
     
-    TLSModule --> VersionDetect
-    GoTLSModule --> VersionDetect
-    VersionDetect --> BytecodeSelect
-    BytecodeSelect --> Manager
+    Probes --> EventProcessor
+    EventProcessor --> IWorker
+    IWorker --> IParser
     
-    Manager --> Uprobes
-    Manager --> TCProgs
-    Manager --> Kprobes
-    
-    Uprobes --> Readers
-    TCProgs --> Readers
-    Kprobes --> Readers
-    
-    Readers --> Processor
-    Processor --> Workers
-    Workers --> Parsers
-    
-    Parsers --> TextOut
-    Parsers --> PcapOut
-    Parsers --> KeylogOut
-    Parsers --> ProtobufOut
+    IParser --> CollectorWriter
+    IParser --> ProtobufWriter
+    CollectorWriter --> Writers
+    ProtobufWriter --> Writers
 ```
 
-The architecture makes several critical design decisions that enable its functionality:
+**Architecture Overview: Five distinct layers with clear separation of concerns**
 
-Sources: [cli/cmd/root.go:80-153](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/root.go#L80-L153), [user/module/probe_openssl.go:83-106](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl.go#L83-L106), [user/module/imodule.go:47-75](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L47-L75), [user/module/probe_openssl.go:178-278](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl.go#L178-L278), [user/module/imodule.go:191-214](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L191-L214)
+The architecture consists of five primary layers:
 
-### Architectural Layers Explained
+1. **CLI Layer**: Parses commands and flags, manages configuration
+2. **Module Orchestration Layer**: Implements the `IModule` interface pattern, coordinates module lifecycle
+3. **eBPF Execution Layer**: Loads and manages eBPF programs, attaches probes to target functions
+4. **Event Processing Layer**: Aggregates and parses raw eBPF events into structured data
+5. **Output Layer**: Formats and writes processed events to various destinations
 
-Each layer has specific responsibilities:
+**Sources:** [cli/cmd/root.go:80-133](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/root.go#L80-L133), [user/module/imodule.go:47-75](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L47-L75), [user/module/probe_openssl.go:83-106](https://github.com/gojue/ecapture/blob/ca085d05/user/module/probe_openssl.go#L83-L106)
 
-| Layer | Responsibilities | Key Components |
-|-------|------------------|----------------|
-| **1. User Interface** | Command parsing, configuration input, runtime updates | `rootCmd` (Cobra CLI), HTTP config server, eCaptureQ integration |
-| **2. Capture Modules** | Protocol-specific logic, bytecode selection, probe attachment | `IModule` interface, `MOpenSSLProbe`, `MGoTLSProbe`, etc. |
-| **3. eBPF Runtime** | Version detection, CO-RE/non-CO-RE selection, eBPF program lifecycle | `manager.Manager`, uprobe/TC/kprobe programs, BTF detection |
-| **4. Event Processing** | Event reading, aggregation, protocol parsing, connection tracking | `EventProcessor`, `eventWorker`, `IParser` implementations |
-| **5. Output** | Format conversion, file writing, network streaming | Text/PCAP/Keylog/Protobuf writers, PCAP-NG DSB blocks |
+---
 
-See [Module System and Lifecycle](2.4-module-system-and-lifecycle.md) for details on the IModule interface and [Event Processing Pipeline](2.2-event-processing-pipeline.md) for event flow details.
+## CLI Layer
 
-### Key Architectural Decisions
-
-| Decision | Rationale | Implementation |
-|----------|-----------|----------------|
-| **Factory Pattern for Modules** | Enables dynamic module loading based on CLI command | `IModule` interface [user/module/imodule.go:47-75](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L47-L75); modules register via `RegisteFunc` at package init |
-| **Dual Bytecode Compilation** | Supports both BTF-enabled (CO-RE) and non-BTF kernels | Build system produces `*_core.o` and `*_noncore.o` variants; runtime selection via `geteBPFName` [user/module/imodule.go:191-214](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L191-L214) |
-| **Version Detection Layer** | Handles 20+ OpenSSL/BoringSSL versions with different struct layouts | `detectOpenssl` [user/module/probe_openssl.go:178-278](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl.go#L178-L278) parses ELF `.rodata`, maps version to bytecode via `sslVersionBpfMap` |
-| **Event Processing Pipeline** | Decouples capture from output formatting, enables protocol parsing | `EventProcessor` [user/module/imodule.go:104](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L104) aggregates events by UUID, applies HTTP/HTTP2 parsers |
-| **Multiple Output Formats** | Supports live analysis (text), forensics (PCAP), decryption (keylog) | `TlsCaptureModelType` enum [user/module/probe_openssl.go:58-76](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl.go#L58-L76) controls capture mode |
-| **Connection Tracking** | Maps network packets to processes without userspace cooperation | Kprobes populate `network_map` LRU hash; TC hooks lookup PID/UID. See [Network Connection Tracking](2.6-network-connection-tracking.md) |
-| **Dual Worker Lifecycle** | Optimizes resource usage for different connection patterns | Socket-based lifecycle for persistent connections, default (10-tick timeout) for short-lived. See [Event Processing Pipeline](2.2-event-processing-pipeline.md) |
-
-Sources: [user/module/imodule.go:47-75](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L47-L75), [user/module/probe_openssl.go:58-76](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl.go#L58-L76), [user/module/probe_openssl.go:178-278](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl.go#L178-L278), [user/module/imodule.go:191-214](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L191-L214)
-
-## Data Flow Pipeline
-
-The following diagram shows how data flows through the system from application to output:
-
-**Diagram: Complete Data Flow**
+The CLI layer is implemented using the Cobra framework and provides the entry point for all eCapture operations.
 
 ```mermaid
 graph LR
-    App["Monitored Application<br/>curl, browser, etc.<br/>Uses OpenSSL/Go TLS"] --> LibraryCall["Library Call<br/>SSL_write/SSL_read<br/>tls.Conn.Write/Read"]
+    User["User Command"]
+    RootCmd["rootCmd<br/>Execute()"]
+    GlobalFlags["Global Flags<br/>--pid, --uid, --debug<br/>--btf, --mapsize"]
+    SubCmd["Subcommand<br/>tls, gotls, bash"]
+    RunModule["runModule()<br/>line 250"]
     
-    LibraryCall --> UprobeHook["Uprobe Hook<br/>kernel intercepts<br/>function entry/return"]
-    
-    UprobeHook --> PlaintextCapture["Plaintext Capture<br/>Before encryption<br/>After decryption"]
-    
-    PlaintextCapture --> eBPFMap["eBPF Map<br/>perf_event_array<br/>or ring_buffer"]
-    
-    eBPFMap --> UserSpaceRead["perf.NewReader.Read<br/>user/module/imodule.go:308<br/>goroutine per map"]
-    
-    UserSpaceRead --> DecodeEvent["Decode Event<br/>child.Decode(map, bytes)<br/>→ IEventStruct"]
-    
-    DecodeEvent --> Dispatcher["Module.Dispatcher<br/>user/module/imodule.go:409<br/>Route by EventType"]
-    
-    Dispatcher --> ProcessorQueue{"EventType?"}
-    ProcessorQueue -->|TypeEventProcessor| EventProcessor["EventProcessor.Write<br/>Aggregate by UUID"]
-    ProcessorQueue -->|TypeOutput| DirectOutput["Direct Output"]
-    ProcessorQueue -->|TypeModuleData| ModuleCache["Module Cache<br/>master secrets, tuples"]
-    
-    EventProcessor --> WorkerPool["eventWorker pool<br/>Parse HTTP/HTTP2<br/>Format output"]
-    
-    WorkerPool --> FinalOutput["Final Output"]
-    DirectOutput --> FinalOutput
-    
-    FinalOutput --> OutputFormat{"Output Mode"}
-    OutputFormat -->|Text| Console["Console/File<br/>zerolog.Logger"]
-    OutputFormat -->|PCAP| PcapFile["PCAP-NG File<br/>+ DSB keylog blocks"]
-    OutputFormat -->|Keylog| KeylogFile["Keylog File<br/>CLIENT_RANDOM format"]
-    OutputFormat -->|Protobuf| WebSocket["WebSocket/TCP<br/>pb.LogEntry messages"]
+    User --> RootCmd
+    RootCmd --> GlobalFlags
+    RootCmd --> SubCmd
+    SubCmd --> RunModule
 ```
 
-Sources: [user/module/imodule.go:285-391](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L285-L391), [user/module/imodule.go:409-448](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L409-L448), [cli/cmd/root.go:250-403](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/root.go#L250-L403)
+**CLI Command Flow: From user input to module execution**
 
-## User Interface Layer
+The `rootCmd` in [cli/cmd/root.go:81-113](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/root.go#L81-L113) is the root Cobra command. It defines global flags that apply to all subcommands:
 
-eCapture provides three interfaces for user interaction: CLI commands, HTTP configuration API, and eCaptureQ GUI integration.
-
-### CLI Entry Point
-
-The CLI uses Cobra command framework. Each subcommand corresponds to a capture module.
-
-**Diagram: CLI Command Structure**
-
-```mermaid
-graph TB
-    main["main()<br/>main.go:10"] --> rootCmd["rootCmd.Execute<br/>cli/cmd/root.go:81"]
-    
-    rootCmd --> SubCommands["Subcommands"]
-    
-    SubCommands --> tls["tls<br/>OpenSSL/BoringSSL"]
-    SubCommands --> gotls["gotls<br/>Go crypto/tls"]
-    SubCommands --> gnutls["gnutls<br/>GnuTLS library"]
-    SubCommands --> nss["nss<br/>NSS/NSPR"]
-    SubCommands --> bash["bash<br/>Command audit"]
-    SubCommands --> zsh["zsh<br/>Command audit"]
-    SubCommands --> mysqld["mysqld<br/>Query audit"]
-    SubCommands --> postgres["postgres<br/>Query audit"]
-    
-    tls --> OpensslConfig["config.OpensslConfig<br/>--libssl, --model, --pcapfile"]
-    gotls --> GotlsConfig["config.GoTLSConfig<br/>--elfpath, --model"]
-    bash --> BashConfig["config.BashConfig<br/>--bashpath"]
-    
-    OpensslConfig --> runModule["runModule<br/>cli/cmd/root.go:250"]
-    GotlsConfig --> runModule
-    BashConfig --> runModule
-    
-    runModule --> SetModConfig["setModConfig<br/>PID, UID, BTF mode<br/>PerCpuMapSize"]
-    SetModConfig --> GetModuleFunc["module.GetModuleFunc<br/>Factory lookup"]
-    
-    GetModuleFunc --> ModInit["mod.Init()<br/>IModule.Init"]
-    ModInit --> ModRun["mod.Run()<br/>Start eBPF, event loop"]
-```
-
-Sources: [main.go:9-11](https://github.com/gojue/ecapture/blob/0766a93b/main.go#L9-L11), [cli/cmd/root.go:80-153](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/root.go#L80-L153), [cli/cmd/root.go:250-403](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/root.go#L250-L403), [cli/cmd/root.go:156-175](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/root.go#L156-L175)
-
-**Persistent Flags** (apply to all modules) [cli/cmd/root.go:140-153](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/root.go#L140-L153):
-
-| Flag | Type | Default | Purpose |
+| Flag | Type | Purpose | Default |
 |------|------|---------|---------|
-| `--pid` / `-p` | uint64 | 0 (all) | Target specific process ID |
-| `--uid` / `-u` | uint64 | 0 (all) | Target specific user ID |
-| `--btf` / `-b` | uint8 | 0 (auto) | BTF mode: 0=auto, 1=core, 2=non-core |
-| `--mapsize` | int | 1024 | eBPF map size per CPU (KB) |
-| `--logaddr` / `-l` | string | "" | Log destination: file path, `tcp://host:port`, or `ws://host:port/path` |
-| `--eventaddr` | string | "" | Event destination (separate from logs) |
-| `--listen` | string | `localhost:28256` | HTTP config server listen address |
-| `--tsize` / `-t` | uint64 | 0 | Truncate size in text mode (bytes, 0=no truncate) |
-| `--ecaptureq` | string | "" | Listen for eCaptureQ client connections |
+| `--pid` / `-p` | uint64 | Target process ID (0 = all processes) | 0 |
+| `--uid` / `-u` | uint64 | Target user ID (0 = all users) | 0 |
+| `--debug` / `-d` | bool | Enable debug logging | false |
+| `--btf` / `-b` | uint8 | BTF mode (0=auto, 1=core, 2=non-core) | 0 |
+| `--mapsize` | int | eBPF map size per CPU (KB) | 1024 |
+| `--logaddr` / `-l` | string | Logger output address | "" |
+| `--listen` | string | HTTP API listen address | "localhost:28256" |
 
-### HTTP Configuration Server
+Each subcommand (e.g., `tls`, `gotls`, `bash`) eventually calls `runModule()` at [cli/cmd/root.go:250-403](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/root.go#L250-L403), which:
 
-An HTTP server runs concurrently to accept runtime configuration updates without restarting.
+1. Creates module-specific configuration from global configuration using `setModConfig()` [cli/cmd/root.go:157-175](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/root.go#L157-L175)
+2. Initializes loggers and event collectors [cli/cmd/root.go:282-295](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/root.go#L282-L295)
+3. Starts an HTTP server for runtime configuration updates [cli/cmd/root.go:313-322](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/root.go#L313-L322)
+4. Initializes the module via `IModule.Init()` [cli/cmd/root.go:352-356](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/root.go#L352-L356)
+5. Runs the module via `IModule.Run()` [cli/cmd/root.go:358-362](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/root.go#L358-L362)
+6. Handles signals for reload or shutdown [cli/cmd/root.go:367-396](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/root.go#L367-L396)
 
-**Diagram: Runtime Configuration Update**
+**Sources:** [cli/cmd/root.go:80-154](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/root.go#L80-L154), [cli/cmd/root.go:157-175](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/root.go#L157-L175), [cli/cmd/root.go:250-403](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/root.go#L250-L403)
 
-```mermaid
-graph TB
-    HTTPServer["http.NewHttpServer<br/>cli/http/server.go<br/>localhost:28256"] --> ListenAddr["HTTP Listen<br/>POST /config endpoint"]
-    
-    ListenAddr --> ReceiveJSON["Receive JSON<br/>updated config.IConfig"]
-    
-    ReceiveJSON --> ReloadChannel["reRloadConfig chan<br/>cli/cmd/root.go:310<br/>buffered channel"]
-    
-    ReloadChannel --> RunModuleLoop["runModule select loop<br/>cli/cmd/root.go:368"]
-    
-    RunModuleLoop --> CloseModule["mod.Close()<br/>Detach eBPF programs"]
-    
-    CloseModule --> Reinit["mod = modFunc()<br/>Create new instance"]
-    
-    Reinit --> InitWithNewConfig["mod.Init(ctx, logger, newConfig)"]
-    
-    InitWithNewConfig --> RestartModule["mod.Run()<br/>Resume with new config"]
-```
+---
 
-Sources: [cli/cmd/root.go:313-322](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/root.go#L313-L322), [cli/cmd/root.go:368-396](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/root.go#L368-L396)
+## Module Orchestration Layer
 
-The HTTP server enables dynamic reconfiguration. When a POST request with updated configuration JSON arrives, the system:
-1. Closes the current module (detaches eBPF programs)
-2. Creates a new module instance
-3. Initializes with updated configuration
-4. Restarts event capture with new settings
-
-See [Configuration System](2.3-configuration-system.md) for configuration structure details and [HTTP API Documentation](https://github.com/gojue/ecapture/blob/0766a93b/docs/remote-config-update-api.md) for API details.
-
-### Output Destinations
-
-eCapture supports multiple output destinations for logs and events:
-
-**Diagram: Output Routing**
+The module orchestration layer is centered around the `IModule` interface, which all capture modules implement.
 
 ```mermaid
 graph TB
-    initLogger["initLogger()<br/>cli/cmd/root.go:178"] --> CheckAddr{"logaddr flag?"}
+    IModule["IModule Interface<br/>user/module/imodule.go:47-75"]
+    Module["Module Base Class<br/>user/module/imodule.go:83-108"]
     
-    CheckAddr -->|""| StdoutOnly["zerolog.ConsoleWriter<br/>os.Stdout only"]
-    CheckAddr -->|file path| FileWriter["os.Create(addr)<br/>MultiLevelWriter"]
-    CheckAddr -->|tcp://| TCPWriter["net.Dial('tcp', addr)<br/>TCP connection"]
-    CheckAddr -->|ws://| WSWriter["ws.NewClient<br/>WebSocket connection"]
+    OpenSSL["MOpenSSLProbe<br/>user/module/probe_openssl.go"]
+    GoTLS["GoTLSProbe<br/>user/module/probe_gotls.go"]
+    Bash["BashProbe<br/>user/module/probe_bash.go"]
     
-    FileWriter --> MultiWriter["zerolog.MultiLevelWriter<br/>Console + File/TCP/WS"]
-    TCPWriter --> MultiWriter
-    WSWriter --> MultiWriter
+    IModule -.implements.- Module
+    Module -.embedded in.- OpenSSL
+    Module -.embedded in.- GoTLS
+    Module -.embedded in.- Bash
     
-    MultiWriter --> LoggerInstance["zerolog.Logger<br/>Used by modules"]
-    StdoutOnly --> LoggerInstance
+    Methods["Key Methods:<br/>Init() - Initialize module<br/>Start() - Start eBPF programs<br/>Run() - Begin event reading<br/>Events() - Return event maps<br/>DecodeFun() - Get decoder<br/>Dispatcher() - Handle events<br/>Close() - Cleanup"]
     
-    LoggerInstance --> EventCollector["eventCollector io.Writer<br/>event.CollectorWriter or ecaptureQEventWriter"]
-    
-    EventCollector --> ModuleInit["mod.Init(ctx, logger, conf, eventCollector)<br/>user/module/imodule.go:111"]
+    IModule --> Methods
 ```
 
-Sources: [cli/cmd/root.go:178-247](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/root.go#L178-L247), [cli/cmd/root.go:255-295](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/root.go#L255-L295)
+**IModule Interface and Implementations**
 
-Output types [cli/cmd/root.go:69-73](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/root.go#L69-L73):
-- **Stdout** (type 0): Console output only
-- **File** (type 1): Write to local file, optionally with rotation via `--eventroratesize` and `--eventroratetime`
-- **TCP** (type 2): Stream to `tcp://host:port`
-- **WebSocket** (type 3): Stream to `ws://host:port/path` or `wss://` (TLS)
+The `IModule` interface at [user/module/imodule.go:47-75](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L47-L75) defines the contract for all capture modules:
 
-The `eventCollector` receives captured events while the `logger` receives operational logs. They can use the same or different destinations via `--logaddr` and `--eventaddr` flags.
+- **`Init(context.Context, *zerolog.Logger, config.IConfig, io.Writer) error`**: Initialize the module with context, logger, configuration, and event writer
+- **`Name() string`**: Return the module name
+- **`Start() error`**: Start the eBPF programs and attach probes
+- **`Run() error`**: Begin reading events from eBPF maps
+- **`Events() []*ebpf.Map`**: Return the eBPF maps that contain events
+- **`DecodeFun(*ebpf.Map) (event.IEventStruct, bool)`**: Return the decoder function for a specific map
+- **`Dispatcher(event.IEventStruct)`**: Process and route decoded events
+- **`Close() error`**: Clean up resources
 
-## Capture Module Layer
+The `Module` base class at [user/module/imodule.go:83-108](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L83-L108) provides common functionality:
 
-The module system uses a factory pattern for dynamic module instantiation. Each module implements the `IModule` interface and embeds the base `Module` struct for common functionality.
+- Event reading from perf buffers and ring buffers [user/module/imodule.go:285-391](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L285-L391)
+- Event decoding [user/module/imodule.go:393-406](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L393-L406)
+- Event dispatching to the event processor [user/module/imodule.go:408-448](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L408-L448)
+- BTF (BPF Type Format) detection [user/module/imodule.go:173-190](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L173-L190)
+- Bytecode file selection (CO-RE vs non-CO-RE) [user/module/imodule.go:191-214](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L191-L214)
 
-### Module Factory and Registration
+**Sources:** [user/module/imodule.go:47-108](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L47-L108), [user/module/imodule.go:236-262](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L236-L262), [user/module/imodule.go:285-391](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L285-L391)
 
-Modules self-register at package initialization time.
-
-**Diagram: Module Factory Pattern**
-
-```mermaid
-graph TB
-    InitFuncs["init() functions<br/>user/module/probe_*.go"] --> CallRegisteFunc["RegisteFunc(NewModuleProbe)<br/>Register constructor"]
-    
-    CallRegisteFunc --> ModuleFactories["moduleFactories map<br/>Global registry"]
-    
-    ModuleFactories --> RegisteredModules["Registered Constructors"]
-    
-    RegisteredModules --> NewOpenSSLProbe["NewOpenSSLProbe<br/>user/module/probe_openssl.go:781"]
-    RegisteredModules --> NewGoTLSProbe["NewGoTLSProbe<br/>user/module/probe_gotls.go"]
-    RegisteredModules --> NewGnuTLSProbe["NewGnuTLSProbe"]
-    RegisteredModules --> NewNSSProbe["NewNSSProbe"]
-    RegisteredModules --> NewBashProbe["NewBashProbe"]
-    RegisteredModules --> NewMysqldProbe["NewMysqldProbe"]
-    RegisteredModules --> NewPostgresProbe["NewPostgresProbe"]
-    RegisteredModules --> NewZshProbe["NewZshProbe"]
-    
-    CLIRunModule["runModule<br/>cli/cmd/root.go:250"] --> GetModuleFunc["module.GetModuleFunc(modName)<br/>Lookup in registry"]
-    
-    GetModuleFunc --> RetrieveConstructor["moduleFactories[modName]<br/>Return func() IModule"]
-    
-    RetrieveConstructor --> CreateInstance["modFunc()<br/>Create module instance"]
-```
-
-Sources: [user/module/probe_openssl.go:777-786](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl.go#L777-L786), [cli/cmd/root.go:344-347](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/root.go#L344-L347)
-
-Example registration from OpenSSL module [user/module/probe_openssl.go:777-786](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl.go#L777-L786):
-```go
-func init() {
-    RegisteFunc(NewOpenSSLProbe)
-}
-
-func NewOpenSSLProbe() IModule {
-    mod := &MOpenSSLProbe{}
-    mod.name = ModuleNameOpenssl
-    mod.mType = ProbeTypeUprobe
-    return mod
-}
-```
-
-The CLI retrieves the constructor via `module.GetModuleFunc(modName)` [cli/cmd/root.go:344](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/root.go#L344) and invokes it to create an instance.
-
-### IModule Interface
-
-All modules implement the `IModule` interface [user/module/imodule.go:47-75](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L47-L75), which defines lifecycle and event processing methods.
-
-**IModule Interface Methods**
-
-| Method | Purpose | Phase | Responsibility |
-|--------|---------|-------|----------------|
-| `Init(context.Context, *zerolog.Logger, config.IConfig, io.Writer)` | Initialize module, setup EventProcessor, BTF detection | Initialization | Base `Module` + child overrides |
-| `Start()` | Load eBPF bytecode, attach probes/hooks | Start | Child implements |
-| `Run()` | Start event readers, begin processing loop | Run | Base `Module` (calls child.Start) |
-| `Events() []*ebpf.Map` | Return eBPF maps to read events from | Run | Child implements |
-| `Decode(*ebpf.Map, []byte) (event.IEventStruct, error)` | Parse raw event bytes into struct | Event Processing | Base delegates to child.DecodeFun |
-| `DecodeFun(*ebpf.Map) (event.IEventStruct, bool)` | Return decoder for specific map | Event Processing | Child implements |
-| `Dispatcher(event.IEventStruct)` | Route events (cache, process, output) | Event Processing | Base + child both implement |
-| `Close()` | Stop eBPF programs, cleanup resources | Shutdown | Base + child both implement |
-
-See [Module System and Lifecycle](2.4-module-system-and-lifecycle.md) for detailed lifecycle information.
-
-Sources: [user/module/imodule.go:47-75](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L47-L75), [user/module/imodule.go:110-171](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L110-L171)
-
-### Base Module Implementation
-
-The `Module` struct [user/module/imodule.go:83-108](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L83-L108) provides common functionality that all probes inherit through embedding.
-
-**Diagram: Module Struct Composition**
-
-```mermaid
-graph TB
-    BaseModule["Module struct<br/>user/module/imodule.go:83<br/>Embedded by all probes"] --> CoreFields["Core Fields"]
-    BaseModule --> CoreMethods["Core Methods"]
-    
-    CoreFields --> ctx["ctx context.Context<br/>Cancellation signal"]
-    CoreFields --> logger["logger *zerolog.Logger<br/>Logging interface"]
-    CoreFields --> conf["conf config.IConfig<br/>Module configuration"]
-    CoreFields --> processor["processor *EventProcessor<br/>pkg/event_processor"]
-    CoreFields --> reader["reader []IClose<br/>perf/ringbuf readers"]
-    CoreFields --> child["child IModule<br/>Actual probe (e.g., MOpenSSLProbe)"]
-    CoreFields --> eventCollector["eventCollector io.Writer<br/>Output destination"]
-    CoreFields --> flags["isCoreUsed bool<br/>isKernelLess5_2 bool"]
-    
-    CoreMethods --> InitMethod["Init()<br/>BTF detection<br/>EventProcessor setup<br/>user/module/imodule.go:111"]
-    CoreMethods --> RunMethod["Run()<br/>Start child.Start()<br/>readEvents()<br/>user/module/imodule.go:236"]
-    CoreMethods --> readEvents["readEvents()<br/>perfEventReader<br/>ringbufEventReader<br/>user/module/imodule.go:285"]
-    CoreMethods --> DecodeMethod["Decode()<br/>Delegates to child.DecodeFun<br/>user/module/imodule.go:393"]
-    CoreMethods --> DispatcherMethod["Dispatcher()<br/>Routes events<br/>user/module/imodule.go:409"]
-    CoreMethods --> CloseMethod["Close()<br/>Cleanup readers<br/>user/module/imodule.go:450"]
-    
-    ProbeModules["Probe Modules"] --> MOpenSSL["MOpenSSLProbe<br/>user/module/probe_openssl.go:83<br/>embeds Module"]
-    ProbeModules --> MGoTLS["MGoTLSProbe<br/>embeds Module"]
-    ProbeModules --> MGnuTLS["MGnuTLSProbe<br/>embeds Module"]
-    ProbeModules --> MBash["MBashProbe<br/>embeds Module"]
-    
-    MOpenSSL --> ImplStart["Implements Start()<br/>setupManagers*<br/>Load eBPF bytecode"]
-    MOpenSSL --> ImplEvents["Implements Events()<br/>Returns event maps"]
-    MOpenSSL --> ImplDecodeFun["Implements DecodeFun()<br/>Map → event struct type"]
-    MOpenSSL --> ImplDispatcher["Implements Dispatcher()<br/>saveMasterSecret<br/>AddConn/DelConn"]
-```
-
-Sources: [user/module/imodule.go:83-108](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L83-L108), [user/module/probe_openssl.go:83-106](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl.go#L83-L106)
-
-**Base Module Responsibilities** [user/module/imodule.go:83-460](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L83-L460):
-
-1. **BTF Detection**: `autoDetectBTF()` checks `/sys/kernel/btf/vmlinux` and container environment [user/module/imodule.go:173-190](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L173-L190)
-2. **Bytecode Selection**: `geteBPFName()` appends `_core.o`/`_noncore.o` and `_less52.o` suffixes [user/module/imodule.go:191-214](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L191-L214)
-3. **Event Readers**: `perfEventReader()` and `ringbufEventReader()` setup goroutines per eBPF map [user/module/imodule.go:308-391](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L308-L391)
-4. **EventProcessor**: Initialized with truncate size and hex mode [user/module/imodule.go:127](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L127)
-5. **Output Routing**: Detects `eventCollector` type to select text vs protobuf encoding [user/module/imodule.go:122-126](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L122-L126), [user/module/imodule.go:461-479](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L461-L479)
-6. **Lifecycle Management**: Coordinates child module's lifecycle through `Start()`, `Run()`, `Close()` [user/module/imodule.go:236-262](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L236-L262)
-
-### Module-Specific Implementations
-
-Each probe module embeds `Module` and adds module-specific state and logic. See [Capture Modules](../3-capture-modules/index.md) for detailed implementation information.
-
-**Key Module Types**
-
-| Module | Purpose | Target Libraries/Binaries | Key State | See Also |
-|--------|---------|---------------------------|-----------|----------|
-| `MOpenSSLProbe` | TLS plaintext capture | libssl.so, libcrypto.so, BoringSSL | `sslVersionBpfMap`, `pidConns`, `masterKeys`, `eBPFProgramType` | [OpenSSL Module](../3-capture-modules/3.1.1-openssl-module.md) |
-| `MGoTLSProbe` | Go TLS plaintext capture | Go binaries (crypto/tls) | `isRegisterABI`, `tcPacketsChan`, `keylogger` | [Go TLS Module](../3-capture-modules/3.1.2-go-tls-module.md) |
-| `MGnuTLSProbe` | GnuTLS plaintext capture | libgnutls.so | `keylogger`, `masterKeys` | [GnuTLS and NSS Modules](../3-capture-modules/3.1.3-gnutls-and-nss-modules.md) |
-| `MNSSProbe` | NSS/NSPR plaintext capture | libnss3.so, libnspr4.so | Master secret extraction | [GnuTLS and NSS Modules](../3-capture-modules/3.1.3-gnutls-and-nss-modules.md) |
-| `MBashProbe` | Bash command audit | bash binary | Command filtering via readline hooks | [Shell Command Auditing](../3-capture-modules/3.2.1-shell-command-auditing.md) |
-| `MZshProbe` | Zsh command audit | zsh binary | Command filtering via zle hooks | [Shell Command Auditing](../3-capture-modules/3.2.1-shell-command-auditing.md) |
-| `MMysqldProbe` | MySQL query audit | mysqld binary | `funcName`, SQL extraction from dispatch_command | [Database Query Auditing](../3-capture-modules/3.2.2-database-query-auditing.md) |
-| `MPostgresProbe` | PostgreSQL query audit | postgres binary | Query extraction from exec_simple_query | [Database Query Auditing](../3-capture-modules/3.2.2-database-query-auditing.md) |
-
-Sources: [user/module/probe_openssl.go:83-106](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl.go#L83-L106)
-
-**Example: MOpenSSLProbe State** [user/module/probe_openssl.go:83-106](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl.go#L83-L106):
-
-| Field | Type | Purpose |
-|-------|------|---------|
-| `pidConns` | `map[uint32]map[uint32]ConnInfo` | Maps PID → FD → connection tuple and socket [user/module/probe_openssl.go:91]() |
-| `sock2pidFd` | `map[uint64][2]uint32` | Reverse map: socket → [PID, FD] for connection cleanup [user/module/probe_openssl.go:93]() |
-| `masterKeys` | `map[string]bool` | Deduplicates TLS master secrets by client random [user/module/probe_openssl.go:98]() |
-| `sslVersionBpfMap` | `map[string]string` | Maps SSL version string to bytecode filename [user/module/probe_openssl.go:101]() |
-| `eBPFProgramType` | `TlsCaptureModelType` | Determines capture mode (Text/Pcap/Keylog) [user/module/probe_openssl.go:99](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl.go#L99) |
-| `keylogger` | `*os.File` | File handle for keylog mode output [user/module/probe_openssl.go:96](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl.go#L96) |
-| `bpfManager` | `*manager.Manager` | eBPF program lifecycle manager [user/module/probe_openssl.go:85](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl.go#L85) |
-
-These maps enable correlation between SSL data events (identified by PID/FD) and network tuples captured by TC hooks. See [Version Detection and Bytecode Selection](2.5-version-detection-and-bytecode-selection.md) for `sslVersionBpfMap` usage and [Network Connection Tracking](2.6-network-connection-tracking.md) for connection mapping details.
-
-## eBPF Runtime Layer
-
-The eBPF runtime layer bridges userspace modules with kernel-space instrumentation. It handles version detection, bytecode selection, and eBPF program lifecycle through the `ebpfmanager` library.
-
-For comprehensive details on eBPF programs and hooks, see [eBPF Engine](2.1-ebpf-engine.md). For version detection algorithms, see [Version Detection and Bytecode Selection](2.5-version-detection-and-bytecode-selection.md).
-
-### Overview of eBPF Runtime Components
-
-**Diagram: eBPF Runtime Components**
-
-```mermaid
-graph TB
-    Module["Capture Module<br/>(e.g., MOpenSSLProbe)"] --> VersionDetection["Version Detection<br/>getSslBpfFile()<br/>detectOpenssl()"]
-    
-    VersionDetection --> BytecodeSelection["Bytecode Selection<br/>geteBPFName()<br/>CO-RE vs non-CO-RE"]
-    
-    BytecodeSelection --> AssetLoad["Asset Loading<br/>assets.Asset(bpfFileName)<br/>Embedded bytecode"]
-    
-    AssetLoad --> ManagerInit["Manager Init<br/>manager.InitWithOptions()<br/>eBPF verifier"]
-    
-    ManagerInit --> ManagerStart["Manager Start<br/>manager.Start()<br/>Attach probes"]
-    
-    ManagerStart --> ProbeTypes["Probe Types"]
-    
-    ProbeTypes --> Uprobes["Uprobes<br/>User function hooks<br/>SSL_read, SSL_write"]
-    ProbeTypes --> TC["TC Classifiers<br/>Network packet capture<br/>ingress/egress"]
-    ProbeTypes --> Kprobes["Kprobes<br/>Kernel function hooks<br/>tcp_sendmsg, etc."]
-    
-    Uprobes --> eBPFMaps["eBPF Maps<br/>perf_event_array<br/>ring_buffer"]
-    TC --> eBPFMaps
-    Kprobes --> eBPFMaps
-    
-    eBPFMaps --> UserSpaceRead["User Space Read<br/>Module.readEvents()<br/>perfEventReader, ringbufEventReader"]
-```
-
-Sources: [user/module/probe_openssl.go:178-278](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl.go#L178-L278), [user/module/imodule.go:191-214](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L191-L214), [user/module/probe_openssl.go:312-331](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl.go#L312-L331), [user/module/imodule.go:285-391](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L285-L391)
-
-The runtime layer performs these operations:
-
-1. **Version Detection**: Determine target library version (see [Version Detection and Bytecode Selection](2.5-version-detection-and-bytecode-selection.md))
-2. **Bytecode Selection**: Choose CO-RE or non-CO-RE bytecode based on BTF availability
-3. **Asset Loading**: Load embedded bytecode from `assets` package
-4. **eBPF Verification**: Kernel verifies program safety
-5. **Probe Attachment**: Attach uprobes, TC classifiers, kprobes
-6. **Event Reading**: Setup readers for eBPF maps
-
-### BTF Detection and Bytecode Selection
-
-eCapture compiles two variants of each eBPF program: **CO-RE** (BTF-enabled, kernel >= 5.2) and **non-CO-RE** (traditional, all kernels). Runtime selection is based on kernel BTF support.
-
-**Diagram: BTF Detection and Bytecode Mode Selection**
-
-```mermaid
-graph TB
-    ModuleInit["Module.Init()<br/>user/module/imodule.go:111"] --> CheckBTFMode{"conf.GetBTF()"}
-    
-    CheckBTFMode -->|0: BTFModeAutoDetect| AutoDetect["autoDetectBTF()<br/>user/module/imodule.go:173"]
-    CheckBTFMode -->|1: BTFModeCore| ForceCore["m.isCoreUsed = true"]
-    CheckBTFMode -->|2: BTFModeNonCore| ForceNonCore["m.isCoreUsed = false"]
-    
-    AutoDetect --> CheckContainer["ebpfenv.IsContainer()<br/>Detect container env"]
-    CheckContainer --> CheckBTFFile["ebpfenv.IsEnableBTF()<br/>Check /sys/kernel/btf/vmlinux"]
-    CheckBTFFile --> SetCoreFlag["m.isCoreUsed = (BTF available)"]
-    
-    ForceCore --> ApplyFilename["geteBPFName()<br/>user/module/imodule.go:191"]
-    ForceNonCore --> ApplyFilename
-    SetCoreFlag --> ApplyFilename
-    
-    ApplyFilename --> CheckMode{"m.isCoreUsed?"}
-    CheckMode -->|true| AppendCore["filename.o<br/>→ filename_core.o"]
-    CheckMode -->|false| AppendNonCore["filename.o<br/>→ filename_noncore.o"]
-    
-    AppendCore --> CheckKernel{"Kernel < 5.2?"}
-    AppendNonCore --> CheckKernel
-    
-    CheckKernel -->|Yes| AppendLess52["Append _less52.o<br/>e.g., filename_core_less52.o"]
-    CheckKernel -->|No| FinalFilename["Final bytecode filename"]
-    
-    AppendLess52 --> FinalFilename
-    
-    FinalFilename --> AssetLookup["assets.Asset(bpfFileName)<br/>Load from embedded FS"]
-```
-
-Sources: [user/module/imodule.go:154-170](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L154-L170), [user/module/imodule.go:173-190](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L173-L190), [user/module/imodule.go:191-214](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L191-L214)
-
-**BTF Detection Logic** [user/module/imodule.go:173-190](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L173-L190):
-1. Check if running in container (BTF detection may be unreliable in containers)
-2. Look for `/sys/kernel/btf/vmlinux` file to confirm BTF support
-3. Set `m.isCoreUsed` flag based on detection result
-
-**Filename Transformation Examples** [user/module/imodule.go:191-214](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L191-L214):
-- `openssl_3_0_0_kern.o` → `openssl_3_0_0_kern_core.o` (BTF kernel >= 5.2)
-- `openssl_3_0_0_kern.o` → `openssl_3_0_0_kern_noncore.o` (non-BTF kernel >= 5.2)
-- `openssl_3_0_0_kern.o` → `openssl_3_0_0_kern_core_less52.o` (BTF kernel < 5.2)
-- `openssl_3_0_0_kern.o` → `openssl_3_0_0_kern_noncore_less52.o` (non-BTF kernel < 5.2)
-
-CO-RE bytecode uses BTF type information for structure layout resolution at load time, enabling **Compile Once - Run Everywhere**. Non-CO-RE bytecode has hardcoded offsets for specific kernel versions. See [Build System](../5-development-guide/5.1-build-system.md) for compilation details.
-
-### eBPF Program Lifecycle
-
-The `ebpfmanager.Manager` [user/module/probe_openssl.go:85](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl.go#L85) manages eBPF program loading, verification, attachment, and cleanup.
-
-```mermaid
-graph TB
-	%% **Diagram: eBPF Lifecycle Management**
-
-    ModuleStart["child.Start()<br/>e.g., probe_openssl.go:280"] --> SetupManagers["setupManagers*()<br/>Mode-specific setup<br/>Text/Pcap/Keylog"]
-    
-    SetupManagers --> DefineManager["Create manager.Manager<br/>Define Probes, Maps, ConstantEditors"]
-    
-    DefineManager --> LoadBytecode["assets.Asset(bpfFileName)<br/>Load from embedded FS<br/>user/module/probe_openssl.go:312"]
-    
-    LoadBytecode --> ManagerInit["bpfManager.InitWithOptions()<br/>bytes.NewReader(byteBuf)<br/>user/module/probe_openssl.go:320"]
-    
-    ManagerInit --> eBPFVerifier["eBPF Verifier<br/>Kernel validates program<br/>Checks safety, loops, permissions"]
-    
-    eBPFVerifier --> ManagerStart["bpfManager.Start()<br/>Attach all probes<br/>user/module/probe_openssl.go:329"]
-    
-    ManagerStart --> AttachProbes["Attach Probes"]
-    
-    AttachProbes --> Uprobes["Uprobes<br/>SSL_read, SSL_write<br/>SSL_do_handshake, etc."]
-    AttachProbes --> TCProgs["TC Classifiers<br/>ingress_cls_func<br/>egress_cls_func"]
-    AttachProbes --> Kprobes["Kprobes<br/>tcp_sendmsg<br/>__sys_connect"]
-    
-    Uprobes --> RegisterMaps["initDecodeFun*()<br/>Register event maps<br/>user/module/probe_openssl.go:336"]
-    TCProgs --> RegisterMaps
-    Kprobes --> RegisterMaps
-    
-    RegisterMaps --> EventMaps["m.eventMaps<br/>[]*ebpf.Map"]
-    RegisterMaps --> EventFuncMaps["m.eventFuncMaps<br/>map[*ebpf.Map]IEventStruct"]
-    
-    EventMaps --> ModuleRun["Module.Run()<br/>Event processing<br/>user/module/imodule.go:236"]
-    EventFuncMaps --> ModuleRun
-    
-    ModuleRun --> Running["Running State<br/>Read events from maps"]
-    
-    Running --> Shutdown["Module.Close()<br/>Shutdown signal"]
-    
-    Shutdown --> ManagerStop["bpfManager.Stop<br/>(manager.CleanAll)<br/>user/module/probe_openssl.go:354"]
-    
-    ManagerStop --> DetachAll["Detach all probes<br/>Unload eBPF programs<br/>Close file descriptors"]
-```
-
-Sources: [user/module/probe_openssl.go:280-357](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl.go#L280-L357), [user/module/imodule.go:236-262](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L236-L262)
-
-**Lifecycle Phases**:
-
-1. **Setup**: `Start()` calls mode-specific setup (`setupManagersText`, `setupManagersPcap`, `setupManagersKeylog`)
-2. **Bytecode Load**: `assets.Asset(bpfFileName)` retrieves embedded bytecode [user/module/probe_openssl.go:312-317](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl.go#L312-L317)
-3. **Initialization**: `bpfManager.InitWithOptions()` loads bytecode, kernel verifies program [user/module/probe_openssl.go:320-326](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl.go#L320-L326)
-4. **Attachment**: `bpfManager.Start()` attaches uprobes/TC/kprobes [user/module/probe_openssl.go:329-331](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl.go#L329-L331)
-5. **Map Registration**: `initDecodeFun*()` populates `eventMaps` and `eventFuncMaps` [user/module/probe_openssl.go:333-348](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl.go#L333-L348)
-6. **Running**: Base `Module.Run()` spawns event readers and EventProcessor [user/module/imodule.go:236-262](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L236-L262)
-7. **Shutdown**: `bpfManager.Stop(manager.CleanAll)` detaches and cleans up [user/module/probe_openssl.go:352-357](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl.go#L352-L357)
-
-### Configuration Injection via Constant Editors
-
-eBPF programs define constant variables that are rewritten at load time to inject runtime configuration (PID, UID filters).
-
-**Constant Editor Mechanism**
-
-| Constant Name | Purpose | Type | Value Source | Effect |
-|---------------|---------|------|--------------|--------|
-| `target_pid` | Filter by process ID | `uint64` | `conf.GetPid()` | 0 = capture all PIDs, non-zero = specific PID only |
-| `target_uid` | Filter by user ID | `uint64` | `conf.GetUid()` | 0 = capture all UIDs, non-zero = specific UID only |
-
-Sources: [user/module/probe_openssl.go:361-387](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl.go#L361-L387)
-
-The `constantEditor()` method [user/module/probe_openssl.go:361-387](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl.go#L361-L387) returns a slice of `manager.ConstantEditor` structs. The eBPF manager rewrites these constants in the bytecode **before** loading into the kernel. This enables parameterized filtering without recompiling eBPF programs.
-
-For kernels < 5.2, global variable support is limited. The `EnableGlobalVar()` check [user/config/iconfig.go:194-203](https://github.com/gojue/ecapture/blob/0766a93b/user/config/iconfig.go#L194-L203) returns false, disabling certain features.
-
-### Uprobe Attachments
-
-Uprobes instrument user-space library functions to capture plaintext data before/after encryption.
-
-**Diagram: Uprobe Hook Points**
-
-```mermaid
-graph TB
-    subgraph "OpenSSL/BoringSSL Uprobes"
-        SSLRead["uprobe/SSL_read<br/>uprobe/SSL_read_ex<br/>capture received plaintext"]
-        SSLWrite["uprobe/SSL_write<br/>uprobe/SSL_write_ex<br/>capture sent plaintext"]
-        SSLHandshake["uprobe/SSL_do_handshake<br/>capture TLS handshake"]
-        SSLGetWbio["uprobe/SSL_get_wbio<br/>extract BIO file descriptor"]
-    end
-    
-    subgraph "Go TLS Uprobes"
-        GoTLSWrite["uprobe/crypto/tls.(*Conn).Write<br/>capture sent plaintext"]
-        GoTLSRead["uprobe/crypto/tls.(*Conn).Read<br/>capture received plaintext"]
-    end
-    
-    subgraph "Bash Uprobes"
-        Readline["uprobe/readline<br/>capture shell commands"]
-    end
-    
-    subgraph "MySQL Uprobes"
-        DispatchCommand["uprobe/dispatch_command<br/>capture SQL queries"]
-    end
-    
-    SSLRead --> SSLDataEvent["SSLDataEvent<br/>events map"]
-    SSLWrite --> SSLDataEvent
-    SSLHandshake --> MasterSecretEvent["MasterSecretEvent<br/>mastersecret_events map"]
-    SSLGetWbio --> ConnDataEvent["ConnDataEvent<br/>connection tracking"]
-    
-    GoTLSWrite --> GoTLSDataEvent["TLS event struct"]
-    GoTLSRead --> GoTLSDataEvent
-    
-    Readline --> BashEvent["Bash command event"]
-    DispatchCommand --> MySQLEvent["MySQL query event"]
-```
-
-Sources: [user/module/probe_openssl.go:85-96](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl.go#L85-L96)
-
-Each uprobe captures function arguments and return values from target library functions. For OpenSSL, key hooks include:
-- `SSL_read` / `SSL_read_ex`: Intercepts plaintext after decryption
-- `SSL_write` / `SSL_write_ex`: Intercepts plaintext before encryption  
-- `SSL_do_handshake`: Captures TLS handshake for master secret extraction
-- `SSL_get_wbio`: Extracts BIO structure to get socket file descriptor
-
-### TC (Traffic Control) Hooks
-
-TC classifier programs attach to network interfaces to capture encrypted packets with network metadata.
-
-**Diagram: TC Hook Architecture**
-
-```mermaid
-graph LR
-    NetworkInterface["Network Interface<br/>eth0, wlan0"] --> IngressPath["Ingress Path<br/>incoming packets"]
-    NetworkInterface --> EgressPath["Egress Path<br/>outgoing packets"]
-    
-    IngressPath --> IngressTC["tc/ingress_cls_func<br/>BPF_PROG_TYPE_SCHED_CLS"]
-    EgressPath --> EgressTC["tc/egress_cls_func<br/>BPF_PROG_TYPE_SCHED_CLS"]
-    
-    IngressTC --> ExtractTuple["Extract 5-tuple<br/>src/dst IP:port + proto"]
-    EgressTC --> ExtractTuple
-    
-    ExtractTuple --> LookupPID["network_map lookup<br/>LRU_HASH map"]
-    LookupPID --> FilterCheck["Filter by PID/UID<br/>target_pid, target_uid"]
-    
-    FilterCheck --> CaptureSKB["Capture skb<br/>packet data + metadata"]
-    CaptureSKB --> TcSkbEvent["TcSkbEvent<br/>skb_events map"]
-```
-
-Sources: TC hooks capture complete packets including:
-- Ethernet, IP, and TCP/UDP headers
-- Encrypted TLS payload
-- 5-tuple (source IP:port, dest IP:port, protocol)
-- Timestamp and packet length
-
-The TC programs lookup the network tuple in `network_map` to determine which process owns the connection, enabling process-level filtering even for encrypted traffic.
-
-### Kprobe Attachments
-
-Kprobes hook kernel functions to build network context mappings that correlate packets with processes.
-
-**Diagram: Kprobe Context Tracking**
-
-```mermaid
-graph TB
-    Kprobe["kprobe/tcp_sendmsg<br/>kprobe/udp_sendmsg"] --> ExtractSocket["Extract sock structure<br/>from kernel args"]
-    
-    ExtractSocket --> GetPIDUID["bpf_get_current_pid_tgid<br/>bpf_get_current_uid_gid"]
-    GetPIDUID --> Extract5Tuple["Extract 5-tuple<br/>from sock->sk_common"]
-    
-    Extract5Tuple --> BuildKey["Build network_map key<br/>saddr, daddr, sport, dport, proto"]
-    BuildKey --> StoreMapping["network_map[key] = {pid, uid}<br/>LRU_HASH map"]
-    
-    StoreMapping --> TCLookup["TC hooks lookup<br/>correlate packets to processes"]
-```
-
-Sources: Kprobes populate the `network_map` LRU hash map with entries mapping network 5-tuples to process identifiers. This enables TC hooks to:
-1. Capture encrypted packets at the network layer
-2. Look up which process owns the connection
-3. Filter packets based on target PID/UID
-4. Associate captured packets with the correct capture session
-
-### eBPF Map Types
-
-Different map types serve different purposes in the data pipeline.
-
-**Map Type Summary**
-
-| Map Type | Purpose | Examples |
-|----------|---------|----------|
-| `BPF_MAP_TYPE_PERF_EVENT_ARRAY` | Stream events to userspace | `events`, `mastersecret_events`, `skb_events` |
-| `BPF_MAP_TYPE_RINGBUF` | High-performance event streaming (kernel >= 5.8) | Alternative to perf arrays |
-| `BPF_MAP_TYPE_LRU_HASH` | Connection tracking with automatic eviction | `network_map`, `pidConns`, `sock2pidFd` |
-| `BPF_MAP_TYPE_ARRAY` | Configuration and constants | `target_pid`, `target_uid` |
-| `BPF_MAP_TYPE_HASH` | General key-value storage | Various module-specific maps |
-
-Sources: [user/module/imodule.go:294-306](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L294-L306)
-
-## Event Processing Pipeline
-
-Once events are captured in kernel space, they flow through userspace processing to produce formatted output.
-
-### Event Reading from eBPF Maps
-
-The base `Module` struct sets up readers for each eBPF map based on its type.
-
-**Diagram: Event Reader Setup**
-
-```mermaid
-graph TB
-    readEvents["Module.readEvents<br/>user/module/imodule.go:285"] --> IterateMaps["for _, e := range child.Events()"]
-    
-    IterateMaps --> CheckMapType{"e.Type()"}
-    CheckMapType -->|PerfEventArray| PerfReader["perfEventReader<br/>user/module/imodule.go:308"]
-    CheckMapType -->|RingBuf| RingReader["ringbufEventReader<br/>user/module/imodule.go:353"]
-    
-    PerfReader --> CreatePerfReader["perf.NewReader<br/>conf.GetPerCpuMapSize()"]
-    RingReader --> CreateRingReader["ringbuf.NewReader"]
-    
-    CreatePerfReader --> PerfLoop["Goroutine: for loop<br/>rd.Read()"]
-    CreateRingReader --> RingLoop["Goroutine: for loop<br/>rd.Read()"]
-    
-    PerfLoop --> ReadRecord["record.RawSample<br/>[]byte"]
-    RingLoop --> ReadRecord
-    
-    ReadRecord --> DecodeEvent["child.Decode<br/>(em, record.RawSample)"]
-    DecodeEvent --> IEventStruct["IEventStruct<br/>event.IEventStruct"]
-    
-    IEventStruct --> DispatchEvent["Module.Dispatcher<br/>(evt)"]
-```
-
-Sources: [user/module/imodule.go:285-391](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L285-L391)
-
-The event reading process [user/module/imodule.go:285-391](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L285-L391):
-
-1. **Map Iteration**: Call `child.Events()` to get list of eBPF maps to read
-2. **Reader Creation**: Create appropriate reader (perf or ringbuf) based on map type
-3. **Goroutine Per Map**: Spawn goroutine for each map to read events concurrently
-4. **Read Loop**: Continuously call `rd.Read()` to fetch raw event bytes
-5. **Decode**: Call `child.Decode(em, rawBytes)` to parse into `IEventStruct`
-6. **Dispatch**: Route event via `Module.Dispatcher(evt)`
-
-The perf event reader [user/module/imodule.go:308-351](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L308-L351) creates a buffer of configurable size (via `--mapsize` flag) per CPU core. Lost samples are logged when the buffer fills.
-
-### Event Decoding
-
-Each module implements its own `Decode` method that parses raw bytes into structured events.
-
-**Diagram: Decode Function Dispatch**
-
-```mermaid
-graph TB
-    ModuleDecode["Module.Decode<br/>user/module/imodule.go:393"] --> DecodeFun["child.DecodeFun(em)<br/>get decoder for this map"]
-    
-    DecodeFun --> EventStructMap{"m.eventFuncMaps[em]"}
-    EventStructMap --> CloneStruct["es.Clone()<br/>create new event instance"]
-    
-    CloneStruct --> DecodeBytes["te.Decode(b)<br/>parse raw bytes"]
-    DecodeBytes --> ReturnEvent["return IEventStruct"]
-    
-    subgraph "Example: OpenSSL Module"
-        OpensslDecodeFun["DecodeFun<br/>probe_openssl.go:389"] --> CheckMap{"which eBPF map?"}
-        CheckMap -->|events| SSLDataDecoder["event.SSLDataEvent"]
-        CheckMap -->|mastersecret_events| MasterSecretDecoder["event.MasterSecretEvent"]
-        CheckMap -->|skb_events| TcSkbDecoder["event.TcSkbEvent"]
-    end
-```
-
-Sources: [user/module/imodule.go:393-406](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L393-L406), [user/module/probe_openssl.go:389-392](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl.go#L389-L392)
-
-The decode process:
-1. Module's `DecodeFun` returns the appropriate event struct type for a given eBPF map
-2. Call `es.Clone()` to create a new instance of the event struct
-3. Call `te.Decode(b)` which uses `encoding/binary` to parse the raw bytes
-4. Return the populated `IEventStruct`
-
-Each event type implements the `IEventStruct` interface which defines `Decode([]byte) error`, `Clone() IEventStruct`, `EventType()`, and output methods.
-
-### Event Dispatcher and Routing
-
-The `Dispatcher` method routes decoded events to appropriate handlers based on event type.
-
-**Diagram: Event Routing Logic**
-
-```mermaid
-graph TB
-    Dispatcher["Module.Dispatcher<br/>user/module/imodule.go:409"] --> CheckClosed{"isClosed.Load()"}
-    CheckClosed -->|true| DropEvent["Drop event<br/>module shutting down"]
-    CheckClosed -->|false| CheckHex{"conf.GetHex()"}
-    
-    CheckHex -->|true| CheckEventType1{"EventType?"}
-    CheckEventType1 -->|TypeEventProcessor| HexOutput1["e.StringHex()<br/>direct hex output"]
-    CheckEventType1 -->|TypeOutput| HexOutput1
-    CheckEventType1 -->|Other| ContinueRouting["Continue to switch"]
-    
-    CheckHex -->|false| ContinueRouting
-    
-    ContinueRouting --> SwitchEventType{"e.EventType()"}
-    SwitchEventType -->|TypeOutput| EncodeOutput["output(e)<br/>text or protobuf"]
-    SwitchEventType -->|TypeEventProcessor| WriteProcessor["processor.Write(e)"]
-    SwitchEventType -->|TypeModuleData| WriteChild["child.Dispatcher(e)<br/>module-specific handling"]
-    
-    EncodeOutput --> WriteCollector["eventCollector.Write(b)"]
-    WriteProcessor --> EventProcessorQueue["EventProcessor queue"]
-    WriteChild --> ModuleCache["Module caches<br/>e.g., master secrets, connections"]
-```
-
-Sources: [user/module/imodule.go:409-448](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L409-L448)
-
-The dispatcher [user/module/imodule.go:409-448](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L409-L448) implements three routing paths:
-
-1. **TypeOutput**: Events ready for direct output (e.g., parsed HTTP requests/responses)
-   - Encoded as text or protobuf based on `eventOutputType` [user/module/imodule.go:461-479](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L461-L479)
-   - Written directly to `eventCollector` (logger or WebSocket)
-
-2. **TypeEventProcessor**: Events needing further processing (e.g., SSL data fragments)
-   - Sent to `EventProcessor` for aggregation and protocol parsing
-   - `processor.Write(e)` queues event for worker processing
-
-3. **TypeModuleData**: Events containing metadata (e.g., master secrets, connections)
-   - Routed to child module's `Dispatcher` for module-specific handling
-   - OpenSSL module saves master secrets [user/module/probe_openssl.go:733-754](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl.go#L733-L754)
-   - Connection info cached for tuple resolution [user/module/probe_openssl.go:398-416](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl.go#L398-L416)
-
-### EventProcessor and Worker Lifecycle
-
-The `EventProcessor` aggregates fragmented events by connection and applies protocol-aware parsing.
-
-**Diagram: EventProcessor Architecture**
-
-```mermaid
-graph TB
-    ProcessorWrite["processor.Write<br/>IEventStruct"] --> ExtractUUID["e.GetUUID()<br/>connection identifier"]
-    
-    ExtractUUID --> LookupWorker{"workers[uuid]<br/>exists?"}
-    LookupWorker -->|No| CreateWorker["newEventWorker<br/>lifecycle management"]
-    LookupWorker -->|Yes| ExistingWorker["Existing eventWorker"]
-    
-    CreateWorker --> DetermineLifecycle{"UUID prefix?"}
-    DetermineLifecycle -->|"sock:"| SocketLifecycle["Socket-based lifecycle<br/>explicit cleanup via sock"]
-    DetermineLifecycle -->|Other| DefaultLifecycle["Default lifecycle<br/>10-tick timeout, auto-cleanup"]
-    
-    SocketLifecycle --> WorkerQueue["worker.incomingChan<br/>queue event"]
-    DefaultLifecycle --> WorkerQueue
-    ExistingWorker --> WorkerQueue
-    
-    WorkerQueue --> WorkerLoop["Goroutine: worker.Run()"]
-    WorkerLoop --> ParseEvent["Parse event data<br/>detect protocol"]
-    
-    ParseEvent --> CheckParser{"IParser?"}
-    CheckParser -->|HTTPRequest| HTTPRequestParser["HTTPRequest parser"]
-    CheckParser -->|HTTPResponse| HTTPResponseParser["HTTPResponse parser"]
-    CheckParser -->|HTTP2| HTTP2Parser["HTTP2 HPACK parser"]
-    CheckParser -->|Default| DefaultParser["Raw payload output"]
-    
-    HTTPRequestParser --> FormatOutput["Format and write<br/>to eventCollector"]
-    HTTPResponseParser --> FormatOutput
-    HTTP2Parser --> FormatOutput
-    DefaultParser --> FormatOutput
-    
-    FormatOutput --> OutputEvent["TypeOutput event"]
-    OutputEvent --> DispatcherAgain["Module.Dispatcher<br/>TypeOutput branch"]
-```
-
-Sources: The `EventProcessor` manages a pool of `eventWorker` goroutines, each responsible for a specific connection UUID. Workers implement two lifecycle models:
-
-1. **Default Lifecycle**: Auto-cleanup after 10 idle ticks (no events received)
-2. **Socket Lifecycle**: Persists until explicit cleanup via socket destruction
-
-Each worker maintains a queue and processes events sequentially to preserve ordering. Protocol parsers detect HTTP/1.1, HTTP/2, and other protocols, applying format-specific decoding (e.g., HPACK decompression for HTTP/2).
-
-## Configuration and Capture Modes
-
-eCapture supports multiple capture modes that determine how data is processed and output.
-
-```mermaid
-graph LR
-    ConfigSystem["config.IConfig<br/>Configuration Interface"] --> CaptureTypes["Capture Types"]
-    
-    CaptureTypes --> TLSCapture["TLS Capture<br/>TlsCaptureModelType"]
-    CaptureTypes --> SystemCapture["System Capture<br/>Bash, MySQL, PostgreSQL"]
-    
-    TLSCapture --> TextMode["TlsCaptureModelTypeText<br/>Live plaintext output"]
-    TLSCapture --> PcapMode["TlsCaptureModelTypePcap<br/>PCAP-NG file output"]
-    TLSCapture --> KeylogMode["TlsCaptureModelTypeKeylog<br/>Master key extraction"]
-    
-    TextMode --> TextProcessor["Direct text processing"]
-    PcapMode --> PcapProcessor["PCAP packet construction"]
-    KeylogMode --> KeylogProcessor["Master secret extraction"]
-    
-    SystemCapture --> AuditMode["Audit Mode<br/>Command/Query logging"]
-    AuditMode --> AuditProcessor["Event-based logging"]
-```
-
-Sources: [user/module/probe_openssl.go:58-76](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl.go#L58-L76), [user/module/probe_openssl.go:127-154](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl.go#L127-L154)
+---
 
 ## Module Lifecycle
 
-Each module follows a standardized lifecycle managed by the base `Module` struct and implemented by specific probes.
+The module lifecycle follows a three-phase pattern: **Init → Run → Close**.
+
+```mermaid
+sequenceDiagram
+    participant CLI as runModule()
+    participant Mod as IModule
+    participant Child as Child Module<br/>(e.g., MOpenSSLProbe)
+    participant BPF as bpfManager
+    participant EP as EventProcessor
+    
+    CLI->>Mod: Init(ctx, logger, config, writer)
+    Mod->>Mod: autoDetectBTF()
+    Mod->>Mod: Create EventProcessor
+    Mod->>Child: SetChild(child)
+    Child->>Child: Detect library version
+    Child->>Child: Select bytecode file
+    
+    CLI->>Mod: Run()
+    Mod->>Child: Start()
+    Child->>BPF: InitWithOptions(bytecode)
+    BPF->>BPF: Load eBPF programs
+    Child->>BPF: Start()
+    BPF->>BPF: Attach probes
+    
+    Mod->>Mod: readEvents()
+    Mod->>Mod: perfEventReader()/ringbufEventReader()
+    Mod->>EP: processor.Serve()
+    
+    loop Event Loop
+        BPF-->>Mod: eBPF event
+        Mod->>Mod: Decode(map, bytes)
+        Mod->>Child: Dispatcher(event)
+        Child->>EP: processor.Write(event)
+    end
+    
+    CLI->>Mod: Close()
+    Mod->>Child: Close()
+    Child->>BPF: Stop(CleanAll)
+    Mod->>EP: processor.Close()
+```
+
+**Module Lifecycle: Three-phase initialization, execution, and cleanup**
+
+### Init Phase
+
+The `Init()` method performs module initialization:
+
+1. **Context and logger setup** at [user/module/imodule.go:111-127](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L111-L127)
+2. **BTF detection** using `autoDetectBTF()` at [user/module/imodule.go:173-190](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L173-L190)
+3. **Kernel version check** at [user/module/imodule.go:140-149](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L140-L149)
+4. **EventProcessor creation** at [user/module/imodule.go:127](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L127)
+5. **Child-specific initialization** (e.g., OpenSSL version detection at [user/module/probe_openssl.go:109-176](https://github.com/gojue/ecapture/blob/ca085d05/user/module/probe_openssl.go#L109-L176))
+
+### Run Phase
+
+The `Run()` method orchestrates execution:
+
+1. **Call `Start()`** on the child module at [user/module/imodule.go:239-242](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L239-L242)
+2. **Start event reading goroutines** at [user/module/imodule.go:256-259](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L256-L259)
+3. **Start EventProcessor** at [user/module/imodule.go:249-254](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L249-L254)
+4. **Read events** from eBPF maps at [user/module/imodule.go:285-305](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L285-L305)
+
+The `Start()` method (implemented by child modules) loads and attaches eBPF programs:
+
+1. **Setup managers** based on capture mode at [user/module/probe_openssl.go:284-300](https://github.com/gojue/ecapture/blob/ca085d05/user/module/probe_openssl.go#L284-L300)
+2. **Load bytecode** from embedded assets at [user/module/probe_openssl.go:310-326](https://github.com/gojue/ecapture/blob/ca085d05/user/module/probe_openssl.go#L310-L326)
+3. **Initialize bpfManager** at [user/module/probe_openssl.go:320-326](https://github.com/gojue/ecapture/blob/ca085d05/user/module/probe_openssl.go#L320-L326)
+4. **Start bpfManager** (attach probes) at [user/module/probe_openssl.go:328-331](https://github.com/gojue/ecapture/blob/ca085d05/user/module/probe_openssl.go#L328-L331)
+5. **Initialize decode functions** at [user/module/probe_openssl.go:333-347](https://github.com/gojue/ecapture/blob/ca085d05/user/module/probe_openssl.go#L333-L347)
+
+### Close Phase
+
+The `Close()` method performs cleanup:
+
+1. **Stop bpfManager** and detach probes at [user/module/probe_openssl.go:352-357](https://github.com/gojue/ecapture/blob/ca085d05/user/module/probe_openssl.go#L352-L357)
+2. **Close EventProcessor** at [user/module/imodule.go:458-459](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L458-L459)
+3. **Close event readers** at [user/module/imodule.go:453-457](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L453-L457)
+
+**Sources:** [user/module/imodule.go:111-171](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L111-L171), [user/module/imodule.go:236-262](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L236-L262), [user/module/probe_openssl.go:109-176](https://github.com/gojue/ecapture/blob/ca085d05/user/module/probe_openssl.go#L109-L176), [user/module/probe_openssl.go:280-350](https://github.com/gojue/ecapture/blob/ca085d05/user/module/probe_openssl.go#L280-L350)
+
+---
+
+## eBPF Execution Layer
+
+The eBPF execution layer manages the loading, initialization, and lifecycle of eBPF programs.
 
 ```mermaid
 graph TB
-    ModuleCreation["Module Creation<br/>NewOpenSSLProbe()"] --> InitPhase["Init Phase<br/>Module.Init()"]
+    subgraph "Bytecode Selection"
+        VersionDetect["Library Version Detection<br/>detectOpenssl()/detectGo()"]
+        BytecodeMap["sslVersionBpfMap<br/>version → bytecode file"]
+        CoreNonCore["CO-RE vs Non-CO-RE<br/>geteBPFName()"]
+    end
     
-    InitPhase --> ConfigSetup["Configuration Setup<br/>config.IConfig processing"]
-    InitPhase --> eBPFSetup["eBPF Setup<br/>bytecode loading, BTF detection"]
-    InitPhase --> EventSetup["Event Setup<br/>EventProcessor initialization"]
+    subgraph "eBPF Manager"
+        Assets["Embedded Bytecode<br/>assets.Asset()"]
+        BPFMgr["bpfManager<br/>ebpfmanager.Manager"]
+        BPFOpts["bpfManagerOptions<br/>Constants, Probes, Maps"]
+    end
     
-    ConfigSetup --> StartPhase["Start Phase<br/>Module.Start()"]
-    eBPFSetup --> StartPhase
-    EventSetup --> StartPhase
+    subgraph "Probe Attachment"
+        Uprobe["Uprobe Attachment<br/>SSL_read, SSL_write, etc."]
+        Kprobe["Kprobe Attachment<br/>tcp_sendmsg, etc."]
+        TC["TC Classifier<br/>ingress/egress"]
+    end
     
-    StartPhase --> ManagerSetup["Manager Setup<br/>setupManagers()"]
-    ManagerSetup --> ProgramLoad["Program Load<br/>bpfManager.InitWithOptions()"]
-    ProgramLoad --> ProgramStart["Program Start<br/>bpfManager.Start()"]
+    VersionDetect --> BytecodeMap
+    BytecodeMap --> CoreNonCore
+    CoreNonCore --> Assets
+    Assets --> BPFMgr
+    BPFOpts --> BPFMgr
     
-    ProgramStart --> RunPhase["Run Phase<br/>Module.Run()"]
-    
-    RunPhase --> EventReading["Event Reading<br/>perfEventReader, ringbufEventReader"]
-    RunPhase --> EventProcessing["Event Processing<br/>EventProcessor.Serve()"]
-    RunPhase --> EventDispatching["Event Dispatching<br/>Module.Dispatcher()"]
-    
-    EventReading --> ClosePhase["Close Phase<br/>Module.Close()"]
-    EventProcessing --> ClosePhase
-    EventDispatching --> ClosePhase
-    
-    ClosePhase --> ManagerStop["Manager Stop<br/>bpfManager.Stop()"]
-    ClosePhase --> ReaderClose["Reader Close<br/>perf/ringbuf reader cleanup"]
-    ClosePhase --> ProcessorClose["Processor Close<br/>EventProcessor.Close()"]
+    BPFMgr --> Uprobe
+    BPFMgr --> Kprobe
+    BPFMgr --> TC
 ```
 
-Sources: [user/module/imodule.go:99-152](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L99-L152), [user/module/imodule.go:218-244](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L218-L244), [user/module/probe_openssl.go:285-355](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl.go#L285-L355), [user/module/imodule.go:430-440](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L430-L440)
+**eBPF Program Loading and Attachment**
+
+### Bytecode Selection
+
+eCapture uses different eBPF bytecode files depending on:
+
+1. **Target library version**: OpenSSL 1.0.x, 1.1.x, 3.0.x, 3.x, BoringSSL variants [user/module/probe_openssl.go:178-278](https://github.com/gojue/ecapture/blob/ca085d05/user/module/probe_openssl.go#L178-L278)
+2. **CO-RE support**: Kernel BTF availability determines CO-RE vs non-CO-RE bytecode [user/module/imodule.go:173-190](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L173-L190)
+3. **Kernel version**: Kernels < 5.2 have different limitations [user/module/imodule.go:140-149](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L140-L149)
+
+The `geteBPFName()` method at [user/module/imodule.go:191-214](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L191-L214) selects the appropriate bytecode file by appending `_core.o` or `_noncore.o` to the base filename.
+
+### Manager Initialization
+
+The `bpfManager` from the `ebpfmanager` library manages eBPF program lifecycle:
+
+1. **Load bytecode** from embedded assets via `assets.Asset()` [user/module/probe_openssl.go:312-317](https://github.com/gojue/ecapture/blob/ca085d05/user/module/probe_openssl.go#L312-L317)
+2. **Initialize manager** with `InitWithOptions()` [user/module/probe_openssl.go:320-326](https://github.com/gojue/ecapture/blob/ca085d05/user/module/probe_openssl.go#L320-L326)
+3. **Start manager** to attach probes with `Start()` [user/module/probe_openssl.go:328-331](https://github.com/gojue/ecapture/blob/ca085d05/user/module/probe_openssl.go#L328-L331)
+
+The `bpfManagerOptions` struct contains:
+
+- **Constants**: Target PID, UID, kernel version flags [user/module/probe_openssl.go:361-395](https://github.com/gojue/ecapture/blob/ca085d05/user/module/probe_openssl.go#L361-L395)
+- **Probes**: List of uprobe/kprobe/TC programs to attach
+- **Maps**: References to eBPF maps for event reading
+
+### Event Maps
+
+Each module defines eBPF maps for event collection:
+
+- **PerfEventArray** or **RingBuf** maps for event streaming
+- Managed by the eBPF manager and accessed via the `Events()` method [user/module/imodule.go:224-226](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L224-L226)
+- Event reading handled by `perfEventReader()` or `ringbufEventReader()` [user/module/imodule.go:308-391](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L308-L391)
+
+**Sources:** [user/module/probe_openssl.go:178-278](https://github.com/gojue/ecapture/blob/ca085d05/user/module/probe_openssl.go#L178-L278), [user/module/probe_openssl.go:280-350](https://github.com/gojue/ecapture/blob/ca085d05/user/module/probe_openssl.go#L280-L350), [user/module/imodule.go:173-214](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L173-L214), [user/module/imodule.go:308-391](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L308-L391)
+
+---
+
+## Event Processing Layer
+
+The event processing layer aggregates raw eBPF events, buffers payloads, and parses protocol data. For detailed information, see [Event Processing Pipeline](2.2-event-processing-pipeline.md).
+
+```mermaid
+graph TB
+    subgraph "Event Flow"
+        RawEvent["Raw eBPF Event<br/>SSLDataEvent, ConnDataEvent"]
+        Decoder["Module.Decode()<br/>user/module/imodule.go:393"]
+        Dispatcher["Module.Dispatcher()<br/>user/module/imodule.go:408"]
+    end
+    
+    subgraph "Event Processor"
+        EP["EventProcessor<br/>event_processor.EventProcessor"]
+        IncomingChan["incoming channel<br/>buffered events"]
+        WorkerQueue["workerQueue<br/>map[UUID]IWorker"]
+    end
+    
+    subgraph "Worker Processing"
+        Worker["eventWorker<br/>accumulates payloads"]
+        Buffer["bytes.Buffer<br/>payload storage"]
+        Parser["IParser.Parse()<br/>HTTP, HTTP2, Default"]
+    end
+    
+    RawEvent --> Decoder
+    Decoder --> Dispatcher
+    Dispatcher --> EP
+    EP --> IncomingChan
+    IncomingChan --> WorkerQueue
+    WorkerQueue --> Worker
+    Worker --> Buffer
+    Buffer --> Parser
+```
+
+**Event Processing: Aggregation, buffering, and parsing**
+
+### Event Decoding
+
+Raw bytes from eBPF maps are decoded into event structures:
+
+1. **Get decoder function** via `DecodeFun()` [user/module/imodule.go:228-230](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L228-L230)
+2. **Decode bytes** into event struct via `Decode()` [user/module/imodule.go:393-406](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L393-L406)
+3. **Dispatch event** via `Dispatcher()` [user/module/imodule.go:408-448](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L408-L448)
+
+### Event Processor
+
+The `EventProcessor` at [user/module/imodule.go:127](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L127) manages worker pools:
+
+- **UUID-based routing**: Events with the same UUID (connection ID) go to the same worker
+- **Worker lifecycle**: Workers are created on-demand and destroyed after inactivity
+- **Buffered accumulation**: Workers accumulate event fragments before parsing
+
+See [Event Processing Pipeline](2.2-event-processing-pipeline.md) for implementation details.
+
+**Sources:** [user/module/imodule.go:285-448](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L285-L448), [user/module/probe_openssl.go:741-783](https://github.com/gojue/ecapture/blob/ca085d05/user/module/probe_openssl.go#L741-L783)
+
+---
+
+## Output Layer
+
+The output layer formats processed events and writes them to configured destinations.
+
+```mermaid
+graph LR
+    subgraph "Output Format"
+        Event["IEventStruct"]
+        CodecType["codecType<br/>text or protobuf"]
+        TextOutput["String() output"]
+        ProtobufOutput["ToProtobufEvent() output"]
+    end
+    
+    subgraph "Output Writers"
+        CollectorWriter["CollectorWriter<br/>(zerolog)"]
+        ProtobufWriter["ProtobufWriter<br/>(protobuf bytes)"]
+    end
+    
+    subgraph "Destinations"
+        Stdout["stdout"]
+        File["File"]
+        TCP["TCP socket"]
+        WebSocket["WebSocket"]
+    end
+    
+    Event --> CodecType
+    CodecType --> TextOutput
+    CodecType --> ProtobufOutput
+    
+    TextOutput --> CollectorWriter
+    ProtobufOutput --> ProtobufWriter
+    
+    CollectorWriter --> Stdout
+    CollectorWriter --> File
+    ProtobufWriter --> TCP
+    ProtobufWriter --> WebSocket
+```
+
+**Output Formatting and Destinations**
+
+### Output Format Selection
+
+The output format is determined by the `eventCollector` writer type:
+
+- **Text mode**: When `eventCollector` is `CollectorWriter` [user/module/imodule.go:122-126](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L122-L126)
+- **Protobuf mode**: When `eventCollector` is `ecaptureQEventWriter` [user/module/imodule.go:122-126](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L122-L126)
+
+The format is applied in `Module.output()` at [user/module/imodule.go:461-479](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L461-L479):
+
+```
+if m.eventOutputType == codecTypeProtobuf {
+    // Marshal to protobuf
+    le := new(pb.LogEntry)
+    le.LogType = pb.LogType_LOG_TYPE_EVENT
+    ep := e.ToProtobufEvent()
+    ...
+} else {
+    // Convert to string
+    s := e.String()
+    ...
+}
+```
+
+### Output Destinations
+
+Output destinations are configured via the `--logaddr` and `--eventaddr` flags:
+
+| Destination Type | Flag Format | Implementation |
+|-----------------|-------------|----------------|
+| Stdout (default) | (none) | `zerolog.ConsoleWriter` to `os.Stdout` |
+| File | `/path/to/file.log` | `os.Create()` file handle |
+| TCP | `tcp://host:port` | `net.Dial("tcp", addr)` |
+| WebSocket | `ws://host:port/path` | `ws.NewClient().Dial()` |
+
+Logger initialization at [cli/cmd/root.go:178-247](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/root.go#L178-L247) creates appropriate writers based on the address format.
+
+### Module-Specific Output
+
+Some modules have specialized output modes:
+
+- **PCAP mode**: Writes pcapng format with DSB (Decryption Secrets Block) for Wireshark [user/config/iconfig.go:73-79](https://github.com/gojue/ecapture/blob/ca085d05/user/config/iconfig.go#L73-L79)
+- **Keylog mode**: Writes TLS master secrets in SSLKEYLOGFILE format [user/config/iconfig.go:73-79](https://github.com/gojue/ecapture/blob/ca085d05/user/config/iconfig.go#L73-L79)
+- **Text mode**: Direct plaintext output with protocol parsing [user/config/iconfig.go:73-79](https://github.com/gojue/ecapture/blob/ca085d05/user/config/iconfig.go#L73-L79)
+
+See [Output Formats](../4-output-formats/index.md) for details on each format.
+
+**Sources:** [user/module/imodule.go:111-127](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L111-L127), [user/module/imodule.go:461-479](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L461-L479), [cli/cmd/root.go:178-247](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/root.go#L178-L247), [user/config/iconfig.go:73-79](https://github.com/gojue/ecapture/blob/ca085d05/user/config/iconfig.go#L73-L79)
+
+---
+
+## Data Flow Summary
+
+The complete data flow through the architecture:
+
+1. **User executes CLI command** → `rootCmd.Execute()` parses flags
+2. **Subcommand handler** calls `runModule()` with module name and config
+3. **Module initialization** → `IModule.Init()` detects libraries, selects bytecode
+4. **Module start** → `IModule.Run()` loads eBPF, attaches probes, starts event processor
+5. **eBPF probes** capture data in kernel, write to maps
+6. **Event readers** poll maps, decode bytes into event structs
+7. **Dispatcher** routes events to event processor or module-specific handlers
+8. **Event processor** aggregates fragments, buffers payloads, parses protocols
+9. **Output formatters** convert to text or protobuf
+10. **Writers** send to stdout, file, TCP, or WebSocket
+
+This architecture provides:
+- **Modularity**: New modules implement `IModule` without changing core code
+- **Flexibility**: Multiple output formats and destinations
+- **Performance**: Asynchronous event processing with worker pools
+- **Extensibility**: Protocol parsers and output writers are pluggable
+
+**Sources:** [cli/cmd/root.go:250-403](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/root.go#L250-L403), [user/module/imodule.go:236-262](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L236-L262), [user/module/imodule.go:285-448](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L285-L448)
