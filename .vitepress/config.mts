@@ -22,9 +22,15 @@ export default withMermaid(defineConfigWithTheme<ThemeConfig>({
   // Mermaid configuration
   mermaid: {
     // Configure mermaid with better default settings
-    theme: 'default',
+    theme: 'base',
     themeVariables: {
       fontSize: '16px',
+      primaryColor: '#43AA8B',
+      primaryTextColor: '#fff',
+      primaryBorderColor: '#90BE6D',
+      lineColor: '#F8961E',
+      secondaryColor: '#F9C74F',
+      tertiaryColor: '#F3722C',
     },
   },
   transformPageData(pageData) {
@@ -41,7 +47,8 @@ export default withMermaid(defineConfigWithTheme<ThemeConfig>({
     ],
     ['link', { rel: 'shortcut icon', href: '/assets/logo-300x300-v2.svg' }],
     ['link', { rel: "icon", type: "image/svg", sizes: "32x32", href: '/assets/logo-300x300-v2.svg'}],
-    ['meta', { name: "theme-color", content: "#ffffff"}],
+    ['meta', { name: "theme-color", content: "#43AA8B"}],
+    ['meta', { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent"}],
   ],
 
   locales: {
@@ -76,7 +83,7 @@ export default withMermaid(defineConfigWithTheme<ThemeConfig>({
 
   themeConfig: {
     editLink: {
-      repo: 'gojue/ecapture.cc#master',
+      repo: 'gojue/ecapture.cc#v2',
       text: 'Edit this page on GitHub',
     },
 
@@ -117,10 +124,8 @@ export default withMermaid(defineConfigWithTheme<ThemeConfig>({
         // for when developing with locally linked theme
         allow: ['../..'],
         cachedChecks: false
-      },
-      force: true, // 强制重新加载
+      }
     },
-    assetsDir:"assets",
     build: {
       minify: 'terser',
       chunkSizeWarningLimit: Infinity
@@ -128,9 +133,5 @@ export default withMermaid(defineConfigWithTheme<ThemeConfig>({
     json: {
       stringify: true
     }
-  },
-
-  vue: {
-    reactivityTransform: true,
   }
 }))

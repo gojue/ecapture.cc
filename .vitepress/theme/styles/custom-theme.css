@@ -1,0 +1,277 @@
+/**
+ * eCapture Custom Theme - Tech/Security Aesthetic
+ * Color Palette: F94144, F3722C, F8961E, F9C74F, 90BE6D, 43AA8B
+ */
+
+:root {
+  /* Primary Brand Colors - Tech/Security Palette */
+  --ec-c-red: #F94144;
+  --ec-c-orange: #F3722C;
+  --ec-c-orange-light: #F8961E;
+  --ec-c-yellow: #F9C74F;
+  --ec-c-green: #90BE6D;
+  --ec-c-teal: #43AA8B;
+
+  /* Gradient Combinations */
+  --ec-gradient-warm: linear-gradient(135deg, #F94144 0%, #F8961E 50%, #F9C74F 100%);
+  --ec-gradient-cool: linear-gradient(135deg, #43AA8B 0%, #90BE6D 100%);
+  --ec-gradient-full: linear-gradient(135deg, #F94144 0%, #F3722C 20%, #F8961E 40%, #F9C74F 60%, #90BE6D 80%, #43AA8B 100%);
+  --ec-gradient-hero: linear-gradient(135deg, rgba(67, 170, 139, 0.1) 0%, rgba(144, 190, 109, 0.1) 50%, rgba(249, 65, 68, 0.1) 100%);
+
+  /* Accent Colors with Transparency */
+  --ec-c-red-soft: rgba(249, 65, 68, 0.14);
+  --ec-c-red-mute: rgba(249, 65, 68, 0.08);
+  --ec-c-teal-soft: rgba(67, 170, 139, 0.14);
+  --ec-c-teal-mute: rgba(67, 170, 139, 0.08);
+  --ec-c-green-soft: rgba(144, 190, 109, 0.14);
+
+  /* Override VitePress Brand Colors */
+  --vp-c-brand-1: #43AA8B;
+  --vp-c-brand-2: #90BE6D;
+  --vp-c-brand-3: #F8961E;
+  --vp-c-brand-soft: var(--ec-c-teal-soft);
+
+  /* Background Colors - Tech Dark Theme */
+  --vp-c-bg: #ffffff;
+  --vp-c-bg-soft: #f9f9f9;
+  --vp-c-bg-mute: #f1f1f1;
+  --vp-c-bg-alt: #ffffff;
+
+  /* Text Colors */
+  --vp-c-text-1: #1a1a1a;
+  --vp-c-text-2: #4a4a4a;
+  --vp-c-text-3: #6a6a6a;
+
+  /* Border & Divider - Tech Styling */
+  --vp-c-divider: rgba(67, 170, 139, 0.12);
+  --vp-c-border: rgba(67, 170, 139, 0.18);
+  --vp-c-gutter: rgba(67, 170, 139, 0.08);
+
+  /* Button Colors */
+  --vp-button-brand-bg: var(--ec-c-teal);
+  --vp-button-brand-hover-bg: #3a9078;
+  --vp-button-brand-active-bg: #2f7461;
+  --vp-button-brand-text: #ffffff;
+
+  --vp-button-alt-bg: var(--ec-c-orange);
+  --vp-button-alt-hover-bg: #e06527;
+  --vp-button-alt-text: #ffffff;
+
+  /* Code Block Colors */
+  --vp-code-bg: rgba(67, 170, 139, 0.05);
+  --vp-code-color: var(--ec-c-teal);
+
+  /* Custom Shadow Effects - Tech Glow */
+  --ec-shadow-glow-teal: 0 0 20px rgba(67, 170, 139, 0.3);
+  --ec-shadow-glow-red: 0 0 20px rgba(249, 65, 68, 0.3);
+  --ec-shadow-glow-green: 0 0 20px rgba(144, 190, 109, 0.3);
+  --ec-shadow-elevated: 0 8px 24px rgba(0, 0, 0, 0.1), 0 0 1px rgba(67, 170, 139, 0.2);
+
+  /* Navigation */
+  --vp-nav-bg-color: rgba(255, 255, 255, 0.95);
+  --vp-nav-screen-bg-color: rgba(255, 255, 255, 0.95);
+
+  /* Sidebar */
+  --vp-sidebar-bg-color: var(--vp-c-bg-soft);
+}
+
+/* Dark Mode - Enhanced Cybersecurity Aesthetic */
+.dark {
+  /* Dark Background - Deep Tech */
+  --vp-c-bg: #0a0e14;
+  --vp-c-bg-soft: #111722;
+  --vp-c-bg-mute: #1a2332;
+  --vp-c-bg-alt: #0f1419;
+
+  /* Dark Text Colors */
+  --vp-c-text-1: #e8eef5;
+  --vp-c-text-2: #b8c4d3;
+  --vp-c-text-3: #8896a8;
+
+  /* Enhanced Dark Brand Colors */
+  --vp-c-brand-1: #5cd0ae;
+  --vp-c-brand-2: #a8d88f;
+  --vp-c-brand-3: #ffa842;
+  --vp-c-brand-soft: rgba(92, 208, 174, 0.16);
+
+  /* Dark Borders with Glow */
+  --vp-c-divider: rgba(92, 208, 174, 0.15);
+  --vp-c-border: rgba(92, 208, 174, 0.22);
+  --vp-c-gutter: rgba(92, 208, 174, 0.1);
+
+  /* Dark Buttons */
+  --vp-button-brand-bg: #43AA8B;
+  --vp-button-brand-hover-bg: #5cd0ae;
+  --vp-button-brand-active-bg: #6ddcba;
+
+  --vp-button-alt-bg: #F3722C;
+  --vp-button-alt-hover-bg: #F8961E;
+
+  /* Dark Code Blocks - Terminal Style */
+  --vp-code-bg: rgba(92, 208, 174, 0.08);
+  --vp-code-color: #5cd0ae;
+
+  /* Dark Navigation with Glass Effect */
+  --vp-nav-bg-color: rgba(10, 14, 20, 0.85);
+  --vp-nav-screen-bg-color: rgba(10, 14, 20, 0.95);
+
+  /* Dark Sidebar */
+  --vp-sidebar-bg-color: var(--vp-c-bg-soft);
+
+  /* Dark Gradients */
+  --ec-gradient-hero: linear-gradient(135deg, rgba(67, 170, 139, 0.15) 0%, rgba(144, 190, 109, 0.12) 50%, rgba(249, 65, 68, 0.15) 100%);
+}
+
+/* Glass Morphism Effect */
+.glass-effect {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.dark .glass-effect {
+  background: rgba(17, 23, 34, 0.5);
+  border: 1px solid rgba(92, 208, 174, 0.15);
+}
+
+/* Tech Border Effect */
+.tech-border {
+  position: relative;
+  border: 2px solid transparent;
+  background: linear-gradient(var(--vp-c-bg), var(--vp-c-bg)) padding-box,
+              var(--ec-gradient-full) border-box;
+  border-radius: 8px;
+}
+
+/* Glow Effect on Hover */
+.glow-on-hover {
+  transition: all 0.3s ease;
+}
+
+.glow-on-hover:hover {
+  box-shadow: var(--ec-shadow-glow-teal);
+  transform: translateY(-2px);
+}
+
+/* Animated Grid Background */
+.grid-background {
+  background-image:
+    linear-gradient(rgba(67, 170, 139, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(67, 170, 139, 0.05) 1px, transparent 1px);
+  background-size: 50px 50px;
+}
+
+.dark .grid-background {
+  background-image:
+    linear-gradient(rgba(92, 208, 174, 0.08) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(92, 208, 174, 0.08) 1px, transparent 1px);
+}
+
+/* Scan Line Effect */
+@keyframes scan {
+  0% {
+    transform: translateY(-100%);
+  }
+  100% {
+    transform: translateY(100vh);
+  }
+}
+
+.scan-line {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--ec-c-teal), transparent);
+  animation: scan 8s linear infinite;
+  pointer-events: none;
+  z-index: 1;
+  opacity: 0.3;
+}
+
+/* Pulse Animation for Accents */
+@keyframes pulse-glow {
+  0%, 100% {
+    opacity: 0.6;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+}
+
+.pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}
+
+/* Matrix-style Text Effect */
+@keyframes matrix-text {
+  0% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.4;
+  }
+}
+
+/* Neon Text Effect */
+.neon-text {
+  text-shadow:
+    0 0 10px rgba(67, 170, 139, 0.8),
+    0 0 20px rgba(67, 170, 139, 0.5),
+    0 0 30px rgba(67, 170, 139, 0.3);
+}
+
+.dark .neon-text {
+  text-shadow:
+    0 0 10px rgba(92, 208, 174, 0.9),
+    0 0 20px rgba(92, 208, 174, 0.6),
+    0 0 30px rgba(92, 208, 174, 0.4),
+    0 0 40px rgba(92, 208, 174, 0.2);
+}
+
+/* Terminal-style Elements */
+.terminal-window {
+  background: #0a0e14;
+  border-radius: 8px;
+  padding: 1rem;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  color: #5cd0ae;
+  border: 1px solid rgba(92, 208, 174, 0.3);
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.5);
+}
+
+/* Cyber Grid Lines */
+.cyber-lines {
+  position: relative;
+  overflow: hidden;
+}
+
+.cyber-lines::before,
+.cyber-lines::after {
+  content: '';
+  position: absolute;
+  background: var(--ec-gradient-full);
+  opacity: 0.15;
+}
+
+.cyber-lines::before {
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+}
+
+.cyber-lines::after {
+  top: 0;
+  left: 0;
+  width: 2px;
+  height: 100%;
+}
+

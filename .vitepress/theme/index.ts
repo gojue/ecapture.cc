@@ -8,11 +8,13 @@ import {
 } from './components/preferences'
 import NavTitleBar from './components/NavTitleBar.vue'
 import LanguageHint from './components/LanguageHint.vue'
+import TechBackground from './components/TechBackground.vue'
 import { setupMermaidZoom } from './composables/mermaidZoom'
 
 export default Object.assign({}, VPTheme, {
   Layout: () => {
     return h('div', null, [
+      h(TechBackground as Component),
       h(VPTheme.Layout as Component, null, {
         'navbar-title': () => h(NavTitleBar as Component),
       }),

@@ -1,4 +1,4 @@
-/* Mermaid diagram styles with zoom functionality */
+/* Mermaid diagram styles with zoom functionality - Tech Theme */
 
 /* Make mermaid diagrams clickable and show pointer cursor */
 .mermaid {
@@ -9,12 +9,27 @@
   overflow-x: auto;
   margin: 1.5rem 0;
   display: block;
-  border-radius: 8px;
+  border-radius: 12px;
   text-align: center;
+  background: var(--ec-c-teal-mute);
+  padding: 1.5rem;
+  border: 1px solid rgba(67, 170, 139, 0.15);
+}
+
+.dark .mermaid {
+  background: rgba(92, 208, 174, 0.05);
+  border-color: rgba(92, 208, 174, 0.2);
 }
 
 .mermaid:hover {
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 8px 24px rgba(67, 170, 139, 0.15);
+  border-color: var(--ec-c-teal);
+  transform: translateY(-2px);
+}
+
+.dark .mermaid:hover {
+  box-shadow: 0 8px 24px rgba(92, 208, 174, 0.2);
+  border-color: #5cd0ae;
 }
 
 /* Lightbox overlay for zoomed mermaid diagrams */

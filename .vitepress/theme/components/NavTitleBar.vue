@@ -56,6 +56,29 @@ const formatStars = (count: number | null) => {
 .logo {
   width: 32px;
   margin-right: 8px;
+  transition: all 0.3s ease;
+  filter: drop-shadow(0 0 8px rgba(67, 170, 139, 0.3));
+}
+
+.logo:hover {
+  transform: rotate(360deg) scale(1.1);
+  filter: drop-shadow(0 0 12px rgba(67, 170, 139, 0.6));
+}
+
+.text {
+  background: linear-gradient(135deg, var(--ec-c-teal) 0%, var(--ec-c-green) 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  font-weight: 600;
+  transition: all 0.3s ease;
+}
+
+.dark .text {
+  background: linear-gradient(135deg, #5cd0ae 0%, #a8d88f 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
 }
 
 .github-stars {
@@ -64,33 +87,63 @@ const formatStars = (count: number | null) => {
   gap: 4px;
   margin-left: 12px;
   padding: 4px 10px;
-  background-color: var(--vt-c-bg-mute);
+  background: var(--ec-c-teal-mute);
   border-radius: 12px;
   text-decoration: none;
-  color: var(--vt-c-text-1);
-  transition: all 0.25s ease;
+  color: var(--vp-c-text-1);
+  transition: all 0.3s ease;
   font-size: 13px;
   font-weight: 500;
-  border: 1px solid var(--vt-c-divider);
+  border: 1px solid rgba(67, 170, 139, 0.2);
+  position: relative;
+  overflow: hidden;
+}
+
+.dark .github-stars {
+  background: rgba(92, 208, 174, 0.08);
+  border-color: rgba(92, 208, 174, 0.3);
+}
+
+.github-stars::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(67, 170, 139, 0.3), transparent);
+  transition: left 0.5s ease;
+}
+
+.github-stars:hover::before {
+  left: 100%;
 }
 
 .github-stars:hover {
-  background-color: var(--vt-c-gray-light-4);
-  border-color: var(--vt-c-brand);
-  transform: translateY(-1px);
+  background: var(--ec-c-teal-soft);
+  border-color: var(--ec-c-teal);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(67, 170, 139, 0.3);
 }
 
 .dark .github-stars:hover {
-  background-color: var(--vt-c-gray-dark-3);
+  background: rgba(92, 208, 174, 0.15);
+  border-color: #5cd0ae;
+  box-shadow: 0 4px 12px rgba(92, 208, 174, 0.4);
 }
 
 .star-icon {
-  color: #f1c40f;
+  color: #F9C74F;
   flex-shrink: 0;
+  transition: transform 0.3s ease;
+}
+
+.github-stars:hover .star-icon {
+  transform: rotate(72deg) scale(1.2);
 }
 
 .star-count {
   font-weight: 600;
-  color: var(--vt-c-text-1);
+  color: var(--vp-c-text-1);
 }
 </style>

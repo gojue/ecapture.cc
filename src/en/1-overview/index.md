@@ -106,7 +106,7 @@ graph TB
     
     subgraph EventProc["4. Event Processing"]
         PerfReader["perfEventReader<br/>Module.readEvents()"]
-        EventProc["EventProcessor<br/>Dispatch goroutine"]
+        EventProcessor["EventProcessor<br/>Dispatch goroutine"]
         WorkerQueue["workerQueue map<br/>UUID to eventWorker"]
         EventWorker["eventWorker<br/>Per-connection state"]
         Parsers["IParser<br/>HTTP1/HTTP2/Default"]
@@ -153,8 +153,8 @@ graph TB
     Kprobes --> PerfReader
     TC --> PerfReader
     
-    PerfReader --> EventProc
-    EventProc --> WorkerQueue
+    PerfReader --> EventProcessor
+    EventProcessor --> WorkerQueue
     WorkerQueue --> EventWorker
     EventWorker --> Parsers
     

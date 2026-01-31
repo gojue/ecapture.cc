@@ -83,7 +83,7 @@ graph TB
     
     subgraph EventProc["4. 事件处理层"]
         PerfReader["perfEventReader<br/>Module.readEvents()"]
-        EventProc["EventProcessor<br/>分发 goroutine"]
+        EventProcessor["EventProcessor<br/>分发 goroutine"]
         WorkerQueue["workerQueue 映射<br/>UUID 到 eventWorker"]
         EventWorker["eventWorker<br/>每个连接的状态"]
         Parsers["IParser<br/>HTTP1/HTTP2/Default"]
@@ -130,8 +130,8 @@ graph TB
     Kprobes --> PerfReader
     TC --> PerfReader
     
-    PerfReader --> EventProc
-    EventProc --> WorkerQueue
+    PerfReader --> EventProcessor
+    EventProcessor --> WorkerQueue
     WorkerQueue --> EventWorker
     EventWorker --> Parsers
     
