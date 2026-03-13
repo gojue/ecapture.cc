@@ -1,4 +1,5 @@
-@import "./pages.css";
+@import './custom-theme.css';
+@import './nav-enhancements.css';
 @import "./badges.css";
 @import "./options-boxes.css";
 @import "./inline-demo.css";

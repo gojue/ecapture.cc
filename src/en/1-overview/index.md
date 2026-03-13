@@ -5,545 +5,616 @@
 
 The following files were used as context for generating this wiki page:
 
-- [CHANGELOG.md](https://github.com/gojue/ecapture/blob/0766a93b/CHANGELOG.md)
-- [README.md](https://github.com/gojue/ecapture/blob/0766a93b/README.md)
-- [README_CN.md](https://github.com/gojue/ecapture/blob/0766a93b/README_CN.md)
-- [go.mod](https://github.com/gojue/ecapture/blob/0766a93b/go.mod)
-- [go.sum](https://github.com/gojue/ecapture/blob/0766a93b/go.sum)
-- [images/ecapture-help-v0.8.9.svg](https://github.com/gojue/ecapture/blob/0766a93b/images/ecapture-help-v0.8.9.svg)
-- [main.go](https://github.com/gojue/ecapture/blob/0766a93b/main.go)
+- [CHANGELOG.md](https://github.com/gojue/ecapture/blob/ca085d05/CHANGELOG.md)
+- [README.md](https://github.com/gojue/ecapture/blob/ca085d05/README.md)
+- [README_CN.md](https://github.com/gojue/ecapture/blob/ca085d05/README_CN.md)
+- [README_JA.md](https://github.com/gojue/ecapture/blob/ca085d05/README_JA.md)
+- [images/ecapture-help-v0.8.9.svg](https://github.com/gojue/ecapture/blob/ca085d05/images/ecapture-help-v0.8.9.svg)
+- [images/ecapture-logo.png](images/ecapture-logo.png)
+- [main.go](https://github.com/gojue/ecapture/blob/ca085d05/main.go)
+- [protobuf/PROTOCOLS.md](https://github.com/gojue/ecapture/blob/ca085d05/protobuf/PROTOCOLS.md)
+- [protobuf/PROTOCOLS_CN.md](https://github.com/gojue/ecapture/blob/ca085d05/protobuf/PROTOCOLS_CN.md)
+- [protobuf/README.md](https://github.com/gojue/ecapture/blob/ca085d05/protobuf/README.md)
+- [protobuf/README_CN.md](https://github.com/gojue/ecapture/blob/ca085d05/protobuf/README_CN.md)
+- [utils/protobuf_visualizer/README.md](https://github.com/gojue/ecapture/blob/ca085d05/utils/protobuf_visualizer/README.md)
+- [utils/protobuf_visualizer/README_CN.md](https://github.com/gojue/ecapture/blob/ca085d05/utils/protobuf_visualizer/README_CN.md)
 
 </details>
 
 
 
-This document introduces eCapture (旁观者), an eBPF-based network traffic capture and system auditing tool. eCapture intercepts SSL/TLS encrypted communications and extracts plaintext data without requiring CA certificates or application modifications. It also provides system auditing capabilities for shell commands and database queries.
+**eCapture (旁观者)** is an eBPF-based network traffic capture and system auditing tool that intercepts SSL/TLS encrypted communications in plaintext without requiring CA certificates or application modifications. The tool uses kernel-level uprobe, kprobe, and Traffic Control (TC) hooks to capture data at encryption boundaries, supporting multiple SSL/TLS library implementations and providing comprehensive system auditing capabilities.
 
-For installation and usage instructions, see [Installation and Quick Start](1.1-installation-and-quick-start.md). For detailed module documentation, see [Capture Modules](../3-capture-modules/index.md). For build and development information, see [Development Guide](../5-development-guide/index.md).
+This page provides a high-level overview of eCapture's purpose, architecture, and capabilities. For installation instructions, see [Installation and Quick Start](1.1-installation-and-quick-start.md). For detailed architectural information, see [Architecture](../2-architecture/index.md). For module-specific documentation, see [Capture Modules](../3-capture-modules/index.md).
 
-## System Purpose and Capabilities
+---
 
-eCapture captures encrypted network traffic at the user-space and kernel-space boundaries using eBPF (Extended Berkeley Packet Filter) technology. The system attaches probes to SSL/TLS library functions and network stack entry points, enabling plaintext capture of encrypted communications and runtime auditing of system activities.
+## Purpose and Scope
 
-**Core Capabilities:**
-- **SSL/TLS Plaintext Capture**: Intercepts encrypted data from OpenSSL, BoringSSL, GnuTLS, NSS/NSPR libraries
-- **Go TLS Capture**: Supports native Go `crypto/tls` library encryption
-- **System Auditing**: Captures Bash/Zsh commands and MySQL/PostgreSQL SQL queries
-- **No CA Certificates Required**: Works transparently without certificate installation
-- **Multiple Output Formats**: Text, PCAP-NG, keylog (SSLKEYLOGFILE), Protobuf streams
+eCapture solves the problem of inspecting encrypted network traffic and auditing system activities without:
 
-Sources: [README.md:1-43](https://github.com/gojue/ecapture/blob/0766a93b/README.md#L1-L43), [README_CN.md:40-43](https://github.com/gojue/ecapture/blob/0766a93b/README_CN.md#L40-L43), [CHANGELOG.md:188-273](https://github.com/gojue/ecapture/blob/0766a93b/CHANGELOG.md#L188-L273)
+- Installing CA certificates in target applications
+- Modifying application source code or configuration
+- Performing man-in-the-middle attacks at the network layer
+- Requiring application restarts or environment variable injection
 
-## Platform Support
+The tool operates entirely through eBPF programs loaded into the Linux kernel, intercepting function calls at the user-space/kernel-space boundary to capture plaintext data before encryption or after decryption.
 
-eCapture supports Linux and Android operating systems with specific kernel version requirements:
+**Sources:** [README.md:1-44](https://github.com/gojue/ecapture/blob/ca085d05/README.md#L1-L44), [README_CN.md:1-43](https://github.com/gojue/ecapture/blob/ca085d05/README_CN.md#L1-L43), [CHANGELOG.md:188-282](https://github.com/gojue/ecapture/blob/ca085d05/CHANGELOG.md#L188-L282)
 
-| Architecture | Minimum Kernel Version | Notes |
-|--------------|------------------------|-------|
-| x86_64 | 4.18 | Full feature support |
-| aarch64 | 5.5 | Full feature support |
+---
 
-**Requirements:**
-- ROOT permissions for eBPF operations
-- BTF (BPF Type Format) support preferred but not required
-- Kernel headers for non-CO-RE compilation mode
+## Core Capabilities
 
-**Unsupported Platforms:**
-- Windows (no eBPF support)
-- macOS (no eBPF support)
+eCapture provides eight distinct capture modules organized by function:
 
-The system automatically detects kernel capabilities and selects between CO-RE (Compile Once - Run Everywhere) and non-CO-RE bytecode at runtime.
+| Module | Purpose | Primary Hook Points | Supported Versions |
+|--------|---------|-------------------|-------------------|
+| `tls` | OpenSSL/BoringSSL TLS capture | `SSL_read`, `SSL_write`, `SSL_do_handshake` | OpenSSL 1.0.2-3.5.x, BoringSSL Android 12-16 |
+| `gotls` | Go crypto/tls capture | `crypto/tls.(*Conn).Write`, `crypto/tls.(*Conn).Read` | Go 1.x with register/stack ABI |
+| `gnutls` | GnuTLS library capture | `gnutls_record_recv`, `gnutls_record_send` | GnuTLS 3.x |
+| `nss` | NSS/NSPR library capture | `PR_Write`, `PR_Read`, `PR_Send`, `PR_Recv` | Firefox, Thunderbird |
+| `bash` | Bash command auditing | `readline` library functions | Bash 4.x-5.x |
+| `zsh` | Zsh command auditing | `zle_line_finish` function | Zsh 5.x |
+| `mysqld` | MySQL query auditing | `dispatch_command` function | MySQL 5.6/5.7/8.0, MariaDB |
+| `postgres` | PostgreSQL query auditing | `exec_simple_query` function | PostgreSQL 10+ |
 
-Sources: [README.md:14-16](https://github.com/gojue/ecapture/blob/0766a93b/README.md#L14-L16), [README_CN.md:15-17](https://github.com/gojue/ecapture/blob/0766a93b/README_CN.md#L15-L17), [go.mod:1-60](https://github.com/gojue/ecapture/blob/0766a93b/go.mod#L1-L60)
+Each module operates independently and can be enabled through the CLI command structure defined in [cli/cmd/root.go](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/root.go).
 
-## System Architecture
+**Sources:** [README.md:152-161](https://github.com/gojue/ecapture/blob/ca085d05/README.md#L152-L161), [README_CN.md:129-137](https://github.com/gojue/ecapture/blob/ca085d05/README_CN.md#L129-L137), [CHANGELOG.md:188-282](https://github.com/gojue/ecapture/blob/ca085d05/CHANGELOG.md#L188-L282)
+
+---
+
+## System Architecture Overview
+
+The following diagram shows the complete eCapture system architecture from CLI invocation to event output:
+
+**Diagram: Five-Layer eCapture Architecture**
 
 ```mermaid
 graph TB
-    subgraph CLI["CLI Entry Point"]
-        main["main.go<br/>cli.Start()"]
-        cobra["cobra/pflag<br/>Command Framework"]
+    subgraph CLI["1. CLI Layer"]
+        Main["main.go<br/>cli.Start()"]
+        RootCmd["cli/cmd/root.go<br/>rootCmd Execute()"]
+        TLSCmd["cli/cmd/tls.go<br/>tlsCommand"]
+        GoTLSCmd["cli/cmd/gotls.go<br/>gotlsCommand"]
+        BashCmd["cli/cmd/bash.go<br/>bashCommand"]
     end
     
-    subgraph Modules["Capture Modules"]
-        tls["EBPFProbeOPENSSL<br/>OpenSSL/BoringSSL"]
-        gotls["EBPFProbeGOTLS<br/>Go crypto/tls"]
-        gnutls["EBPFProbeGNUTLS<br/>GnuTLS"]
-        nspr["EBPFProbeNSPR<br/>NSS/NSPR"]
-        bash["EBPFProbeBASH<br/>Bash readline"]
-        zsh["EBPFProbeZSH<br/>Zsh zle"]
-        mysql["EBPFProbeMYSQLD<br/>MySQL dispatch_command"]
-        postgres["EBPFProbePOSTGRES<br/>PostgreSQL exec_simple_query"]
+    subgraph ModOrch["2. Module Orchestration"]
+        IModule["IModule Interface<br/>Init/Start/Run/Close"]
+        BaseModule["Module struct<br/>Base implementation"]
+        OpenSSLProbe["MOpenSSLProbe"]
+        GoTLSProbe["MGoTLSProbe"]
+        BashProbe["MBashProbe"]
+        MysqldProbe["MMysqldProbe"]
+        PostgresProbe["MPostgresProbe"]
+        GnuTLSProbe["MGnuTLSProbe"]
+        NSSProbe["MNSSPRProbe"]
+        ZshProbe["MZshProbe"]
     end
     
-    subgraph eBPF["eBPF Runtime"]
-        manager["ebpfmanager<br/>Lifecycle Management"]
-        uprobe["Uprobe Programs<br/>Function Hooks"]
-        tc["TC Programs<br/>Network Packets"]
-        kprobe["Kprobe Programs<br/>Kernel Hooks"]
-        maps["eBPF Maps<br/>Perf/RingBuffer"]
+    subgraph eBPFExec["3. eBPF Execution"]
+        Manager["ebpfmanager.Manager<br/>Program loading"]
+        BytecodeAssets["assets/ebpf_probe.go<br/>Asset() function"]
+        CoreBC["*_kern_core.o<br/>BTF-enabled"]
+        NonCoreBC["*_kern_noncore.o<br/>Fixed offsets"]
+        Uprobes["Uprobe attachment<br/>SSL_read/write"]
+        Kprobes["Kprobe attachment<br/>tcp_sendmsg"]
+        TC["TC attachment<br/>egress/ingress"]
     end
     
-    subgraph Events["Event Processing"]
-        reader["perfEventReader<br/>ringbufEventReader"]
-        worker["eventWorker<br/>Connection Lifecycle"]
-        parser["IParser<br/>HTTP/HTTP2 Parsing"]
+    subgraph EventProc["4. Event Processing"]
+        PerfReader["perfEventReader<br/>Module.readEvents()"]
+        EventProcessor["EventProcessor<br/>Dispatch goroutine"]
+        WorkerQueue["workerQueue map<br/>UUID to eventWorker"]
+        EventWorker["eventWorker<br/>Per-connection state"]
+        Parsers["IParser<br/>HTTP1/HTTP2/Default"]
     end
     
-    subgraph Output["Output Layer"]
-        text["Text Logger<br/>Console/File"]
-        pcap["PCAP Writer<br/>pcapng Format"]
-        keylog["Keylog Writer<br/>SSLKEYLOGFILE"]
-        proto["Protobuf Stream<br/>WebSocket"]
+    subgraph Output["5. Output Layer"]
+        CollectorWriter["CollectorWriter<br/>zerolog format"]
+        ProtobufWriter["ProtobufWriter<br/>pb.LogEntry"]
+        PcapngWriter["PcapngWriter<br/>DSB blocks"]
+        KeylogWriter["KeylogWriter<br/>CLIENT_RANDOM"]
+        WebSocket["WebSocket Server<br/>:28256/:28257"]
     end
     
-    main --> cobra
-    cobra --> tls
-    cobra --> gotls
-    cobra --> gnutls
-    cobra --> nspr
-    cobra --> bash
-    cobra --> zsh
-    cobra --> mysql
-    cobra --> postgres
+    Main --> RootCmd
+    RootCmd --> TLSCmd
+    RootCmd --> GoTLSCmd
+    RootCmd --> BashCmd
     
-    tls --> manager
-    gotls --> manager
-    gnutls --> manager
-    nspr --> manager
-    bash --> manager
-    zsh --> manager
-    mysql --> manager
-    postgres --> manager
+    TLSCmd --> OpenSSLProbe
+    GoTLSCmd --> GoTLSProbe
+    BashCmd --> BashProbe
     
-    manager --> uprobe
-    manager --> tc
-    manager --> kprobe
+    OpenSSLProbe --> IModule
+    GoTLSProbe --> IModule
+    BashProbe --> IModule
+    MysqldProbe --> IModule
+    PostgresProbe --> IModule
+    GnuTLSProbe --> IModule
+    NSSProbe --> IModule
+    ZshProbe --> IModule
     
-    uprobe --> maps
-    tc --> maps
-    kprobe --> maps
+    IModule --> BaseModule
     
-    maps --> reader
-    reader --> worker
-    worker --> parser
+    BaseModule --> Manager
+    Manager --> BytecodeAssets
+    BytecodeAssets --> CoreBC
+    BytecodeAssets --> NonCoreBC
     
-    parser --> text
-    parser --> pcap
-    parser --> keylog
-    parser --> proto
+    Manager --> Uprobes
+    Manager --> Kprobes
+    Manager --> TC
+    
+    Uprobes --> PerfReader
+    Kprobes --> PerfReader
+    TC --> PerfReader
+    
+    PerfReader --> EventProcessor
+    EventProcessor --> WorkerQueue
+    WorkerQueue --> EventWorker
+    EventWorker --> Parsers
+    
+    Parsers --> CollectorWriter
+    Parsers --> ProtobufWriter
+    Parsers --> PcapngWriter
+    Parsers --> KeylogWriter
+    
+    ProtobufWriter --> WebSocket
 ```
 
-**System Layers:**
+**Architecture Description:**
 
-1. **CLI Entry Point**: Command-line interface using Cobra framework for subcommand routing
-2. **Capture Modules**: Eight specialized modules implementing `IModule` interface for different protocols
-3. **eBPF Runtime**: Probe management, bytecode loading, and eBPF program lifecycle
-4. **Event Processing**: Event reading, connection tracking, and protocol parsing
-5. **Output Layer**: Multiple output formats for different consumption scenarios
+The system follows a five-layer design:
 
-Each module operates independently with its own eBPF programs and event handlers, coordinated through the `IModule` interface.
+1. **CLI Layer**: Entry point via `main.go` calling `cli.Start()`, which executes `rootCmd` from [cli/cmd/root.go](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/root.go) using the cobra framework. Each subcommand (tls, gotls, bash, etc.) is defined in [cli/cmd/](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/).
 
-Sources: [main.go:1-12](https://github.com/gojue/ecapture/blob/0766a93b/main.go#L1-L12), [README.md:152-161](https://github.com/gojue/ecapture/blob/0766a93b/README.md#L152-L161), [README_CN.md:129-140](https://github.com/gojue/ecapture/blob/0766a93b/README_CN.md#L129-L140)
+2. **Module Orchestration**: All capture modules implement the `IModule` interface [user/module/imodule.go](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go) with lifecycle methods `Init()`, `Start()`, `Run()`, and `Close()`. The `Module` base struct [user/module/module.go](https://github.com/gojue/ecapture/blob/ca085d05/user/module/module.go) provides common functionality including event reading and configuration management. Eight probe implementations extend this base.
 
-## Capture Modules
+3. **eBPF Execution**: The `ebpfmanager.Manager` [pkg/util/ebpf/manager.go](https://github.com/gojue/ecapture/blob/ca085d05/pkg/util/ebpf/manager.go) loads bytecode from [assets/ebpf_probe.go](https://github.com/gojue/ecapture/blob/ca085d05/assets/ebpf_probe.go) using the `Asset()` function. Bytecode comes in two variants: CO-RE (requires BTF) and non-CO-RE. Programs attach as uprobes (SSL_read/SSL_write), kprobes (tcp_sendmsg), or TC classifiers (network packets).
 
-eCapture provides eight modules for capturing different protocols and applications:
+4. **Event Processing**: The `perfEventReader` in each module's `readEvents()` method polls perf/ring buffers. Events are dispatched to `EventProcessor` [pkg/event_processor/processor.go](https://github.com/gojue/ecapture/blob/ca085d05/pkg/event_processor/processor.go), which routes them via UUID to dedicated `eventWorker` goroutines. Workers invoke `IParser` implementations for protocol detection.
 
-| Module | Target | Description | Command |
-|--------|--------|-------------|---------|
-| `tls` | OpenSSL/BoringSSL | Captures SSL/TLS plaintext from OpenSSL 1.0.x-3.5.x and BoringSSL (Android 12-16) | `ecapture tls` |
-| `gotls` | Go crypto/tls | Captures TLS traffic from Go applications using native crypto/tls library | `ecapture gotls` |
-| `gnutls` | GnuTLS | Captures TLS traffic from GnuTLS library applications | `ecapture gnutls` |
-| `nss` | NSS/NSPR | Captures traffic from Firefox and other NSS/NSPR-based applications | `ecapture nss` |
-| `bash` | Bash | Audits bash command execution via readline library hooks | `ecapture bash` |
-| `zsh` | Zsh | Audits zsh command execution via zle (Z-Shell Line Editor) hooks | `ecapture zsh` |
-| `mysqld` | MySQL/MariaDB | Captures SQL queries from MySQL 5.6/5.7/8.0 and MariaDB | `ecapture mysqld` |
-| `postgres` | PostgreSQL | Captures SQL queries from PostgreSQL 10+ | `ecapture postgres` |
+5. **Output Layer**: Four writer types format events: `CollectorWriter` (zerolog), `ProtobufWriter` (pb.LogEntry), `PcapngWriter` (PCAP-NG with DSB), and `KeylogWriter` (SSLKEYLOGFILE). The `ProtobufWriter` feeds WebSocket servers on ports 28256/28257.
 
-Each module implements the `IModule` interface and can run independently or be combined with others.
+**Sources:** [main.go:1-11](https://github.com/gojue/ecapture/blob/ca085d05/main.go#L1-L11), [cli/cmd/root.go](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/root.go), [user/module/imodule.go](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go), [user/module/module.go](https://github.com/gojue/ecapture/blob/ca085d05/user/module/module.go), [pkg/util/ebpf/manager.go](https://github.com/gojue/ecapture/blob/ca085d05/pkg/util/ebpf/manager.go), [pkg/event_processor/processor.go](https://github.com/gojue/ecapture/blob/ca085d05/pkg/event_processor/processor.go), [assets/ebpf_probe.go](https://github.com/gojue/ecapture/blob/ca085d05/assets/ebpf_probe.go)
 
-Sources: [README.md:152-161](https://github.com/gojue/ecapture/blob/0766a93b/README.md#L152-L161), [README_CN.md:129-140](https://github.com/gojue/ecapture/blob/0766a93b/README_CN.md#L129-L140), [CHANGELOG.md:38-42](https://github.com/gojue/ecapture/blob/0766a93b/CHANGELOG.md#L38-L42)
+---
 
-## eBPF Technology Usage
+## Key Components and Code Structure
+
+### Module System
+
+All capture modules implement the `IModule` interface defined in [user/module/imodule.go](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go), which provides a common lifecycle:
+
+```
+Init(ctx, logger, conf) → Start() → Run() → Close()
+```
+
+The base implementation is provided by the `Module` struct [user/module/module.go](https://github.com/gojue/ecapture/blob/ca085d05/user/module/module.go), which each probe extends. Each module has a corresponding CLI command in [cli/cmd/](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/) and eBPF bytecode in [kern/](https://github.com/gojue/ecapture/blob/ca085d05/kern/).
+
+**Diagram: Module Implementation Hierarchy**
 
 ```mermaid
-graph LR
-    subgraph UserSpace["User Space Applications"]
-        app["Target Application<br/>OpenSSL/Go/MySQL/Bash"]
-    end
+graph TB
+    IModule["IModule interface<br/>Init/Start/Run/Close"]
+    Module["Module struct<br/>Base implementation<br/>readEvents/Decode/Dispatcher"]
     
-    subgraph Kernel["Kernel Space"]
-        uprobe_entry["uprobe<br/>SSL_read entry"]
-        uprobe_ret["uretprobe<br/>SSL_read return"]
-        tc_ingress["TC ingress<br/>capture_packets"]
-        tc_egress["TC egress<br/>capture_packets"]
-        kprobe_hook["kprobe<br/>tcp_sendmsg<br/>udp_sendmsg"]
-    end
+    OpenSSL["MOpenSSLProbe<br/>probe_openssl.go"]
+    GoTLS["MGoTLSProbe<br/>probe_gotls.go"]
+    GnuTLS["MGnuTLSProbe<br/>probe_gnutls.go"]
+    NSS["MNSSPRProbe<br/>probe_nspr.go"]
+    Bash["MBashProbe<br/>probe_bash.go"]
+    Zsh["MZshProbe<br/>probe_zsh.go"]
+    Mysqld["MMysqldProbe<br/>probe_mysqld.go"]
+    Postgres["MPostgresProbe<br/>probe_postgres.go"]
     
-    subgraph Maps["eBPF Maps"]
-        perf["Perf Array<br/>Data Events"]
-        ring["Ring Buffer<br/>Events"]
-        hash["Hash Maps<br/>pidConns<br/>sock2pidFd<br/>masterKeys"]
-    end
+    IModule --> Module
+    Module --> OpenSSL
+    Module --> GoTLS
+    Module --> GnuTLS
+    Module --> NSS
+    Module --> Bash
+    Module --> Zsh
+    Module --> Mysqld
+    Module --> Postgres
     
-    app -->|"function call"| uprobe_entry
-    app -->|"function return"| uprobe_ret
-    app -->|"network packets"| tc_ingress
-    app -->|"network packets"| tc_egress
-    app -->|"socket operations"| kprobe_hook
+    OpenSSL --> ByteOpenSSL["openssl_3_0_0_kern.c"]
+    GoTLS --> ByteGoTLS["gotls_kern.c"]
+    Bash --> ByteBash["bash_kern.c"]
     
-    uprobe_entry --> perf
-    uprobe_ret --> perf
-    tc_ingress --> ring
-    tc_egress --> ring
-    kprobe_hook --> hash
-    
-    perf --> reader["perfEventReader<br/>User Space"]
-    ring --> reader
-    hash --> reader
+    style IModule fill:#f9f9f9
+    style Module fill:#f9f9f9
 ```
 
-**eBPF Probe Types:**
+| Probe Struct | Source File | eBPF Bytecode | Primary Hooks | Supported Versions |
+|--------------|------------|---------------|---------------|-------------------|
+| `MOpenSSLProbe` | [user/module/probe_openssl.go](https://github.com/gojue/ecapture/blob/ca085d05/user/module/probe_openssl.go) | [kern/openssl_*_kern.c]() | SSL_read, SSL_write, SSL_do_handshake, SSL_get_wbio, SSL_in_before | OpenSSL 1.0.2-3.5.x, BoringSSL Android 12-16 |
+| `MGoTLSProbe` | [user/module/probe_gotls.go](https://github.com/gojue/ecapture/blob/ca085d05/user/module/probe_gotls.go) | [kern/gotls_kern.c](https://github.com/gojue/ecapture/blob/ca085d05/kern/gotls_kern.c) | crypto/tls.(*Conn).writeRecordLocked, crypto/tls.(*Conn).Read, crypto/tls.(*Conn).writeKeyLog | Go 1.x (register/stack ABI) |
+| `MGnuTLSProbe` | [user/module/probe_gnutls.go](https://github.com/gojue/ecapture/blob/ca085d05/user/module/probe_gnutls.go) | [kern/gnutls_kern.c](https://github.com/gojue/ecapture/blob/ca085d05/kern/gnutls_kern.c) | gnutls_record_recv, gnutls_record_send | GnuTLS 3.x |
+| `MNSSPRProbe` | [user/module/probe_nspr.go](https://github.com/gojue/ecapture/blob/ca085d05/user/module/probe_nspr.go) | [kern/nspr_kern.c](https://github.com/gojue/ecapture/blob/ca085d05/kern/nspr_kern.c) | PR_Write, PR_Read, PR_Send, PR_Recv | Firefox, Thunderbird |
+| `MBashProbe` | [user/module/probe_bash.go](https://github.com/gojue/ecapture/blob/ca085d05/user/module/probe_bash.go) | [kern/bash_kern.c](https://github.com/gojue/ecapture/blob/ca085d05/kern/bash_kern.c) | readline() | Bash 4.x-5.x |
+| `MZshProbe` | [user/module/probe_zsh.go](https://github.com/gojue/ecapture/blob/ca085d05/user/module/probe_zsh.go) | [kern/zsh_kern.c](https://github.com/gojue/ecapture/blob/ca085d05/kern/zsh_kern.c) | zle_line_finish() | Zsh 5.x |
+| `MMysqldProbe` | [user/module/probe_mysqld.go](https://github.com/gojue/ecapture/blob/ca085d05/user/module/probe_mysqld.go) | [kern/mysqld_kern.c](https://github.com/gojue/ecapture/blob/ca085d05/kern/mysqld_kern.c) | dispatch_command() | MySQL 5.6/5.7/8.0, MariaDB |
+| `MPostgresProbe` | [user/module/probe_postgres.go](https://github.com/gojue/ecapture/blob/ca085d05/user/module/probe_postgres.go) | [kern/postgres_kern.c](https://github.com/gojue/ecapture/blob/ca085d05/kern/postgres_kern.c) | exec_simple_query() | PostgreSQL 10+ |
 
-1. **Uprobe/Uretprobe**: Attaches to user-space library functions
-   - Entry probes capture function arguments (e.g., `SSL_read(ssl, buf, len)`)
-   - Return probes capture return values and output buffers
-   - Used for: SSL/TLS functions, database queries, shell commands
+**Sources:** [user/module/imodule.go](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go), [user/module/module.go](https://github.com/gojue/ecapture/blob/ca085d05/user/module/module.go), [user/module/probe_openssl.go](https://github.com/gojue/ecapture/blob/ca085d05/user/module/probe_openssl.go), [user/module/probe_gotls.go](https://github.com/gojue/ecapture/blob/ca085d05/user/module/probe_gotls.go), [kern/openssl_3_0_0_kern.c](https://github.com/gojue/ecapture/blob/ca085d05/kern/openssl_3_0_0_kern.c), [kern/gotls_kern.c](https://github.com/gojue/ecapture/blob/ca085d05/kern/gotls_kern.c)
 
-2. **TC (Traffic Control)**: Attaches to network interface ingress/egress
-   - Captures network packets at kernel level
-   - Extracts 4-tuple (src/dst IP:port) for connection tracking
-   - Used for: PCAP mode packet capture with process attribution
+### eBPF Bytecode Management
 
-3. **Kprobe**: Attaches to kernel functions
-   - Hooks socket operations (`tcp_sendmsg`, `udp_sendmsg`)
-   - Maps socket file descriptors to processes
-   - Used for: Connection tracking and process identification
+eCapture compiles eBPF programs at build time into two variants:
 
-**CO-RE vs Non-CO-RE:**
-- **CO-RE (BTF-enabled)**: Single bytecode works across kernel versions
-- **Non-CO-RE**: Requires kernel-specific bytecode with header files
-- eCapture detects BTF availability and loads appropriate bytecode automatically
+- **CO-RE (Compile Once, Run Everywhere)**: Uses BTF for kernel structure relocations, files named `*_core.o`
+- **Non-CO-RE**: Compiled against specific kernel headers, files named `*_noncore.o`
 
-Sources: [README.md:38-43](https://github.com/gojue/ecapture/blob/0766a93b/README.md#L38-L43), [CHANGELOG.md:249-251](https://github.com/gojue/ecapture/blob/0766a93b/CHANGELOG.md#L249-L251), [CHANGELOG.md:552-556](https://github.com/gojue/ecapture/blob/0766a93b/CHANGELOG.md#L552-L556)
-
-## Output Modes and Formats
-
-eCapture supports four primary output modes, configurable per module:
-
-### Text Mode
-
-**Command**: `ecapture tls -m text` (default mode)
-
-Outputs plaintext data directly to console or file. Includes HTTP/1.x and HTTP/2 protocol parsing with automatic decoding of compressed responses.
-
-**Features:**
-- Real-time output to stdout
-- File output with `-w <filename>`
-- HTTP/HTTP2 request/response parsing
-- Color-coded output for readability
-- Hex dump mode with `--hex` flag
-
-### PCAP Mode
-
-**Command**: `ecapture tls -m pcap --pcapfile=output.pcapng -i eth0`
-
-Generates PCAP-NG files compatible with Wireshark, combining captured plaintext with reconstructed network packets.
-
-**Features:**
-- Standard pcapng format with EPB (Enhanced Packet Block)
-- DSB (Decryption Secrets Block) for TLS master keys
-- IPv4/IPv6 support with 4-tuple tracking
-- TCP and UDP protocol support (including QUIC)
-- PID/UID filtering via eBPF
-
-### Keylog Mode
-
-**Command**: `ecapture tls -m keylog --keylogfile=keys.log`
-
-Exports TLS master secrets in `SSLKEYLOGFILE` format for use with Wireshark or tshark.
-
-**Format:**
-```
-CLIENT_RANDOM <client_random_hex> <master_secret_hex>
-CLIENT_HANDSHAKE_TRAFFIC_SECRET <client_random_hex> <secret_hex>
-SERVER_HANDSHAKE_TRAFFIC_SECRET <client_random_hex> <secret_hex>
-```
-
-**Use Case:**
-```shell
-# Capture keys
-ecapture tls -m keylog --keylogfile=keys.log
-
-# Decrypt with tshark
-tshark -o tls.keylog_file:keys.log -Y http -T fields -e http.file_data -f "port 443" -i eth0
-```
-
-### Protobuf Mode
-
-**Command**: `ecapture tls` with WebSocket server enabled (default: `localhost:28256`)
-
-Streams events in Protocol Buffer format to connected clients (e.g., eCaptureQ GUI application).
-
-**Event Types:**
-- `SSLDataEvent`: Plaintext SSL/TLS data
-- `MasterSecretEvent`: TLS master secrets
-- `BashEvent`: Shell commands
-- `MysqldEvent`: SQL queries
-
-Sources: [README.md:172-253](https://github.com/gojue/ecapture/blob/0766a93b/README.md#L172-L253), [README_CN.md:150-220](https://github.com/gojue/ecapture/blob/0766a93b/README_CN.md#L150-L220), [CHANGELOG.md:715-747](https://github.com/gojue/ecapture/blob/0766a93b/CHANGELOG.md#L715-L747)
-
-## Data Flow Pipeline
+At runtime, the system detects kernel BTF support [pkg/util/kernel/btf.go](https://github.com/gojue/ecapture/blob/ca085d05/pkg/util/kernel/btf.go) and selects the appropriate bytecode from embedded assets [assets/ebpf_probe.go](https://github.com/gojue/ecapture/blob/ca085d05/assets/ebpf_probe.go):
 
 ```mermaid
-flowchart TD
-    subgraph Capture["eBPF Capture"]
-        ssl["SSL_read/SSL_write<br/>Uprobe Hooks"]
-        gotls_read["crypto/tls.Conn.Read<br/>Uprobe Hook"]
-        tc["TC Packet Capture<br/>4-tuple Extraction"]
-        mysql["dispatch_command<br/>Uprobe Hook"]
+flowchart LR
+    Runtime["Runtime Detection"] --> Container{Container?}
+    Runtime --> BTFCheck{BTF Available?}
+    
+    Container -->|Yes| CoreMode["Load CO-RE Bytecode<br/>*_core.o"]
+    Container -->|No| BTFCheck
+    
+    BTFCheck -->|Yes| CoreMode
+    BTFCheck -->|No| NonCoreMode["Load non-CO-RE Bytecode<br/>*_noncore.o"]
+    
+    CoreMode --> Relocate["Kernel performs<br/>CO-RE relocations"]
+    NonCoreMode --> DirectLoad["Direct load with<br/>fixed offsets"]
+    
+    Relocate --> KernelLoad["eBPF Verifier<br/>Program loaded"]
+    DirectLoad --> KernelLoad
+```
+
+The bytecode files are embedded during the build process via `go-bindata` [Makefile](https://github.com/gojue/ecapture/blob/ca085d05/Makefile) and accessed through [assets/ebpf_probe.go](https://github.com/gojue/ecapture/blob/ca085d05/assets/ebpf_probe.go).
+
+**Sources:** [assets/ebpf_probe.go](https://github.com/gojue/ecapture/blob/ca085d05/assets/ebpf_probe.go), [pkg/util/kernel/btf.go](https://github.com/gojue/ecapture/blob/ca085d05/pkg/util/kernel/btf.go), [Makefile](https://github.com/gojue/ecapture/blob/ca085d05/Makefile)
+
+### Event Processing Pipeline
+
+The event processing architecture uses a three-stage pipeline with UUID-based routing to ensure ordered processing of events from the same connection.
+
+**Diagram: Event Flow from Kernel to Output**
+
+```mermaid
+graph TB
+    subgraph KernelMaps["Kernel eBPF Maps"]
+        TLSEvents["tls_events<br/>PERF_EVENT_ARRAY"]
+        ConnEvents["connect_events<br/>PERF_EVENT_ARRAY"]
+        SkbEvents["skb_events<br/>PERF_EVENT_ARRAY"]
+        MasterSecretEvents["mastersecret_events<br/>PERF_EVENT_ARRAY"]
     end
     
-    subgraph Maps["eBPF Maps"]
-        perf["Perf Events<br/>Plaintext Data"]
-        master["Master Key Map<br/>TLS Secrets"]
-        conn["Connection Maps<br/>pidConns<br/>sock2pidFd"]
+    subgraph ReaderStage["Stage 1: Event Reader"]
+        PerfReader["perfEventReader<br/>Module.readEvents()"]
+        RingReader["ringbufEventReader<br/>Module.readEvents()"]
+        Decode["Module.Decode()<br/>Binary to struct"]
     end
     
-    subgraph Reader["Event Readers"]
-        perf_reader["perfEventReader<br/>4MB Ring"]
-        ring_reader["ringbufEventReader<br/>Kernel 5.8+"]
+    subgraph ProcessorStage["Stage 2: EventProcessor"]
+        Incoming["incoming chan<br/>Buffered 10000"]
+        Dispatch["dispatch() goroutine<br/>UUID extraction"]
+        WorkerQueue["workerQueue map<br/>UUID → *eventWorker"]
+        WorkerCreate["createWorker()<br/>Lifecycle selection"]
     end
     
-    subgraph Worker["Event Worker"]
-        dispatch["Dispatcher<br/>Event Type Routing"]
-        lifecycle["Connection Lifecycle<br/>Default vs Socket Mode"]
+    subgraph WorkerStage["Stage 3: eventWorker"]
+        Buffer["bytes.Buffer<br/>Payload accumulation"]
+        Ticker["time.Ticker<br/>100ms intervals"]
+        ParserEvents["parserEvents()<br/>Protocol detection"]
+        IParser["IParser.detect()<br/>HTTP1/HTTP2/Default"]
+        IWriter["IWriter.Write()<br/>CollectorWriter/ProtobufWriter"]
     end
     
-    subgraph Parser["Protocol Parsers"]
-        http1["HTTP/1.x Parser<br/>Request/Response"]
-        http2["HTTP/2 Parser<br/>HPACK Decoder"]
-        sql["SQL Parser<br/>Query Extraction"]
-    end
+    TLSEvents --> PerfReader
+    ConnEvents --> PerfReader
+    SkbEvents --> PerfReader
+    MasterSecretEvents --> PerfReader
     
-    subgraph Collector["Event Collector"]
-        aggregate["Aggregation<br/>Multi-buffer Assembly"]
-        truncate["Truncation<br/>--truncate Size"]
-        rotate["Rotation<br/>--eventrotatesize"]
-    end
+    PerfReader --> Decode
+    RingReader --> Decode
     
-    subgraph Writers["Output Writers"]
-        text_w["Text Writer<br/>Console/File"]
-        pcap_w["PCAP Writer<br/>gopacket"]
-        key_w["Keylog Writer<br/>SSLKEYLOGFILE"]
-        proto_w["Protobuf Writer<br/>WebSocket"]
-    end
+    Decode --> Incoming
+    Incoming --> Dispatch
+    Dispatch --> WorkerQueue
+    WorkerQueue --> WorkerCreate
     
-    ssl --> perf
-    gotls_read --> perf
-    mysql --> perf
-    ssl --> master
-    tc --> conn
-    
-    perf --> perf_reader
-    perf --> ring_reader
-    master --> perf_reader
-    conn --> perf_reader
-    
-    perf_reader --> dispatch
-    ring_reader --> dispatch
-    
-    dispatch --> lifecycle
-    lifecycle --> http1
-    lifecycle --> http2
-    lifecycle --> sql
-    
-    http1 --> aggregate
-    http2 --> aggregate
-    sql --> aggregate
-    
-    aggregate --> truncate
-    truncate --> rotate
-    
-    rotate --> text_w
-    rotate --> pcap_w
-    rotate --> key_w
-    rotate --> proto_w
+    WorkerCreate --> Buffer
+    Buffer --> Ticker
+    Ticker --> ParserEvents
+    ParserEvents --> IParser
+    IParser --> IWriter
 ```
 
 **Pipeline Stages:**
 
-1. **Capture**: eBPF probes intercept function calls and network packets
-2. **Maps**: Kernel-space storage for events and connection state
-3. **Readers**: User-space consumers of eBPF map data (perf array or ring buffer)
-4. **Worker**: Event type dispatch and connection lifecycle management
-5. **Parser**: Protocol-specific parsing (HTTP, HTTP/2, SQL)
-6. **Collector**: Event aggregation, truncation, and rotation
-7. **Writers**: Format-specific output generation
+1. **Event Reader**: Module's `readEvents()` method polls perf/ring buffers using `perfEventReader` or `ringbufEventReader`. Raw events are decoded via `Module.Decode()` into typed structs (`SSLDataEvent`, `ConnDataEvent`, etc.) defined in [user/module/event_type.go](https://github.com/gojue/ecapture/blob/ca085d05/user/module/event_type.go).
 
-The pipeline supports configurable event truncation (`--truncate`), file rotation (`--eventrotatesize`, `--eventrotatetime`), and selective filtering by PID (`--pid`) or UID (`--uid`).
+2. **EventProcessor**: The `incoming` channel buffers up to 10,000 events. The `dispatch()` goroutine extracts UUIDs from events and routes them to the `workerQueue` map. If no worker exists for a UUID, `createWorker()` instantiates one with either socket-bound or default lifecycle.
 
-Sources: [CHANGELOG.md:137-163](https://github.com/gojue/ecapture/blob/0766a93b/CHANGELOG.md#L137-L163), [CHANGELOG.md:647-653](https://github.com/gojue/ecapture/blob/0766a93b/CHANGELOG.md#L647-L653), [CHANGELOG.md:491-493](https://github.com/gojue/ecapture/blob/0766a93b/CHANGELOG.md#L491-L493)
+3. **eventWorker**: Each worker accumulates payloads in a `bytes.Buffer` and triggers parsing every 100ms via a `time.Ticker`. The `parserEvents()` method invokes `IParser.detect()` for protocol identification, then writes formatted output via `IWriter.Write()`.
+
+**Worker Lifecycle Models:**
+
+- **Socket-bound workers**: Created for TCP connections with explicit open/close events. Workers persist until receiving a close event.
+- **Default workers**: Created for connectionless protocols or single-shot events. Workers self-destruct after 1 second of inactivity.
+
+**Sources:** [pkg/event_processor/processor.go](https://github.com/gojue/ecapture/blob/ca085d05/pkg/event_processor/processor.go), [pkg/event_processor/iworker.go](https://github.com/gojue/ecapture/blob/ca085d05/pkg/event_processor/iworker.go), [user/module/event_type.go](https://github.com/gojue/ecapture/blob/ca085d05/user/module/event_type.go), [user/module/module.go](https://github.com/gojue/ecapture/blob/ca085d05/user/module/module.go)
+
+---
 
 ## Version Detection and Bytecode Selection
 
+eCapture automatically detects SSL library versions through ELF parsing and selects compatible bytecode at runtime.
+
+**Diagram: Version Detection and Bytecode Mapping**
+
 ```mermaid
-graph TD
-    start["Module Init<br/>e.g., MOpenSSLProbe.Init()"]
-    detect["Version Detection<br/>ELF Parsing"]
-    check_ver{{"Version<br/>Found?"}}
-    map["Bytecode Mapping<br/>OpenSSL 1.0.2-3.5.x<br/>BoringSSL A12-A16"]
-    check_btf{{"BTF<br/>Enabled?"}}
-    core["Load CO-RE Bytecode<br/>*_core.o"}
-    noncore["Load Non-CO-RE<br/>*_noncore.o"]
-    fallback["Use Default<br/>linux_default_3_0"}
-    attach["Attach Probes<br/>ebpfmanager"]
+flowchart TB
+    Init["Module Init()"] --> LibPath{Library Path Source}
     
-    start --> detect
-    detect --> check_ver
-    check_ver -->|"Yes"| map
-    check_ver -->|"No"| fallback
-    map --> check_btf
-    fallback --> check_btf
-    check_btf -->|"Yes"| core
-    check_btf -->|"No"| noncore
-    core --> attach
-    noncore --> attach
+    LibPath -->|--libssl flag| UserPath["User-specified path"]
+    LibPath -->|Auto-detect| LdConf["Parse /etc/ld.so.conf<br/>Search /usr/lib paths"]
+    
+    UserPath --> ElfParse["pkg/util/kernel/elf.go<br/>ParseDynLibrary()"]
+    LdConf --> ElfParse
+    
+    ElfParse --> ReadSection["Read .rodata section<br/>Search OpenSSL_version_num<br/>or version string"]
+    
+    ReadSection --> VersionString["Extract version<br/>e.g. 3.0.12"]
+    
+    VersionString --> MapLookup["sslVersionBpfMap lookup<br/>user/module/probe_openssl.go"]
+    
+    MapLookup --> Exact{Exact Match?}
+    
+    Exact -->|Yes| Found["Version found<br/>e.g. 3.0.12 → openssl_3_0_12"]
+    Exact -->|No| Downgrade["downgradeOpensslVersion()<br/>Find nearest older version"]
+    
+    Downgrade --> Compatible["Compatible version<br/>e.g. 3.0.12 → 3.0.11"]
+    
+    Found --> BytecodeFile["Bytecode filename<br/>openssl_3_0_12_kern_core.o"]
+    Compatible --> BytecodeFile
+    
+    BytecodeFile --> Asset["assets.Asset()<br/>Embedded bytecode"]
+    
+    Asset --> Manager["ebpfmanager.Manager<br/>LoadAndAttach"]
 ```
 
-**Version Detection Process:**
+**Version Mapping Strategy:**
 
-1. **ELF Parsing**: Reads shared library file (e.g., `libssl.so.3`) to extract version strings
-2. **Version Mapping**: Maps detected version to specific structure offsets
-3. **Bytecode Selection**: Chooses appropriate eBPF bytecode based on version and BTF availability
-4. **Fallback Strategy**: Uses default version offsets if detection fails
+The `sslVersionBpfMap` in [user/module/probe_openssl.go](https://github.com/gojue/ecapture/blob/ca085d05/user/module/probe_openssl.go) groups library versions by internal structure compatibility:
 
-**Supported OpenSSL Versions:**
-- 1.0.2 series: 1.0.2a-1.0.2zg
-- 1.1.0 series: 1.1.0-1.1.0l
-- 1.1.1 series: 1.1.1-1.1.1w
-- 3.0 series: 3.0.0-3.0.15
-- 3.1 series: 3.1.0-3.1.7
-- 3.2 series: 3.2.0-3.2.3
-- 3.3 series: 3.3.0-3.3.3
-- 3.4 series: 3.4.0-3.4.1
-- 3.5 series: 3.5.0-3.5.4
+- **OpenSSL 1.0.2**: All 1.0.2a-u variants use `openssl_1_0_2a_kern.o` (26 versions → 1 file)
+- **OpenSSL 1.1.0**: All 1.1.0a-l variants use `openssl_1_1_0a_kern.o` (12 versions → 1 file)
+- **OpenSSL 1.1.1**: Subdivided into groups (1.1.1d-j, 1.1.1k-w) based on structure offsets
+- **OpenSSL 3.0-3.5**: Each minor version has dedicated bytecode due to frequent structure changes
 
-**Supported BoringSSL Versions:**
-- Android 12 (API 31, A12)
-- Android 13 (API 33, A13)
-- Android 14 (API 34, A14)
-- Android 15 (API 35, A15)
-- Android 16 (API 36, A16)
+**Version Downgrade Logic:**
 
-The system warns when version detection fails but continues with default offsets.
+When an exact version match fails, `downgradeOpensslVersion()` [user/module/probe_openssl.go](https://github.com/gojue/ecapture/blob/ca085d05/user/module/probe_openssl.go) performs backward compatibility search. For example, OpenSSL 3.0.13 (unknown) falls back to 3.0.12 bytecode if structures remain compatible.
 
-Sources: [CHANGELOG.md:14-35](https://github.com/gojue/ecapture/blob/0766a93b/CHANGELOG.md#L14-L35), [CHANGELOG.md:98-99](https://github.com/gojue/ecapture/blob/0766a93b/CHANGELOG.md#L98-L99), [CHANGELOG.md:305-308](https://github.com/gojue/ecapture/blob/0766a93b/CHANGELOG.md#L305-L308), [CHANGELOG.md:540-541](https://github.com/gojue/ecapture/blob/0766a93b/CHANGELOG.md#L540-L541), [CHANGELOG.md:651-654](https://github.com/gojue/ecapture/blob/0766a93b/CHANGELOG.md#L651-L654), [CHANGELOG.md:779-781](https://github.com/gojue/ecapture/blob/0766a93b/CHANGELOG.md#L779-L781)
+**Special Cases:**
 
-## Use Cases
+- **BoringSSL**: Version detection reads Android system properties or library metadata. Supported versions: Android 12, 13, 14, 15, 16.
+- **Go TLS**: No version detection required. ABI detection determines register vs. stack calling convention (Go 1.17+ uses register ABI).
+- **Static binaries**: The `--libssl` flag must point directly to the executable, which eCapture treats as if it were a shared library.
 
-### Network Debugging and Development
+**Supported Version Ranges (as of v1.5.2):**
 
-**Scenario**: Debugging HTTPS API calls without modifying application code
+- **OpenSSL**: 1.0.2a-u, 1.1.0a-l, 1.1.1a-w, 3.0.0-3.5.4
+- **BoringSSL**: Android 12, 13, 14, 15, 16
+- **GnuTLS**: 3.x series
+- **NSS/NSPR**: Firefox 60+, Thunderbird
+- **Go TLS**: All Go versions with ABI auto-detection
 
-```shell
-# Capture plaintext for specific process
-ecapture tls --pid=12345
+**Sources:** [user/module/probe_openssl.go](https://github.com/gojue/ecapture/blob/ca085d05/user/module/probe_openssl.go), [pkg/util/kernel/elf.go](https://github.com/gojue/ecapture/blob/ca085d05/pkg/util/kernel/elf.go), [assets/ebpf_probe.go](https://github.com/gojue/ecapture/blob/ca085d05/assets/ebpf_probe.go), [CHANGELOG.md:23-32](https://github.com/gojue/ecapture/blob/ca085d05/CHANGELOG.md#L23-L32)
 
-# Capture with HTTP/2 parsing
-ecapture tls -m text
+---
 
-# Generate PCAP for Wireshark analysis
-ecapture tls -m pcap -i eth0 --pcapfile=debug.pcapng
+## Output Format Overview
+
+eCapture supports four distinct output formats, each designed for different use cases:
+
+### Text Mode
+
+Direct plaintext output to console or file, with optional hex encoding. Default mode for all modules except when explicitly overridden.
+
+**Configuration:** `-m text` (default), `--output_file` for file destination
+
+### PCAP/PCAPNG Mode
+
+Reconstructs network packets with plaintext payload and embeds TLS master secrets in Decryption Secrets Block (DSB). Compatible with Wireshark for protocol analysis.
+
+**Configuration:** `-m pcap` or `-m pcapng`, `--pcapfile` (default: `ecapture_openssl.pcapng`), `-i` interface
+
+**File Structure:**
+```
+Section Header Block (SHB)
+Interface Description Block (IDB)
+Decryption Secrets Block (DSB) - TLS keys
+Enhanced Packet Block (EPB) - Per packet
 ```
 
-### Security Analysis and Monitoring
+Implementation in [pkg/util/pcapng/](https://github.com/gojue/ecapture/blob/ca085d05/pkg/util/pcapng/)
 
-**Scenario**: Real-time monitoring of encrypted communications for security audit
+### Keylog Mode
 
-```shell
-# Capture all HTTPS traffic on system
-ecapture tls
+Extracts and saves TLS handshake keys in SSLKEYLOGFILE format, enabling offline decryption with Wireshark or tshark.
 
-# Monitor specific user's connections
-ecapture tls --uid=1000
+**Configuration:** `-m keylog`, `--keylogfile` (default: `ecapture_masterkey.log`)
 
-# Export keys for offline analysis
-ecapture tls -m keylog --keylogfile=audit_keys.log
+**Format:**
+```
+CLIENT_RANDOM <32-byte hex> <48-byte hex master secret>
 ```
 
-### Database Activity Auditing
+### Protobuf Stream Mode
 
-**Scenario**: Monitor SQL queries for compliance and performance analysis
+Real-time event streaming using Protocol Buffers over WebSocket or HTTP. Primary format for eCaptureQ GUI integration.
 
-```shell
-# Capture MySQL queries
-ecapture mysqld --pid=$(pidof mysqld)
+**Configuration:** HTTP API server on `localhost:28256` (default)
 
-# Capture PostgreSQL queries
-ecapture postgres --pid=$(pidof postgres)
+**Event Types:** Defined in [protobuf/event.proto](https://github.com/gojue/ecapture/blob/ca085d05/protobuf/event.proto), includes `SSLDataEvent`, `ConnDataEvent`, `MasterSecretEvent`
+
+See [Output Formats](../4-output-formats/index.md) for detailed documentation on each format.
+
+**Sources:** [pkg/util/pcapng/](https://github.com/gojue/ecapture/blob/ca085d05/pkg/util/pcapng/), [protobuf/event.proto](https://github.com/gojue/ecapture/blob/ca085d05/protobuf/event.proto), [pkg/api/server.go](https://github.com/gojue/ecapture/blob/ca085d05/pkg/api/server.go)
+
+---
+
+## Deployment Targets and Requirements
+
+### Linux Systems
+
+| Architecture | Minimum Kernel | BTF Required | Recommended Kernel | Notes |
+|-------------|----------------|--------------|-------------------|-------|
+| x86_64 | 4.18 | Optional | 5.15+ with BTF | CO-RE mode requires BTF for kernel structure relocations |
+| aarch64 | 5.5 | Optional | 5.15+ with BTF | ARM64 support added in v0.8.0, production-ready in v1.0.0 |
+
+**Required Capabilities:**
+- **Root access**: Simplest deployment method, provides all necessary capabilities
+- **CAP_BPF + CAP_PERFMON + CAP_NET_ADMIN**: For kernel 5.8+, allows non-root operation
+- **CAP_SYS_ADMIN**: Legacy capability for kernels < 5.8
+
+**BTF Detection:**
+
+BTF (BPF Type Format) support is detected at runtime via:
+1. Check `/sys/kernel/btf/vmlinux` existence [pkg/util/kernel/btf.go](https://github.com/gojue/ecapture/blob/ca085d05/pkg/util/kernel/btf.go)
+2. Verify `CONFIG_DEBUG_INFO_BTF=y` in kernel configuration
+3. Container environments may require BTF to be bind-mounted from host
+
+If BTF is unavailable, eCapture automatically falls back to non-CO-RE bytecode compiled with fixed kernel structure offsets.
+
+**Sources:** [README.md:14-16](https://github.com/gojue/ecapture/blob/ca085d05/README.md#L14-L16), [pkg/util/kernel/btf.go](https://github.com/gojue/ecapture/blob/ca085d05/pkg/util/kernel/btf.go), [CHANGELOG.md:188-282](https://github.com/gojue/ecapture/blob/ca085d05/CHANGELOG.md#L188-L282)
+
+### Android Systems
+
+| Android Version | BoringSSL Support | Kernel Requirements |
+|-----------------|-------------------|---------------------|
+| 12-16 | Full support | 4.14+ with BTF |
+
+**Deployment:** Requires rooted device or container environment (e.g., Redroid). See [Installation and Quick Start](1.1-installation-and-quick-start.md) for Android-specific instructions.
+
+### Container Environments
+
+eCapture runs in Docker with `--privileged=true` and `--net=host` flags:
+
+```bash
+docker run --rm --privileged=true --net=host \
+  -v ${HOST_PATH}:${CONTAINER_PATH} \
+  gojue/ecapture:latest tls
 ```
 
-### Shell Command Auditing
+**Container Requirements:**
 
-**Scenario**: Track shell commands for security auditing and incident response
+- `--privileged=true`: Grants container access to load eBPF programs
+- `--net=host`: Allows direct access to host network interfaces for TC classifiers
+- Volume mounts: Optional for output file persistence (PCAP, keylog files)
 
-```shell
-# Audit all bash sessions
-ecapture bash
+**BTF in Containers:**
 
-# Audit zsh sessions
-ecapture zsh
+Containers inherit kernel BTF from the host. If the host kernel has BTF enabled (`/sys/kernel/btf/vmlinux` exists), the container will use CO-RE bytecode. If BTF is unavailable, non-CO-RE bytecode is automatically selected.
+
+**Image Contents:**
+
+The `gojue/ecapture:latest` image includes:
+- Both CO-RE and non-CO-RE bytecode for all modules
+- Static libpcap library for PCAP generation
+- Pre-compiled binaries for x86_64 and aarch64
+
+See [Docker Hub](https://hub.docker.com/r/gojue/ecapture) for available tags and multi-arch support.
+
+**Sources:** [README.md:63-68](https://github.com/gojue/ecapture/blob/ca085d05/README.md#L63-L68), [README_CN.md:62-67](https://github.com/gojue/ecapture/blob/ca085d05/README_CN.md#L62-L67)
+
+---
+
+## Use Cases and Applications
+
+### Network Traffic Analysis
+
+- **HTTPS decryption**: Inspect encrypted web traffic without CA certificates or browser extensions
+- **API monitoring**: Capture REST/GraphQL API calls from applications using OpenSSL/BoringSSL
+- **Protocol debugging**: Analyze HTTP/2 and QUIC protocol implementations with built-in parsers
+
+### Security Auditing
+
+- **Command history**: Track bash/zsh commands executed by users (compliance requirements)
+- **Database auditing**: Log SQL queries from MySQL/PostgreSQL for security analysis
+- **Insider threat detection**: Monitor encrypted communications from internal applications
+
+### Development and Debugging
+
+- **TLS troubleshooting**: Debug TLS handshake failures and cipher suite negotiations
+- **Performance analysis**: Measure encryption overhead and data transfer patterns
+- **Integration testing**: Verify API client/server communications during CI/CD
+
+### Research and Forensics
+
+- **Protocol analysis**: Study TLS 1.2/1.3 implementation differences across libraries
+- **Malware analysis**: Examine C2 communications from compromised systems
+- **Incident response**: Capture network activity during security incidents
+
+The tool operates non-invasively, requiring no application restarts or configuration changes, making it suitable for production environments where traditional inspection methods are impractical.
+
+**Sources:** [CHANGELOG.md:188-282](https://github.com/gojue/ecapture/blob/ca085d05/CHANGELOG.md#L188-L282), [README.md:36-44](https://github.com/gojue/ecapture/blob/ca085d05/README.md#L36-L44)
+
+---
+
+## System Limitations and Constraints
+
+### Technical Limitations
+
+- **Kernel Compatibility**: Requires Linux kernel ≥4.18 (x86_64) or ≥5.5 (aarch64)
+- **Architecture Support**: Only x86_64 and aarch64; no 32-bit support
+- **Privilege Requirements**: Must run as root or with `CAP_BPF`/`CAP_SYS_ADMIN` capabilities
+- **Dynamic Linking**: Targets dynamically linked libraries; static binaries require `--libssl` path specification
+
+### Operational Constraints
+
+- **Performance Impact**: eBPF hooks add minimal overhead (<5% typically), but high-throughput scenarios may experience measurable latency
+- **Memory Usage**: Perf/ring buffer maps consume kernel memory, configurable via `--mapsize` (default 5120 KB)
+- **Event Loss**: If user-space processing cannot keep up with kernel event generation, events may be dropped
+
+### Unsupported Scenarios
+
+- **Windows/macOS**: eBPF is Linux-specific; no support for other operating systems
+- **Custom SSL Libraries**: Requires known library versions; exotic or heavily modified SSL implementations may not work
+- **Kernel-Mode TLS**: Cannot capture TLS offloaded to kernel (e.g., ktls)
+
+See [Dependencies and System Requirements](1.3-dependencies-and-system-requirements.md) for detailed compatibility information.
+
+**Sources:** [README.md:14-16](https://github.com/gojue/ecapture/blob/ca085d05/README.md#L14-L16), [pkg/util/ebpf/manager.go](https://github.com/gojue/ecapture/blob/ca085d05/pkg/util/ebpf/manager.go)
+
+---
+
+## Project Structure
+
+The codebase is organized into functional directories:
+
+```
+ecapture/
+├── cli/                    # Command-line interface (cobra framework)
+│   └── cmd/               # Subcommands (tls, gotls, etc.)
+├── user/                  # User-space capture logic
+│   └── module/           # Capture module implementations
+├── kern/                  # eBPF C programs (uprobe/kprobe/TC)
+├── pkg/                   # Shared utilities
+│   ├── event_processor/  # Event routing and parsing
+│   ├── util/             # Kernel interaction, ELF parsing
+│   └── api/              # HTTP API server
+├── assets/               # Embedded eBPF bytecode
+├── protobuf/             # Protocol buffer definitions
+└── builder/              # Build scripts and Dockerfiles
 ```
 
-### Go Application TLS Capture
+For build system details, see [Build System](../5-development-guide/5.1-build-system.md). For adding new modules, see [Adding New Modules](../5-development-guide/5.3-adding-new-modules.md).
 
-**Scenario**: Debug Go applications using native crypto/tls library
+**Sources:** [main.go:1-12](https://github.com/gojue/ecapture/blob/ca085d05/main.go#L1-L12), [cli/cmd/](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/), [user/module/](https://github.com/gojue/ecapture/blob/ca085d05/user/module/), [kern/](https://github.com/gojue/ecapture/blob/ca085d05/kern/)
 
-```shell
-# Specify Go binary path
-ecapture gotls --elfpath=/path/to/go_binary
+---
 
-# Capture with keylog mode
-ecapture gotls --elfpath=/path/to/go_binary -m keylog
-```
-
-Sources: [README.md:72-280](https://github.com/gojue/ecapture/blob/0766a93b/README.md#L72-L280), [README_CN.md:69-251](https://github.com/gojue/ecapture/blob/0766a93b/README_CN.md#L69-L251), [CHANGELOG.md:260-273](https://github.com/gojue/ecapture/blob/0766a93b/CHANGELOG.md#L260-L273)
-
-## Remote Configuration and Integration
-
-eCapture provides HTTP API for runtime configuration updates and event forwarding:
-
-**HTTP Configuration API**: Accessible at `localhost:28256` (configurable with `--listen` flag)
-
-**Event Forwarding**: 
-- WebSocket streaming to external clients
-- Protocol Buffer serialization for structured data
-- Integration with eCaptureQ GUI application
-- Support for Burp Suite and other analysis tools
-
-For detailed API documentation, see:
-- Remote configuration: [docs/remote-config-update-api.md](https://github.com/gojue/ecapture/blob/0766a93b/docs/remote-config-update-api.md)
-- Event forwarding: [docs/event-forward-api.md](https://github.com/gojue/ecapture/blob/0766a93b/docs/event-forward-api.md)
-- Protobuf protocol: [protobuf/PROTOCOLS.md](https://github.com/gojue/ecapture/blob/0766a93b/protobuf/PROTOCOLS.md)
-
-Sources: [CHANGELOG.md:16-17](https://github.com/gojue/ecapture/blob/0766a93b/CHANGELOG.md#L16-L17), [CHANGELOG.md:27-28](https://github.com/gojue/ecapture/blob/0766a93b/CHANGELOG.md#L27-L28), [CHANGELOG.md:43-45](https://github.com/gojue/ecapture/blob/0766a93b/CHANGELOG.md#L43-L45), [CHANGELOG.md:82-89](https://github.com/gojue/ecapture/blob/0766a93b/CHANGELOG.md#L82-L89), [README.md:288-327](https://github.com/gojue/ecapture/blob/0766a93b/README.md#L288-L327), [README_CN.md:268-307](https://github.com/gojue/ecapture/blob/0766a93b/README_CN.md#L268-L307)
-
-## Build and Deployment
-
-eCapture uses a sophisticated build system that produces self-contained binaries:
-
-**Build Artifacts:**
-- **Linux ELF binaries**: Static binaries with embedded eBPF bytecode
-- **Docker images**: Multi-arch images (linux/amd64, linux/arm64)
-- **Debian packages**: `.deb` format for package management
-- **Android releases**: Non-CO-RE only with BoringSSL support
-
-**Binary Embedding**: All eBPF bytecode variants are embedded using `go-bindata`, eliminating runtime dependencies on external bytecode files.
-
-**Cross-Compilation**: Supports building x86_64 binaries on aarch64 hosts and vice versa.
-
-For build instructions and development setup, see [Build System](../5-development-guide/5.1-build-system.md).
-
-Sources: [CHANGELOG.md:537-538](https://github.com/gojue/ecapture/blob/0766a93b/CHANGELOG.md#L537-L538), [README.md:316-319](https://github.com/gojue/ecapture/blob/0766a93b/README.md#L316-L319), [README_CN.md:297-300](https://github.com/gojue/ecapture/blob/0766a93b/README_CN.md#L297-L300)
+This overview establishes the foundational understanding of eCapture's purpose, architecture, and capabilities. Subsequent sections of this documentation provide detailed technical specifications for each component and subsystem.

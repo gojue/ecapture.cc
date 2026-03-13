@@ -1,624 +1,504 @@
-# 架构设计
+# 架构
 
-eCapture 是一个基于 eBPF 的复杂可观测性平台，能够在不需要 CA 证书或代码修改的情况下捕获 SSL/TLS 明文并执行系统审计。系统架构由五个主要层级组成，它们协同工作以在不同系统级别拦截加密流量并生成格式化输出。
+本文档描述了 eCapture 的整体架构，解释了系统如何分层组织，以及数据如何从命令行接口通过 eBPF 探针流向最终输出。该架构遵循五层设计：**CLI 层 → 模块编排 → eBPF 执行 → 事件处理 → 输出**。
 
-本页面提供高层次的架构概述。有关特定组件的详细信息，请参阅：
-- [eBPF 引擎](2.1-ebpf-engine.md) - eBPF 技术使用、探针附加、CO-RE 与 non-CO-RE 模式
-- [事件处理流程](2.2-event-processing-pipeline.md) - 从 eBPF maps 到 workers 和 parsers 的事件流
-- [配置系统](2.3-configuration-system.md) - IConfig 接口和运行时配置
-- [模块系统与生命周期](2.4-module-system-and-lifecycle.md) - IModule 接口和模块管理
-- [版本检测与字节码选择](2.5-version-detection-and-bytecode-selection.md) - SSL/TLS 库版本检测策略
-- [网络连接跟踪](2.6-network-connection-tracking.md) - 基于 TC 的数据包捕获和连接映射
+有关特定捕获模块（OpenSSL、GoTLS 等）的详细信息，请参阅[捕获模块](../3-capture-modules/index.md)。有关 eBPF 实现的信息，请参阅 [eBPF 引擎](2.1-ebpf-engine.md)。有关事件处理内部机制，请参阅[事件处理流程](2.2-event-processing-pipeline.md)。
 
-有关模块特定的实现细节，请参阅[捕获模块](../3-capture-modules/index.md)。有关构建系统架构，请参阅[构建系统](../5-development-guide/5.1-build-system.md)。
+---
 
-## 系统架构概述
+## 系统概述
 
-eCapture 实现了一个五层架构，具有清晰的关注点分离。数据从被监控的应用程序通过内核空间的 eBPF 钩子流向用户空间的事件处理，最终以多种格式（文本、PCAP-NG、密钥日志文件或 protobuf 流）生成格式化输出。
+eCapture 被组织为一个基于 eBPF 的模块化捕获系统。该架构将关注点分离到不同的层，允许在不修改核心基础设施的情况下添加新的捕获模块。每个模块都实现 `IModule` 接口并管理自己的 eBPF 程序，同时共享通用的事件处理和输出机制。
 
-**图表：五层架构**
+**来源：** [README.md:36-44](https://github.com/gojue/ecapture/blob/ca085d05/README.md#L36-L44), [cli/cmd/root.go:44-51](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/root.go#L44-L51), [user/module/imodule.go:47-75](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L47-L75)
+
+---
+
+## 五层架构
 
 ```mermaid
 graph TB
-    subgraph Layer1["1. 用户界面层"]
-        CLI["rootCmd<br/>cli/cmd/root.go:81<br/>cobra.Command"]
-        HTTPServer["http.NewHttpServer<br/>cli/http/server.go<br/>localhost:28256"]
-        eCaptureQ["eCaptureQ 模式<br/>ecaptureq.NewServer<br/>Tauri/React GUI"]
+    subgraph CLI["CLI 层"]
+        RootCmd["rootCmd<br/>(cobra.Command)"]
+        SubCommands["子命令<br/>tls, gotls, bash 等"]
+        GlobalConf["globalConf<br/>(BaseConfig)"]
     end
     
-    subgraph Layer2["2. 捕获模块层"]
-        ModuleFactory["module.GetModuleFunc<br/>user/module/imodule.go"]
-        
-        TLSModule["MOpenSSLProbe<br/>user/module/probe_openssl.go:83<br/>OpenSSL/BoringSSL/NSS/GnuTLS"]
-        GoTLSModule["MGoTLSProbe<br/>Go crypto/tls"]
-        AuditModules["Bash/Zsh/MySQL/PostgreSQL<br/>系统审计模块"]
+    subgraph ModuleOrch["模块编排层"]
+        RunModule["runModule()<br/>cli/cmd/root.go"]
+        IModule["IModule 接口<br/>user/module/imodule.go"]
+        ModuleImpl["模块实现<br/>MOpenSSLProbe<br/>GoTLSProbe 等"]
     end
     
-    subgraph Layer3["3. eBPF 运行时层"]
-        VersionDetect["getSslBpfFile<br/>detectOpenssl<br/>user/module/probe_openssl.go:179"]
-        BytecodeSelect["geteBPFName<br/>user/module/imodule.go:191<br/>CO-RE/_core.o vs non-CO-RE/_noncore.o"]
-        Manager["manager.Manager<br/>ebpfmanager.InitWithOptions<br/>ebpfmanager.Start"]
-        
-        Uprobes["Uprobe 程序<br/>SSL_read/SSL_write<br/>SSL_do_handshake"]
-        TCProgs["TC 程序<br/>capture_packets<br/>ingress/egress"]
-        Kprobes["Kprobe 程序<br/>tcp_sendmsg<br/>udp_sendmsg"]
+    subgraph eBPFExec["eBPF 执行层"]
+        BPFManager["bpfManager<br/>(ebpfmanager.Manager)"]
+        BytecodeAssets["字节码资源<br/>user/bytecode/*.o"]
+        Probes["探针<br/>uprobes, kprobes, TC"]
     end
     
-    subgraph Layer4["4. 事件处理层"]
-        Readers["事件读取器<br/>perf.NewReader<br/>ringbuf.NewReader<br/>user/module/imodule.go:308"]
-        Processor["EventProcessor<br/>event_processor.EventProcessor<br/>pkg/event_processor"]
-        Workers["eventWorker<br/>基于 UUID 的生命周期<br/>Socket vs Default"]
-        Parsers["协议解析器<br/>IParser 接口<br/>HTTP/HTTP2/H2C"]
+    subgraph EventProc["事件处理层"]
+        EventProcessor["EventProcessor<br/>event_processor.EventProcessor"]
+        IWorker["IWorker 池<br/>eventWorker 实例"]
+        IParser["IParser<br/>协议解析器"]
     end
     
-    subgraph Layer5["5. 输出层"]
-        TextOut["文本模式<br/>TlsCaptureModelTypeText<br/>直接控制台输出"]
-        PcapOut["PCAP 模式<br/>TlsCaptureModelTypePcap<br/>savePcapngSslKeyLog"]
-        KeylogOut["密钥日志模式<br/>TlsCaptureModelTypeKeylog<br/>saveMasterSecret"]
-        ProtobufOut["Protobuf 流<br/>pb.LogEntry<br/>WebSocket/TCP"]
+    subgraph Output["输出层"]
+        CollectorWriter["CollectorWriter<br/>(zerolog)"]
+        ProtobufWriter["ProtobufWriter<br/>(protobuf)"]
+        Writers["输出写入器<br/>stdout, file, websocket"]
     end
     
-    CLI --> ModuleFactory
-    HTTPServer -.->|运行时配置| ModuleFactory
-    eCaptureQ -.->|远程模式| ProtobufOut
+    RootCmd --> SubCommands
+    SubCommands --> RunModule
+    RunModule --> GlobalConf
+    RunModule --> IModule
+    IModule --> ModuleImpl
     
-    ModuleFactory --> TLSModule
-    ModuleFactory --> GoTLSModule
-    ModuleFactory --> AuditModules
+    ModuleImpl --> BPFManager
+    BPFManager --> BytecodeAssets
+    BPFManager --> Probes
     
-    TLSModule --> VersionDetect
-    GoTLSModule --> VersionDetect
-    VersionDetect --> BytecodeSelect
-    BytecodeSelect --> Manager
+    Probes --> EventProcessor
+    EventProcessor --> IWorker
+    IWorker --> IParser
     
-    Manager --> Uprobes
-    Manager --> TCProgs
-    Manager --> Kprobes
-    
-    Uprobes --> Readers
-    TCProgs --> Readers
-    Kprobes --> Readers
-    
-    Readers --> Processor
-    Processor --> Workers
-    Workers --> Parsers
-    
-    Parsers --> TextOut
-    Parsers --> PcapOut
-    Parsers --> KeylogOut
-    Parsers --> ProtobufOut
+    IParser --> CollectorWriter
+    IParser --> ProtobufWriter
+    CollectorWriter --> Writers
+    ProtobufWriter --> Writers
 ```
 
-来源：[cli/cmd/root.go:80-153](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/root.go#L80-L153), [user/module/probe_openssl.go:83-106](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl.go#L83-L106), [user/module/imodule.go:47-75](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L47-L75), [user/module/probe_openssl.go:178-278](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl.go#L178-L278), [user/module/imodule.go:191-214](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L191-L214)
+**架构概览：五个不同的层次，关注点明确分离**
 
-### 架构层级说明
+该架构由五个主要层次组成：
 
-每一层都有特定的职责：
+1. **CLI 层**：解析命令和标志，管理配置
+2. **模块编排层**：实现 `IModule` 接口模式，协调模块生命周期
+3. **eBPF 执行层**：加载和管理 eBPF 程序，将探针附加到目标函数
+4. **事件处理层**：聚合原始 eBPF 事件并解析为结构化数据
+5. **输出层**：格式化已处理的事件并写入各种目标
 
-| 层级 | 职责 | 关键组件 |
-|-------|------------------|----------------|
-| **1. 用户界面** | 命令解析、配置输入、运行时更新 | `rootCmd` (Cobra CLI)、HTTP 配置服务器、eCaptureQ 集成 |
-| **2. 捕获模块** | 协议特定逻辑、字节码选择、探针附加 | `IModule` 接口、`MOpenSSLProbe`、`MGoTLSProbe` 等 |
-| **3. eBPF 运行时** | 版本检测、CO-RE/non-CO-RE 选择、eBPF 程序生命周期 | `manager.Manager`、uprobe/TC/kprobe 程序、BTF 检测 |
-| **4. 事件处理** | 事件读取、聚合、协议解析、连接跟踪 | `EventProcessor`、`eventWorker`、`IParser` 实现 |
-| **5. 输出** | 格式转换、文件写入、网络流 | Text/PCAP/Keylog/Protobuf 写入器、PCAP-NG DSB 块 |
+**来源：** [cli/cmd/root.go:80-133](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/root.go#L80-L133), [user/module/imodule.go:47-75](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L47-L75), [user/module/probe_openssl.go:83-106](https://github.com/gojue/ecapture/blob/ca085d05/user/module/probe_openssl.go#L83-L106)
 
-有关 IModule 接口的详细信息，请参阅[模块系统与生命周期](2.4-module-system-and-lifecycle.md)；有关事件流详细信息，请参阅[事件处理流程](2.2-event-processing-pipeline.md)。
+---
 
-### 关键架构决策
+## CLI 层
 
-架构做出了几个关键的设计决策以实现其功能：
-
-| 决策 | 理由 | 实现 |
-|----------|-----------|----------------|
-| **模块的工厂模式** | 支持基于 CLI 命令的动态模块加载 | `IModule` 接口 [user/module/imodule.go:47-75](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L47-L75)；模块通过 `RegisteFunc` 在包初始化时注册 |
-| **双字节码编译** | 支持 BTF 启用（CO-RE）和非 BTF 内核 | 构建系统生成 `*_core.o` 和 `*_noncore.o` 变体；运行时通过 `geteBPFName` 选择 [user/module/imodule.go:191-214](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L191-L214) |
-| **版本检测层** | 处理 20+ 个具有不同结构布局的 OpenSSL/BoringSSL 版本 | `detectOpenssl` [user/module/probe_openssl.go:178-278](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl.go#L178-L278) 解析 ELF `.rodata`，通过 `sslVersionBpfMap` 将版本映射到字节码 |
-| **事件处理流程** | 将捕获与输出格式化解耦，支持协议解析 | `EventProcessor` [user/module/imodule.go:104](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L104) 按 UUID 聚合事件，应用 HTTP/HTTP2 解析器 |
-| **多种输出格式** | 支持实时分析（文本）、取证（PCAP）、解密（密钥日志） | `TlsCaptureModelType` 枚举 [user/module/probe_openssl.go:58-76](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl.go#L58-L76) 控制捕获模式 |
-| **连接跟踪** | 在没有用户空间协作的情况下将网络数据包映射到进程 | Kprobes 填充 `network_map` LRU 哈希表；TC 钩子查找 PID/UID。参见[网络连接跟踪](2.6-network-connection-tracking.md) |
-| **双 Worker 生命周期** | 针对不同连接模式优化资源使用 | 持久连接使用基于 Socket 的生命周期，短期连接使用默认（10-tick 超时）。参见[事件处理流程](2.2-event-processing-pipeline.md) |
-
-来源：[user/module/imodule.go:47-75](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L47-L75), [user/module/probe_openssl.go:58-76](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl.go#L58-L76), [user/module/probe_openssl.go:178-278](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl.go#L178-L278), [user/module/imodule.go:191-214](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L191-L214)
-
-## 数据流管道
-
-以下图表显示了数据如何从应用程序流向输出：
-
-**图表：完整数据流**
+CLI 层使用 Cobra 框架实现，为所有 eCapture 操作提供入口点。
 
 ```mermaid
 graph LR
-    App["被监控的应用程序<br/>curl, browser, etc.<br/>使用 OpenSSL/Go TLS"] --> LibraryCall["库函数调用<br/>SSL_write/SSL_read<br/>tls.Conn.Write/Read"]
+    User["用户命令"]
+    RootCmd["rootCmd<br/>Execute()"]
+    GlobalFlags["全局标志<br/>--pid, --uid, --debug<br/>--btf, --mapsize"]
+    SubCmd["子命令<br/>tls, gotls, bash"]
+    RunModule["runModule()<br/>第 250 行"]
     
-    LibraryCall --> UprobeHook["Uprobe 钩子<br/>内核拦截<br/>函数入口/返回"]
-    
-    UprobeHook --> PlaintextCapture["明文捕获<br/>加密前<br/>解密后"]
-    
-    PlaintextCapture --> eBPFMap["eBPF Map<br/>perf_event_array<br/>或 ring_buffer"]
-    
-    eBPFMap --> UserSpaceRead["perf.NewReader.Read<br/>user/module/imodule.go:308<br/>每个 map 一个 goroutine"]
-    
-    UserSpaceRead --> DecodeEvent["解码事件<br/>child.Decode(map, bytes)<br/>→ IEventStruct"]
-    
-    DecodeEvent --> Dispatcher["Module.Dispatcher<br/>user/module/imodule.go:409<br/>根据 EventType 路由"]
-    
-    Dispatcher --> ProcessorQueue{"EventType?"}
-    ProcessorQueue -->|TypeEventProcessor| EventProcessor["EventProcessor.Write<br/>按 UUID 聚合"]
-    ProcessorQueue -->|TypeOutput| DirectOutput["直接输出"]
-    ProcessorQueue -->|TypeModuleData| ModuleCache["模块缓存<br/>主密钥、元组"]
-    
-    EventProcessor --> WorkerPool["eventWorker 池<br/>解析 HTTP/HTTP2<br/>格式化输出"]
-    
-    WorkerPool --> FinalOutput["最终输出"]
-    DirectOutput --> FinalOutput
-    
-    FinalOutput --> OutputFormat{"输出模式"}
-    OutputFormat -->|Text| Console["控制台/文件<br/>zerolog.Logger"]
-    OutputFormat -->|PCAP| PcapFile["PCAP-NG 文件<br/>+ DSB 密钥日志块"]
-    OutputFormat -->|Keylog| KeylogFile["密钥日志文件<br/>CLIENT_RANDOM 格式"]
-    OutputFormat -->|Protobuf| WebSocket["WebSocket/TCP<br/>pb.LogEntry 消息"]
+    User --> RootCmd
+    RootCmd --> GlobalFlags
+    RootCmd --> SubCmd
+    SubCmd --> RunModule
 ```
 
-来源：[user/module/imodule.go:285-391](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L285-L391), [user/module/imodule.go:409-448](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L409-L448), [cli/cmd/root.go:250-403](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/root.go#L250-L403)
+**CLI 命令流程：从用户输入到模块执行**
 
-## 用户界面层
+[cli/cmd/root.go:81-113](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/root.go#L81-L113) 中的 `rootCmd` 是根 Cobra 命令。它定义了适用于所有子命令的全局标志：
 
-eCapture 提供三种用户交互界面：CLI 命令、HTTP 配置 API 和 eCaptureQ GUI 集成。
-
-### CLI 入口点
-
-CLI 使用 Cobra 命令框架。每个子命令对应一个捕获模块。
-
-**图表：CLI 命令结构**
-
-```mermaid
-graph TB
-    main["main()<br/>main.go:10"] --> rootCmd["rootCmd.Execute<br/>cli/cmd/root.go:81"]
-    
-    rootCmd --> SubCommands["子命令"]
-    
-    SubCommands --> tls["tls<br/>OpenSSL/BoringSSL"]
-    SubCommands --> gotls["gotls<br/>Go crypto/tls"]
-    SubCommands --> gnutls["gnutls<br/>GnuTLS 库"]
-    SubCommands --> nss["nss<br/>NSS/NSPR"]
-    SubCommands --> bash["bash<br/>命令审计"]
-    SubCommands --> zsh["zsh<br/>命令审计"]
-    SubCommands --> mysqld["mysqld<br/>查询审计"]
-    SubCommands --> postgres["postgres<br/>查询审计"]
-    
-    tls --> OpensslConfig["config.OpensslConfig<br/>--libssl, --model, --pcapfile"]
-    gotls --> GotlsConfig["config.GoTLSConfig<br/>--elfpath, --model"]
-    bash --> BashConfig["config.BashConfig<br/>--bashpath"]
-    
-    OpensslConfig --> runModule["runModule<br/>cli/cmd/root.go:250"]
-    GotlsConfig --> runModule
-    BashConfig --> runModule
-    
-    runModule --> SetModConfig["setModConfig<br/>PID, UID, BTF 模式<br/>PerCpuMapSize"]
-    SetModConfig --> GetModuleFunc["module.GetModuleFunc<br/>工厂查找"]
-    
-    GetModuleFunc --> ModInit["mod.Init()<br/>IModule.Init"]
-    ModInit --> ModRun["mod.Run()<br/>启动 eBPF，事件循环"]
-```
-
-来源：[main.go:9-11](https://github.com/gojue/ecapture/blob/0766a93b/main.go#L9-L11), [cli/cmd/root.go:80-153](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/root.go#L80-L153), [cli/cmd/root.go:250-403](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/root.go#L250-L403), [cli/cmd/root.go:156-175](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/root.go#L156-L175)
-
-**持久化标志**（应用于所有模块）[cli/cmd/root.go:140-153](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/root.go#L140-L153)：
-
-| 标志 | 类型 | 默认值 | 用途 |
+| 标志 | 类型 | 用途 | 默认值 |
 |------|------|---------|---------|
-| `--pid` / `-p` | uint64 | 0 (全部) | 目标特定进程 ID |
-| `--uid` / `-u` | uint64 | 0 (全部) | 目标特定用户 ID |
-| `--btf` / `-b` | uint8 | 0 (自动) | BTF 模式：0=自动，1=core，2=non-core |
-| `--mapsize` | int | 1024 | 每 CPU 的 eBPF map 大小（KB） |
-| `--logaddr` / `-l` | string | "" | 日志目的地：文件路径、`tcp://host:port` 或 `ws://host:port/path` |
-| `--eventaddr` | string | "" | 事件目的地（与日志分开） |
-| `--listen` | string | `localhost:28256` | HTTP 配置服务器监听地址 |
-| `--tsize` / `-t` | uint64 | 0 | 文本模式下的截断大小（字节，0=不截断） |
-| `--ecaptureq` | string | "" | 监听 eCaptureQ 客户端连接 |
+| `--pid` / `-p` | uint64 | 目标进程 ID（0 = 所有进程） | 0 |
+| `--uid` / `-u` | uint64 | 目标用户 ID（0 = 所有用户） | 0 |
+| `--debug` / `-d` | bool | 启用调试日志 | false |
+| `--btf` / `-b` | uint8 | BTF 模式（0=自动，1=core，2=non-core） | 0 |
+| `--mapsize` | int | 每个 CPU 的 eBPF map 大小（KB） | 1024 |
+| `--logaddr` / `-l` | string | 日志输出地址 | "" |
+| `--listen` | string | HTTP API 监听地址 | "localhost:28256" |
 
-### HTTP 配置服务器
+每个子命令（例如 `tls`、`gotls`、`bash`）最终都会调用 [cli/cmd/root.go:250-403](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/root.go#L250-L403) 中的 `runModule()`，该函数：
 
-HTTP 服务器并发运行以接受运行时配置更新而无需重启。
+1. 使用 `setModConfig()` 从全局配置创建模块特定配置 [cli/cmd/root.go:157-175](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/root.go#L157-L175)
+2. 初始化日志记录器和事件收集器 [cli/cmd/root.go:282-295](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/root.go#L282-L295)
+3. 启动 HTTP 服务器用于运行时配置更新 [cli/cmd/root.go:313-322](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/root.go#L313-L322)
+4. 通过 `IModule.Init()` 初始化模块 [cli/cmd/root.go:352-356](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/root.go#L352-L356)
+5. 通过 `IModule.Run()` 运行模块 [cli/cmd/root.go:358-362](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/root.go#L358-L362)
+6. 处理重载或关闭信号 [cli/cmd/root.go:367-396](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/root.go#L367-L396)
 
-**图表：运行时配置更新**
+**来源：** [cli/cmd/root.go:80-154](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/root.go#L80-L154), [cli/cmd/root.go:157-175](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/root.go#L157-L175), [cli/cmd/root.go:250-403](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/root.go#L250-L403)
 
-```mermaid
-graph TB
-    HTTPServer["http.NewHttpServer<br/>cli/http/server.go<br/>localhost:28256"] --> ListenAddr["HTTP 监听<br/>POST /config 端点"]
-    
-    ListenAddr --> ReceiveJSON["接收 JSON<br/>更新后的 config.IConfig"]
-    
-    ReceiveJSON --> ReloadChannel["reRloadConfig chan<br/>cli/cmd/root.go:310<br/>缓冲通道"]
-    
-    ReloadChannel --> RunModuleLoop["runModule select 循环<br/>cli/cmd/root.go:368"]
-    
-    RunModuleLoop --> CloseModule["mod.Close()<br/>分离 eBPF 程序"]
-    
-    CloseModule --> Reinit["mod = modFunc()<br/>创建新实例"]
-    
-    Reinit --> InitWithNewConfig["mod.Init(ctx, logger, newConfig)"]
-    
-    InitWithNewConfig --> RestartModule["mod.Run()<br/>使用新配置恢复"]
-```
+---
 
-来源：[cli/cmd/root.go:313-322](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/root.go#L313-L322), [cli/cmd/root.go:368-396](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/root.go#L368-L396)
+## 模块编排层
 
-HTTP 服务器支持动态重新配置。当收到带有更新配置 JSON 的 POST 请求时，系统会：
-1. 关闭当前模块（分离 eBPF 程序）
-2. 创建新的模块实例
-3. 使用更新的配置初始化
-4. 使用新设置重新启动事件捕获
-
-有关配置结构详细信息，请参阅[配置系统](2.3-configuration-system.md)；有关 API 详细信息，请参阅 [HTTP API 文档](https://github.com/gojue/ecapture/blob/0766a93b/docs/remote-config-update-api.md)。
-
-### 输出目的地
-
-eCapture 支持多个日志和事件的输出目的地：
-
-**图表：输出路由**
+模块编排层围绕 `IModule` 接口构建，所有捕获模块都实现该接口。
 
 ```mermaid
 graph TB
-    initLogger["initLogger()<br/>cli/cmd/root.go:178"] --> CheckAddr{"logaddr 标志?"}
+    IModule["IModule 接口<br/>user/module/imodule.go:47-75"]
+    Module["Module 基类<br/>user/module/imodule.go:83-108"]
     
-    CheckAddr -->|""| StdoutOnly["zerolog.ConsoleWriter<br/>仅 os.Stdout"]
-    CheckAddr -->|文件路径| FileWriter["os.Create(addr)<br/>MultiLevelWriter"]
-    CheckAddr -->|tcp://| TCPWriter["net.Dial('tcp', addr)<br/>TCP 连接"]
-    CheckAddr -->|ws://| WSWriter["ws.NewClient<br/>WebSocket 连接"]
+    OpenSSL["MOpenSSLProbe<br/>user/module/probe_openssl.go"]
+    GoTLS["GoTLSProbe<br/>user/module/probe_gotls.go"]
+    Bash["BashProbe<br/>user/module/probe_bash.go"]
     
-    FileWriter --> MultiWriter["zerolog.MultiLevelWriter<br/>控制台 + 文件/TCP/WS"]
-    TCPWriter --> MultiWriter
-    WSWriter --> MultiWriter
+    IModule -.实现.- Module
+    Module -.嵌入到.- OpenSSL
+    Module -.嵌入到.- GoTLS
+    Module -.嵌入到.- Bash
     
-    MultiWriter --> LoggerInstance["zerolog.Logger<br/>被模块使用"]
-    StdoutOnly --> LoggerInstance
+    Methods["关键方法：<br/>Init() - 初始化模块<br/>Start() - 启动 eBPF 程序<br/>Run() - 开始事件读取<br/>Events() - 返回事件 map<br/>DecodeFun() - 获取解码器<br/>Dispatcher() - 处理事件<br/>Close() - 清理"]
     
-    LoggerInstance --> EventCollector["eventCollector io.Writer<br/>event.CollectorWriter 或 ecaptureQEventWriter"]
-    
-    EventCollector --> ModuleInit["mod.Init(ctx, logger, conf, eventCollector)<br/>user/module/imodule.go:111"]
+    IModule --> Methods
 ```
 
-来源：[cli/cmd/root.go:178-247](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/root.go#L178-L247), [cli/cmd/root.go:255-295](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/root.go#L255-L295)
+**IModule 接口及其实现**
 
-输出类型 [cli/cmd/root.go:69-73](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/root.go#L69-L73)：
-- **Stdout**（类型 0）：仅控制台输出
-- **File**（类型 1）：写入本地文件，可通过 `--eventroratesize` 和 `--eventroratetime` 选择性轮转
-- **TCP**（类型 2）：流式传输到 `tcp://host:port`
-- **WebSocket**（类型 3）：流式传输到 `ws://host:port/path` 或 `wss://`（TLS）
+[user/module/imodule.go:47-75](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L47-L75) 中的 `IModule` 接口为所有捕获模块定义了契约：
 
-`eventCollector` 接收捕获的事件，而 `logger` 接收操作日志。它们可以通过 `--logaddr` 和 `--eventaddr` 标志使用相同或不同的目的地。
+- **`Init(context.Context, *zerolog.Logger, config.IConfig, io.Writer) error`**：使用上下文、日志记录器、配置和事件写入器初始化模块
+- **`Name() string`**：返回模块名称
+- **`Start() error`**：启动 eBPF 程序并附加探针
+- **`Run() error`**：开始从 eBPF map 读取事件
+- **`Events() []*ebpf.Map`**：返回包含事件的 eBPF map
+- **`DecodeFun(*ebpf.Map) (event.IEventStruct, bool)`**：返回特定 map 的解码函数
+- **`Dispatcher(event.IEventStruct)`**：处理和路由解码后的事件
+- **`Close() error`**：清理资源
 
-## 捕获模块层
+[user/module/imodule.go:83-108](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L83-L108) 中的 `Module` 基类提供通用功能：
 
-模块系统使用工厂模式进行动态模块实例化。每个模块都实现 `IModule` 接口并嵌入基础 `Module` 结构体以获得通用功能。
+- 从 perf 缓冲区和 ring 缓冲区读取事件 [user/module/imodule.go:285-391](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L285-L391)
+- 事件解码 [user/module/imodule.go:393-406](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L393-L406)
+- 将事件分发到事件处理器 [user/module/imodule.go:408-448](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L408-L448)
+- BTF（BPF 类型格式）检测 [user/module/imodule.go:173-190](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L173-L190)
+- 字节码文件选择（CO-RE 与 non-CO-RE）[user/module/imodule.go:191-214](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L191-L214)
 
-### 模块工厂和注册
+**来源：** [user/module/imodule.go:47-108](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L47-L108), [user/module/imodule.go:236-262](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L236-L262), [user/module/imodule.go:285-391](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L285-L391)
 
-模块在包初始化时自注册。
+---
 
-**图表：模块工厂模式**
+## 模块生命周期
+
+模块生命周期遵循三阶段模式：**Init → Run → Close**。
+
+```mermaid
+sequenceDiagram
+    participant CLI as runModule()
+    participant Mod as IModule
+    participant Child as 子模块<br/>(例如 MOpenSSLProbe)
+    participant BPF as bpfManager
+    participant EP as EventProcessor
+    
+    CLI->>Mod: Init(ctx, logger, config, writer)
+    Mod->>Mod: autoDetectBTF()
+    Mod->>Mod: 创建 EventProcessor
+    Mod->>Child: SetChild(child)
+    Child->>Child: 检测库版本
+    Child->>Child: 选择字节码文件
+    
+    CLI->>Mod: Run()
+    Mod->>Child: Start()
+    Child->>BPF: InitWithOptions(bytecode)
+    BPF->>BPF: 加载 eBPF 程序
+    Child->>BPF: Start()
+    BPF->>BPF: 附加探针
+    
+    Mod->>Mod: readEvents()
+    Mod->>Mod: perfEventReader()/ringbufEventReader()
+    Mod->>EP: processor.Serve()
+    
+    loop 事件循环
+        BPF-->>Mod: eBPF 事件
+        Mod->>Mod: Decode(map, bytes)
+        Mod->>Child: Dispatcher(event)
+        Child->>EP: processor.Write(event)
+    end
+    
+    CLI->>Mod: Close()
+    Mod->>Child: Close()
+    Child->>BPF: Stop(CleanAll)
+    Mod->>EP: processor.Close()
+```
+
+**模块生命周期：三阶段初始化、执行和清理**
+
+### Init 阶段
+
+`Init()` 方法执行模块初始化：
+
+1. **上下文和日志记录器设置** 在 [user/module/imodule.go:111-127](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L111-L127)
+2. **BTF 检测** 使用 `autoDetectBTF()` 在 [user/module/imodule.go:173-190](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L173-L190)
+3. **内核版本检查** 在 [user/module/imodule.go:140-149](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L140-L149)
+4. **EventProcessor 创建** 在 [user/module/imodule.go:127](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L127)
+5. **子模块特定初始化**（例如，OpenSSL 版本检测在 [user/module/probe_openssl.go:109-176](https://github.com/gojue/ecapture/blob/ca085d05/user/module/probe_openssl.go#L109-L176)）
+
+### Run 阶段
+
+`Run()` 方法协调执行：
+
+1. **调用子模块的 `Start()`** 在 [user/module/imodule.go:239-242](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L239-L242)
+2. **启动事件读取协程** 在 [user/module/imodule.go:256-259](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L256-L259)
+3. **启动 EventProcessor** 在 [user/module/imodule.go:249-254](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L249-L254)
+4. **从 eBPF map 读取事件** 在 [user/module/imodule.go:285-305](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L285-L305)
+
+`Start()` 方法（由子模块实现）加载并附加 eBPF 程序：
+
+1. **根据捕获模式设置管理器** 在 [user/module/probe_openssl.go:284-300](https://github.com/gojue/ecapture/blob/ca085d05/user/module/probe_openssl.go#L284-L300)
+2. **从嵌入资源加载字节码** 在 [user/module/probe_openssl.go:310-326](https://github.com/gojue/ecapture/blob/ca085d05/user/module/probe_openssl.go#L310-L326)
+3. **初始化 bpfManager** 在 [user/module/probe_openssl.go:320-326](https://github.com/gojue/ecapture/blob/ca085d05/user/module/probe_openssl.go#L320-L326)
+4. **启动 bpfManager**（附加探针）在 [user/module/probe_openssl.go:328-331](https://github.com/gojue/ecapture/blob/ca085d05/user/module/probe_openssl.go#L328-L331)
+5. **初始化解码函数** 在 [user/module/probe_openssl.go:333-347](https://github.com/gojue/ecapture/blob/ca085d05/user/module/probe_openssl.go#L333-L347)
+
+### Close 阶段
+
+`Close()` 方法执行清理：
+
+1. **停止 bpfManager** 并分离探针在 [user/module/probe_openssl.go:352-357](https://github.com/gojue/ecapture/blob/ca085d05/user/module/probe_openssl.go#L352-L357)
+2. **关闭 EventProcessor** 在 [user/module/imodule.go:458-459](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L458-L459)
+3. **关闭事件读取器** 在 [user/module/imodule.go:453-457](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L453-L457)
+
+**来源：** [user/module/imodule.go:111-171](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L111-L171), [user/module/imodule.go:236-262](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L236-L262), [user/module/probe_openssl.go:109-176](https://github.com/gojue/ecapture/blob/ca085d05/user/module/probe_openssl.go#L109-L176), [user/module/probe_openssl.go:280-350](https://github.com/gojue/ecapture/blob/ca085d05/user/module/probe_openssl.go#L280-L350)
+
+---
+
+## eBPF 执行层
+
+eBPF 执行层管理 eBPF 程序的加载、初始化和生命周期。
 
 ```mermaid
 graph TB
-    InitFuncs["init() 函数<br/>user/module/probe_*.go"] --> CallRegisteFunc["RegisteFunc(NewModuleProbe)<br/>注册构造函数"]
+    subgraph "字节码选择"
+        VersionDetect["库版本检测<br/>detectOpenssl()/detectGo()"]
+        BytecodeMap["sslVersionBpfMap<br/>版本 → 字节码文件"]
+        CoreNonCore["CO-RE vs Non-CO-RE<br/>geteBPFName()"]
+    end
     
-    CallRegisteFunc --> ModuleFactories["moduleFactories map<br/>全局注册表"]
+    subgraph "eBPF 管理器"
+        Assets["嵌入字节码<br/>assets.Asset()"]
+        BPFMgr["bpfManager<br/>ebpfmanager.Manager"]
+        BPFOpts["bpfManagerOptions<br/>常量、探针、Map"]
+    end
     
-    ModuleFactories --> RegisteredModules["已注册的构造函数"]
+    subgraph "探针附加"
+        Uprobe["Uprobe 附加<br/>SSL_read, SSL_write 等"]
+        Kprobe["Kprobe 附加<br/>tcp_sendmsg 等"]
+        TC["TC 分类器<br/>ingress/egress"]
+    end
     
-    RegisteredModules --> NewOpenSSLProbe["NewOpenSSLProbe<br/>user/module/probe_openssl.go:781"]
-    RegisteredModules --> NewGoTLSProbe["NewGoTLSProbe<br/>user/module/probe_gotls.go"]
-    RegisteredModules --> NewGnuTLSProbe["NewGnuTLSProbe"]
-    RegisteredModules --> NewNSSProbe["NewNSSProbe"]
-    RegisteredModules --> NewBashProbe["NewBashProbe"]
-    RegisteredModules --> NewMysqldProbe["NewMysqldProbe"]
-    RegisteredModules --> NewPostgresProbe["NewPostgresProbe"]
-    RegisteredModules --> NewZshProbe["NewZshProbe"]
+    VersionDetect --> BytecodeMap
+    BytecodeMap --> CoreNonCore
+    CoreNonCore --> Assets
+    Assets --> BPFMgr
+    BPFOpts --> BPFMgr
     
-    CLIRunModule["runModule<br/>cli/cmd/root.go:250"] --> GetModuleFunc["module.GetModuleFunc(modName)<br/>在注册表中查找"]
-    
-    GetModuleFunc --> RetrieveConstructor["moduleFactories[modName]<br/>返回 func() IModule"]
-    
-    RetrieveConstructor --> CreateInstance["modFunc()<br/>创建模块实例"]
+    BPFMgr --> Uprobe
+    BPFMgr --> Kprobe
+    BPFMgr --> TC
 ```
 
-来源：[user/module/probe_openssl.go:777-786](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl.go#L777-L786), [cli/cmd/root.go:344-347](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/root.go#L344-L347)
+**eBPF 程序加载和附加**
 
-来自 OpenSSL 模块的注册示例 [user/module/probe_openssl.go:777-786](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl.go#L777-L786)：
-```go
-func init() {
-    RegisteFunc(NewOpenSSLProbe)
-}
+### 字节码选择
 
-func NewOpenSSLProbe() IModule {
-    mod := &MOpenSSLProbe{}
-    mod.name = ModuleNameOpenssl
-    mod.mType = ProbeTypeUprobe
-    return mod
-}
-```
+eCapture 根据以下因素使用不同的 eBPF 字节码文件：
 
-CLI 通过 `module.GetModuleFunc(modName)` [cli/cmd/root.go:344](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/root.go#L344) 检索构造函数并调用它来创建实例。
+1. **目标库版本**：OpenSSL 1.0.x、1.1.x、3.0.x、3.x、BoringSSL 变体 [user/module/probe_openssl.go:178-278](https://github.com/gojue/ecapture/blob/ca085d05/user/module/probe_openssl.go#L178-L278)
+2. **CO-RE 支持**：内核 BTF 可用性决定 CO-RE 或 non-CO-RE 字节码 [user/module/imodule.go:173-190](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L173-L190)
+3. **内核版本**：内核 < 5.2 有不同的限制 [user/module/imodule.go:140-149](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L140-L149)
 
-### IModule 接口
+[user/module/imodule.go:191-214](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L191-L214) 中的 `geteBPFName()` 方法通过在基础文件名后附加 `_core.o` 或 `_noncore.o` 来选择合适的字节码文件。
 
-所有模块都实现 `IModule` 接口 [user/module/imodule.go:47-75](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L47-L75)，该接口定义了生命周期和事件处理方法。
+### 管理器初始化
 
-**IModule 接口方法**
+来自 `ebpfmanager` 库的 `bpfManager` 管理 eBPF 程序生命周期：
 
-| 方法 | 用途 | 阶段 | 责任 |
-|--------|---------|-------|----------------|
-| `Init(context.Context, *zerolog.Logger, config.IConfig, io.Writer)` | 初始化模块，设置 EventProcessor，BTF 检测 | 初始化 | 基础 `Module` + 子类重写 |
-| `Start()` | 加载 eBPF 字节码，附加探针/钩子 | 启动 | 子类实现 |
-| `Run()` | 启动事件读取器，开始处理循环 | 运行 | 基础 `Module`（调用 child.Start） |
-| `Events() []*ebpf.Map` | 返回要读取事件的 eBPF maps | 运行 | 子类实现 |
-| `Decode(*ebpf.Map, []byte) (event.IEventStruct, error)` | 将原始事件字节解析为结构体 | 事件处理 | 基础委托给 child.DecodeFun |
-| `DecodeFun(*ebpf.Map) (event.IEventStruct, bool)` | 返回特定 map 的解码器 | 事件处理 | 子类实现 |
-| `Dispatcher(event.IEventStruct)` | 路由事件（缓存、处理、输出） | 事件处理 | 基础 + 子类都实现 |
-| `Close()` | 停止 eBPF 程序，清理资源 | 关闭 | 基础 + 子类都实现 |
+1. **从嵌入资源加载字节码** 通过 `assets.Asset()` [user/module/probe_openssl.go:312-317](https://github.com/gojue/ecapture/blob/ca085d05/user/module/probe_openssl.go#L312-L317)
+2. **使用 `InitWithOptions()` 初始化管理器** [user/module/probe_openssl.go:320-326](https://github.com/gojue/ecapture/blob/ca085d05/user/module/probe_openssl.go#L320-L326)
+3. **启动管理器** 以使用 `Start()` 附加探针 [user/module/probe_openssl.go:328-331](https://github.com/gojue/ecapture/blob/ca085d05/user/module/probe_openssl.go#L328-L331)
 
-有关详细的生命周期信息，请参阅[模块系统与生命周期](2.4-module-system-and-lifecycle.md)。
+`bpfManagerOptions` 结构包含：
 
-来源：[user/module/imodule.go:47-75](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L47-L75), [user/module/imodule.go:110-171](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L110-L171)
+- **常量**：目标 PID、UID、内核版本标志 [user/module/probe_openssl.go:361-395](https://github.com/gojue/ecapture/blob/ca085d05/user/module/probe_openssl.go#L361-L395)
+- **探针**：要附加的 uprobe/kprobe/TC 程序列表
+- **Map**：用于事件读取的 eBPF map 引用
 
-### 基础模块实现
+### 事件 Map
 
-`Module` 结构体 [user/module/imodule.go:83-108](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L83-L108) 提供了所有探针通过嵌入继承的通用功能。
+每个模块定义用于事件收集的 eBPF map：
 
-**图表：模块结构体组成**
+- **PerfEventArray** 或 **RingBuf** map 用于事件流
+- 由 eBPF 管理器管理，通过 `Events()` 方法访问 [user/module/imodule.go:224-226](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L224-L226)
+- 事件读取由 `perfEventReader()` 或 `ringbufEventReader()` 处理 [user/module/imodule.go:308-391](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L308-L391)
 
-```mermaid
-graph TB
-    BaseModule["Module 结构体<br/>user/module/imodule.go:83<br/>被所有探针嵌入"] --> CoreFields["核心字段"]
-    BaseModule --> CoreMethods["核心方法"]
-    
-    CoreFields --> ctx["ctx context.Context<br/>取消信号"]
-    CoreFields --> logger["logger *zerolog.Logger<br/>日志接口"]
-    CoreFields --> conf["conf config.IConfig<br/>模块配置"]
-    CoreFields --> processor["processor *EventProcessor<br/>pkg/event_processor"]
-    CoreFields --> reader["reader []IClose<br/>perf/ringbuf 读取器"]
-    CoreFields --> child["child IModule<br/>实际探针（例如 MOpenSSLProbe）"]
-    CoreFields --> eventCollector["eventCollector io.Writer<br/>输出目的地"]
-    CoreFields --> flags["isCoreUsed bool<br/>isKernelLess5_2 bool"]
-    
-    CoreMethods --> InitMethod["Init()<br/>BTF 检测<br/>EventProcessor 设置<br/>user/module/imodule.go:111"]
-    CoreMethods --> RunMethod["Run()<br/>启动 child.Start()<br/>readEvents()<br/>user/module/imodule.go:236"]
-    CoreMethods --> readEvents["readEvents()<br/>perfEventReader<br/>ringbufEventReader<br/>user/module/imodule.go:285"]
-    CoreMethods --> DecodeMethod["Decode()<br/>委托给 child.DecodeFun<br/>user/module/imodule.go:393"]
-    CoreMethods --> DispatcherMethod["Dispatcher()<br/>路由事件<br/>user/module/imodule.go:409"]
-    CoreMethods --> CloseMethod["Close()<br/>清理读取器<br/>user/module/imodule.go:450"]
-    
-    ProbeModules["探针模块"] --> MOpenSSL["MOpenSSLProbe<br/>user/module/probe_openssl.go:83<br/>嵌入 Module"]
-    ProbeModules --> MGoTLS["MGoTLSProbe<br/>嵌入 Module"]
-    ProbeModules --> MGnuTLS["MGnuTLSProbe<br/>嵌入 Module"]
-    ProbeModules --> MBash["MBashProbe<br/>嵌入 Module"]
-    
-    MOpenSSL --> ImplStart["实现 Start()<br/>setupManagers*<br/>加载 eBPF 字节码"]
-    MOpenSSL --> ImplEvents["实现 Events()<br/>返回事件 maps"]
-    MOpenSSL --> ImplDecodeFun["实现 DecodeFun()<br/>Map → 事件结构体类型"]
-    MOpenSSL --> ImplDispatcher["实现 Dispatcher()<br/>saveMasterSecret<br/>AddConn/DelConn"]
-```
+**来源：** [user/module/probe_openssl.go:178-278](https://github.com/gojue/ecapture/blob/ca085d05/user/module/probe_openssl.go#L178-L278), [user/module/probe_openssl.go:280-350](https://github.com/gojue/ecapture/blob/ca085d05/user/module/probe_openssl.go#L280-L350), [user/module/imodule.go:173-214](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L173-L214), [user/module/imodule.go:308-391](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L308-L391)
 
-来源：[user/module/imodule.go:83-108](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L83-L108), [user/module/probe_openssl.go:83-106](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl.go#L83-L106)
-
-**基础模块职责** [user/module/imodule.go:83-460](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L83-L460)：
-
-1. **BTF 检测**：`autoDetectBTF()` 检查 `/sys/kernel/btf/vmlinux` 和容器环境 [user/module/imodule.go:173-190](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L173-L190)
-2. **字节码选择**：`geteBPFName()` 附加 `_core.o`/`_noncore.o` 和 `_less52.o` 后缀 [user/module/imodule.go:191-214](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L191-L214)
-3. **事件读取器**：`perfEventReader()` 和 `ringbufEventReader()` 为每个 eBPF map 设置 goroutines [user/module/imodule.go:308-391](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L308-L391)
-4. **EventProcessor**：使用截断大小和十六进制模式初始化 [user/module/imodule.go:127](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L127)
-5. **输出路由**：检测 `eventCollector` 类型以选择文本或 protobuf 编码 [user/module/imodule.go:122-126](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L122-L126), [user/module/imodule.go:461-479](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L461-L479)
-6. **生命周期管理**：通过 `Start()`、`Run()`、`Close()` 协调子模块的生命周期 [user/module/imodule.go:236-262](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L236-L262)
-
-### 模块特定实现
-
-每个探针模块都嵌入 `Module` 并添加模块特定的状态和逻辑。有关详细的实现信息，请参阅[捕获模块](../3-capture-modules/index.md)。
-
-**关键模块类型**
-
-| 模块 | 用途 | 目标库/二进制文件 | 关键状态 | 另请参阅 |
-|--------|---------|---------------------------|-----------|----------|
-| `MOpenSSLProbe` | TLS 明文捕获 | libssl.so、libcrypto.so、BoringSSL | `sslVersionBpfMap`、`pidConns`、`masterKeys`、`eBPFProgramType` | [OpenSSL 模块](../3-capture-modules/3.1.1-openssl-module.md) |
-| `MGoTLSProbe` | Go TLS 明文捕获 | Go 二进制文件（crypto/tls） | `isRegisterABI`、`tcPacketsChan`、`keylogger` | [Go TLS 模块](../3-capture-modules/3.1.2-go-tls-module.md) |
-| `MGnuTLSProbe` | GnuTLS 明文捕获 | libgnutls.so | `keylogger`、`masterKeys` | [GnuTLS 与 NSS 模块](../3-capture-modules/3.1.3-gnutls-and-nss-modules.md) |
-| `MNSSProbe` | NSS/NSPR 明文捕获 | libnss3.so、libnspr4.so | 主密钥提取 | [GnuTLS 与 NSS 模块](../3-capture-modules/3.1.3-gnutls-and-nss-modules.md) |
-| `MBashProbe` | Bash 命令审计 | bash 二进制文件 | 通过 readline 钩子过滤命令 | [Shell 命令审计](../3-capture-modules/3.2.1-shell-command-auditing.md) |
-| `MZshProbe` | Zsh 命令审计 | zsh 二进制文件 | 通过 zle 钩子过滤命令 | [Shell 命令审计](../3-capture-modules/3.2.1-shell-command-auditing.md) |
-| `MMysqldProbe` | MySQL 查询审计 | mysqld 二进制文件 | `funcName`，从 dispatch_command 提取 SQL | [数据库查询审计](../3-capture-modules/3.2.2-database-query-auditing.md) |
-| `MPostgresProbe` | PostgreSQL 查询审计 | postgres 二进制文件 | 从 exec_simple_query 提取查询 | [数据库查询审计](../3-capture-modules/3.2.2-database-query-auditing.md) |
-
-来源：[user/module/probe_openssl.go:83-106](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl.go#L83-L106)
-
-**示例：MOpenSSLProbe 状态** [user/module/probe_openssl.go:83-106](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl.go#L83-L106)：
-
-| 字段 | 类型 | 用途 |
-|-------|------|---------|
-| `pidConns` | `map[uint32]map[uint32]ConnInfo` | 映射 PID → FD → 连接元组和套接字 [user/module/probe_openssl.go:91]() |
-| `sock2pidFd` | `map[uint64][2]uint32` | 反向映射：套接字 → [PID, FD] 用于连接清理 [user/module/probe_openssl.go:93]() |
-| `masterKeys` | `map[string]bool` | 通过客户端随机数去重 TLS 主密钥 [user/module/probe_openssl.go:98]() |
-| `sslVersionBpfMap` | `map[string]string` | 将 SSL 版本字符串映射到字节码文件名 [user/module/probe_openssl.go:101]() |
-| `eBPFProgramType` | `TlsCaptureModelType` | 确定捕获模式（Text/Pcap/Keylog）[user/module/probe_openssl.go:99](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl.go#L99) |
-| `keylogger` | `*os.File` | 密钥日志模式输出的文件句柄 [user/module/probe_openssl.go:96](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl.go#L96) |
-| `bpfManager` | `*manager.Manager` | eBPF 程序生命周期管理器 [user/module/probe_openssl.go:85](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl.go#L85) |
-
-这些映射表启用了 SSL 数据事件（由 PID/FD 标识）与 TC 钩子捕获的网络元组之间的关联。有关 `sslVersionBpfMap` 的使用，请参阅[版本检测与字节码选择](2.5-version-detection-and-bytecode-selection.md)；有关连接映射的详细信息，请参阅[网络连接跟踪](2.6-network-connection-tracking.md)。
-
-## eBPF 运行时层
-
-eBPF 运行时层连接用户空间模块和内核空间检测。它通过 `ebpfmanager` 库处理版本检测、字节码选择和 eBPF 程序生命周期。
-
-有关 eBPF 程序和钩子的综合详细信息，请参阅 [eBPF 引擎](2.1-ebpf-engine.md)。有关版本检测算法，请参阅[版本检测与字节码选择](2.5-version-detection-and-bytecode-selection.md)。
-
-### eBPF 运行时组件概述
-
-**图表：eBPF 运行时组件**
-
-```mermaid
-graph TB
-    Module["捕获模块<br/>（例如 MOpenSSLProbe）"] --> VersionDetection["版本检测<br/>getSslBpfFile()<br/>detectOpenssl()"]
-    
-    VersionDetection --> BytecodeSelection["字节码选择<br/>geteBPFName()<br/>CO-RE vs non-CO-RE"]
-    
-    BytecodeSelection --> AssetLoad["资源加载<br/>assets.Asset(bpfFileName)<br/>嵌入的字节码"]
-    
-    AssetLoad --> ManagerInit["Manager 初始化<br/>manager.InitWithOptions()<br/>eBPF 验证器"]
-    
-    ManagerInit --> ManagerStart["Manager 启动<br/>manager.Start()<br/>附加探针"]
-    
-    ManagerStart --> ProbeTypes["探针类型"]
-    
-    ProbeTypes --> Uprobes["Uprobes<br/>用户函数钩子<br/>SSL_read, SSL_write"]
-    ProbeTypes --> TC["TC 分类器<br/>网络数据包捕获<br/>ingress/egress"]
-    ProbeTypes --> Kprobes["Kprobes<br/>内核函数钩子<br/>tcp_sendmsg, etc."]
-    
-    Uprobes --> eBPFMaps["eBPF Maps<br/>perf_event_array<br/>ring_buffer"]
-    TC --> eBPFMaps
-    Kprobes --> eBPFMaps
-    
-    eBPFMaps --> UserSpaceRead["用户空间读取<br/>Module.readEvents()<br/>perfEventReader, ringbufEventReader"]
-```
-
-来源：[user/module/probe_openssl.go:178-278](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl.go#L178-L278), [user/module/imodule.go:191-214](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L191-L214), [user/module/probe_openssl.go:312-331](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl.go#L312-L331), [user/module/imodule.go:285-391](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L285-L391)
-
-运行时层执行以下操作：
-
-1. **版本检测**：确定目标库版本（参见[版本检测与字节码选择](2.5-version-detection-and-bytecode-selection.md)）
-2. **字节码选择**：根据 BTF 可用性选择 CO-RE 或 non-CO-RE 字节码
-3. **资源加载**：从 `assets` 包加载嵌入的字节码
-4. **eBPF 验证**：内核验证程序安全性
-5. **探针附加**：附加 uprobes、TC 分类器、kprobes
-6. **事件读取**：为 eBPF maps 设置读取器
-
-### BTF 检测与字节码选择
-
-eCapture 编译每个 eBPF 程序的两个变体：**CO-RE**（启用 BTF，内核 >= 5.2）和 **non-CO-RE**（传统，所有内核）。运行时选择基于内核 BTF 支持。
-
-**图表：BTF 检测与字节码模式选择**
-
-```mermaid
-graph TB
-    ModuleInit["Module.Init()<br/>user/module/imodule.go:111"] --> CheckBTFMode{"conf.GetBTF()"}
-    
-    CheckBTFMode -->|0: BTFModeAutoDetect| AutoDetect["autoDetectBTF()<br/>user/module/imodule.go:173"]
-    CheckBTFMode -->|1: BTFModeCore| ForceCore["m.isCoreUsed = true"]
-    CheckBTFMode -->|2: BTFModeNonCore| ForceNonCore["m.isCoreUsed = false"]
-    
-    AutoDetect --> CheckContainer["ebpfenv.IsContainer()<br/>检测容器环境"]
-    CheckContainer --> CheckBTFFile["ebpfenv.IsEnableBTF()<br/>检查 /sys/kernel/btf/vmlinux"]
-    CheckBTFFile --> SetCoreFlag["m.isCoreUsed = (BTF 可用)"]
-    
-    ForceCore --> ApplyFilename["geteBPFName()<br/>user/module/imodule.go:191"]
-    ForceNonCore --> ApplyFilename
-    SetCoreFlag --> ApplyFilename
-    
-    ApplyFilename --> CheckMode{"m.isCoreUsed?"}
-    CheckMode -->|true| AppendCore["filename.o<br/>→ filename_core.o"]
-    CheckMode -->|false| AppendNonCore["filename.o<br/>→ filename_noncore.o"]
-    
-    AppendCore --> CheckKernel{"内核 < 5.2?"}
-    AppendNonCore --> CheckKernel
-    
-    CheckKernel -->|是| AppendLess52["附加 _less52.o<br/>例如 filename_core_less52.o"]
-    CheckKernel -->|否| FinalFilename["最终字节码文件名"]
-    
-    AppendLess52 --> FinalFilename
-    
-    FinalFilename --> AssetLookup["assets.Asset(bpfFileName)<br/>从嵌入式 FS 加载"]
-```
-
-来源：[user/module/imodule.go:154-170](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L154-L170), [user/module/imodule.go:173-190](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L173-L190), [user/module/imodule.go:191-214](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L191-L214)
-
-**BTF 检测逻辑** [user/module/imodule.go:173-190](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L173-L190)：
-1. 检查是否在容器中运行（在容器中 BTF 检测可能不可靠）
-2. 查找 `/sys/kernel/btf/vmlinux` 文件以确认 BTF 支持
-3. 根据检测结果设置 `m.isCoreUsed` 标志
-
-**文件名转换示例** [user/module/imodule.go:191-214](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L191-L214)：
-- `openssl_3_0_0_kern.o` → `openssl_3_0_0_kern_core.o`（BTF 内核 >= 5.2）
-- `openssl_3_0_0_kern.o` → `openssl_3_0_0_kern_noncore.o`（非 BTF 内核 >= 5.2）
-- `openssl_3_0_0_kern.o` → `openssl_3_0_0_kern_core_less52.o`（BTF 内核 < 5.2）
-- `openssl_3_0_0_kern.o` → `openssl_3_0_0_kern_noncore_less52.o`（非 BTF 内核 < 5.2）
-
-CO-RE 字节码使用 BTF 类型信息在加载时解析结构布局，实现**一次编译 - 随处运行**。non-CO-RE 字节码为特定内核版本硬编码偏移量。有关编译详细信息，请参阅[构建系统](../5-development-guide/5.1-build-system.md)。
-
-### eBPF 程序生命周期
-
-`ebpfmanager.Manager` [user/module/probe_openssl.go:85](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl.go#L85) 管理 eBPF 程序的加载、验证、附加和清理。
-
-**图表：eBPF 生命周期管理**
-
-```mermaid
-graph TB
-    ModuleStart["child.Start()<br/>例如 probe_openssl.go:280"] --> SetupManagers["setupManagers*()<br/>模式特定设置<br/>Text/Pcap/Keylog"]
-    
-    SetupManagers --> DefineManager["创建 manager.Manager<br/>定义 Probes、Maps、ConstantEditors"]
-    
-    DefineManager --> LoadBytecode["assets.Asset(bpfFileName)<br/>从嵌入式 FS 加载<br/>user/module/probe_openssl.go:312"]
-    
-    LoadBytecode --> ManagerInit["bpfManager.InitWithOptions()<br/>bytes.NewReader(byteBuf)<br/>user/module/probe_openssl.go:320"]
-    
-    ManagerInit --> eBPFVerifier["eBPF 验证器<br/>内核验证程序<br/>检查安全性、循环、权限"]
-    
-    eBPFVerifier --> ManagerStart["bpfManager.Start()<br/>附加所有探针<br/>user/module/probe_openssl.go:329"]
-    
-    ManagerStart --> AttachProbes["附加探针"]
-    
-    AttachProbes --> Uprobes["Uprobes<br/>SSL_read, SSL_write<br/>SSL_do_handshake, etc."]
-    AttachProbes --> TCProgs["TC 分类器<br/>ingress_cls_func<br/>egress_cls_func"]
-    AttachProbes --> Kprobes["Kprobes<br/>tcp_sendmsg<br/>__sys_connect"]
-    
-    Uprobes --> RegisterMaps["initDecodeFun*()<br/>注册事件 maps<br/>user/module/probe_openssl.go:336"]
-    TCProgs --> RegisterMaps
-    Kprobes --> RegisterMaps
-    
-    RegisterMaps --> EventMaps["m.eventMaps<br/>[]*ebpf.Map"]
-    RegisterMaps --> EventFuncMaps["m.eventFuncMaps<br/>map[*ebpf.Map]IEventStruct"]
-    
-    EventMaps --> ModuleRun["Module.Run()<br/>事件处理<br/>user/module/imodule.go:236"]
-    EventFuncMaps --> ModuleRun
-    
-    ModuleRun --> Running["运行状态<br/>从 maps 读取事件"]
-    
-    Running --> Shutdown["Module.Close()<br/>关闭信号"]
-    
-    Shutdown --> ManagerStop["bpfManager.Stop<br/>(manager.CleanAll)<br/>user/module/probe_openssl.go:354"]
-    
-    ManagerStop --> DetachAll["分离所有探针<br/>卸载 eBPF 程序<br/>关闭文件描述符"]
-```
-
-来源：[user/module/probe_openssl.go:280-357](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl.go#L280-L357), [user/module/imodule.go:236-262](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L236-L262)
-
-**生命周期阶段**：
-
-1. **设置**：`Start()` 调用模式特定的设置（`setupManagersText`、`setupManagersPcap`、`setupManagersKeylog`）
-2. **字节码加载**：`assets.Asset(bpfFileName)` 检索嵌入的字节码 [user/module/probe_openssl.go:312-317](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl.go#L312-L317)
-3. **初始化**：`bpfManager.InitWithOptions()` 加载字节码，内核验证程序 [user/module/probe_openssl.go:320-326](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl.go#L320-L326)
-4. **附加**：`bpfManager.Start()` 附加 uprobes/TC/kprobes [user/module/probe_openssl.go:329-331](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl.go#L329-L331)
-5. **Map 注册**：`initDecodeFun*()` 填充 `eventMaps` 和 `eventFuncMaps` [user/module/probe_openssl.go:333-348](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl.go#L333-L348)
-6. **运行**：基础 `Module.Run()` 生成事件读取器和 EventProcessor [user/module/imodule.go:236-262](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L236-L262)
-7. **关闭**：`bpfManager.Stop(manager.CleanAll)` 分离并清理 [user/module/probe_openssl.go:352-357](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl.go#L352-L357)
-
-### 通过常量编辑器注入配置
-
-eBPF 程序定义在加载时重写的常量变量以注入运行时配置（PID、UID 过滤器）。
-
-**常量编辑器机制**
-
-| 常量名称 | 用途 | 类型 | 值来源 | 效果 |
-|---------------|---------|------|--------------|--------|
-| `target_pid` | 按进程 ID 过滤 | `uint64` | `conf.GetPid()` | 0 = 捕获所有 PID，非零 = 仅特定 PID |
-| `target_uid` | 按用户 ID 过滤 | `uint64` | `conf.GetUid()` | 0 = 捕获所有 UID，非零 = 仅特定 UID |
-
-来源：[user/module/probe_openssl.go:361-387](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl.go#L361-L387)
-
-`constantEditor()` 方法 [user/module/probe_openssl.go:361-387](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl.go#L361-L387) 返回一个 `manager.ConstantEditor` 结构体切片。eBPF 管理器在加载到内核**之前**重写字节码中的这些常量。这使得无需重新编译 eBPF 程序即可实现参数化过滤。
-
-对于内核 < 5.2，全局变量支持受限。`EnableGlobalVar()` 检查 [user/config/iconfig.go:194-203](https://github.com/gojue/ecapture/blob/0766a93b/user/config/iconfig.go#L194-L203) 返回 false，禁用某些功能。
+---
 
 ## 事件处理层
 
-在 eBPF 程序捕获事件并通过 perf 数组或环形缓冲区传输后，用户空间事件处理流程会聚合、解析并格式化它们以供输出。
+事件处理层聚合原始 eBPF 事件、缓冲载荷并解析协议数据。详细信息请参阅[事件处理流程](2.2-event-processing-pipeline.md)。
 
-有关全面的事件处理详细信息，请参阅[事件处理流程](2.2-event-processing-pipeline.md)。
+```mermaid
+graph TB
+    subgraph "事件流"
+        RawEvent["原始 eBPF 事件<br/>SSLDataEvent, ConnDataEvent"]
+        Decoder["Module.Decode()<br/>user/module/imodule.go:393"]
+        Dispatcher["Module.Dispatcher()<br/>user/module/imodule.go:408"]
+    end
+    
+    subgraph "事件处理器"
+        EP["EventProcessor<br/>event_processor.EventProcessor"]
+        IncomingChan["incoming 通道<br/>缓冲事件"]
+        WorkerQueue["workerQueue<br/>map[UUID]IWorker"]
+    end
+    
+    subgraph "Worker 处理"
+        Worker["eventWorker<br/>累积载荷"]
+        Buffer["bytes.Buffer<br/>载荷存储"]
+        Parser["IParser.Parse()<br/>HTTP, HTTP2, Default"]
+    end
+    
+    RawEvent --> Decoder
+    Decoder --> Dispatcher
+    Dispatcher --> EP
+    EP --> IncomingChan
+    IncomingChan --> WorkerQueue
+    WorkerQueue --> Worker
+    Worker --> Buffer
+    Buffer --> Parser
+```
+
+**事件处理：聚合、缓冲和解析**
+
+### 事件解码
+
+从 eBPF map 的原始字节解码为事件结构：
+
+1. **通过 `DecodeFun()` 获取解码器函数** [user/module/imodule.go:228-230](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L228-L230)
+2. **通过 `Decode()` 将字节解码为事件结构** [user/module/imodule.go:393-406](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L393-L406)
+3. **通过 `Dispatcher()` 分发事件** [user/module/imodule.go:408-448](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L408-L448)
+
+### 事件处理器
+
+[user/module/imodule.go:127](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L127) 中的 `EventProcessor` 管理 worker 池：
+
+- **基于 UUID 的路由**：具有相同 UUID（连接 ID）的事件发送到同一个 worker
+- **Worker 生命周期**：Worker 按需创建，在空闲后销毁
+- **缓冲累积**：Worker 在解析之前累积事件片段
+
+详见[事件处理流程](2.2-event-processing-pipeline.md)以了解实现细节。
+
+**来源：** [user/module/imodule.go:285-448](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L285-L448), [user/module/probe_openssl.go:741-783](https://github.com/gojue/ecapture/blob/ca085d05/user/module/probe_openssl.go#L741-L783)
+
+---
+
+## 输出层
+
+输出层格式化处理后的事件并将其写入配置的目标。
+
+```mermaid
+graph LR
+    subgraph "输出格式"
+        Event["IEventStruct"]
+        CodecType["codecType<br/>text 或 protobuf"]
+        TextOutput["String() 输出"]
+        ProtobufOutput["ToProtobufEvent() 输出"]
+    end
+    
+    subgraph "输出写入器"
+        CollectorWriter["CollectorWriter<br/>(zerolog)"]
+        ProtobufWriter["ProtobufWriter<br/>(protobuf 字节)"]
+    end
+    
+    subgraph "目标"
+        Stdout["stdout"]
+        File["文件"]
+        TCP["TCP socket"]
+        WebSocket["WebSocket"]
+    end
+    
+    Event --> CodecType
+    CodecType --> TextOutput
+    CodecType --> ProtobufOutput
+    
+    TextOutput --> CollectorWriter
+    ProtobufOutput --> ProtobufWriter
+    
+    CollectorWriter --> Stdout
+    CollectorWriter --> File
+    ProtobufWriter --> TCP
+    ProtobufWriter --> WebSocket
+```
+
+**输出格式化和目标**
+
+### 输出格式选择
+
+输出格式由 `eventCollector` 写入器类型决定：
+
+- **文本模式**：当 `eventCollector` 是 `CollectorWriter` 时 [user/module/imodule.go:122-126](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L122-L126)
+- **Protobuf 模式**：当 `eventCollector` 是 `ecaptureQEventWriter` 时 [user/module/imodule.go:122-126](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L122-L126)
+
+格式在 [user/module/imodule.go:461-479](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L461-L479) 的 `Module.output()` 中应用：
+
+```
+if m.eventOutputType == codecTypeProtobuf {
+    // 编组为 protobuf
+    le := new(pb.LogEntry)
+    le.LogType = pb.LogType_LOG_TYPE_EVENT
+    ep := e.ToProtobufEvent()
+    ...
+} else {
+    // 转换为字符串
+    s := e.String()
+    ...
+}
+```
+
+### 输出目标
+
+输出目标通过 `--logaddr` 和 `--eventaddr` 标志配置：
+
+| 目标类型 | 标志格式 | 实现 |
+|-----------------|-------------|----------------|
+| Stdout（默认） | （无） | `zerolog.ConsoleWriter` 到 `os.Stdout` |
+| 文件 | `/path/to/file.log` | `os.Create()` 文件句柄 |
+| TCP | `tcp://host:port` | `net.Dial("tcp", addr)` |
+| WebSocket | `ws://host:port/path` | `ws.NewClient().Dial()` |
+
+[cli/cmd/root.go:178-247](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/root.go#L178-L247) 中的日志记录器初始化根据地址格式创建适当的写入器。
+
+### 模块特定输出
+
+某些模块具有专门的输出模式：
+
+- **PCAP 模式**：写入带有 DSB（解密秘密块）的 pcapng 格式供 Wireshark 使用 [user/config/iconfig.go:73-79](https://github.com/gojue/ecapture/blob/ca085d05/user/config/iconfig.go#L73-L79)
+- **Keylog 模式**：以 SSLKEYLOGFILE 格式写入 TLS 主密钥 [user/config/iconfig.go:73-79](https://github.com/gojue/ecapture/blob/ca085d05/user/config/iconfig.go#L73-L79)
+- **文本模式**：带有协议解析的直接明文输出 [user/config/iconfig.go:73-79](https://github.com/gojue/ecapture/blob/ca085d05/user/config/iconfig.go#L73-L79)
+
+详见[输出格式](../4-output-formats/index.md)以了解每种格式的详细信息。
+
+**来源：** [user/module/imodule.go:111-127](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L111-L127), [user/module/imodule.go:461-479](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L461-L479), [cli/cmd/root.go:178-247](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/root.go#L178-L247), [user/config/iconfig.go:73-79](https://github.com/gojue/ecapture/blob/ca085d05/user/config/iconfig.go#L73-L79)
+
+---
+
+## 数据流总结
+
+通过架构的完整数据流：
+
+1. **用户执行 CLI 命令** → `rootCmd.Execute()` 解析标志
+2. **子命令处理程序** 使用模块名称和配置调用 `runModule()`
+3. **模块初始化** → `IModule.Init()` 检测库，选择字节码
+4. **模块启动** → `IModule.Run()` 加载 eBPF，附加探针，启动事件处理器
+5. **eBPF 探针** 在内核中捕获数据，写入 map
+6. **事件读取器** 轮询 map，将字节解码为事件结构
+7. **分发器** 将事件路由到事件处理器或模块特定处理程序
+8. **事件处理器** 聚合片段，缓冲载荷，解析协议
+9. **输出格式化器** 转换为文本或 protobuf
+10. **写入器** 发送到 stdout、文件、TCP 或 WebSocket
+
+该架构提供：
+- **模块化**：新模块实现 `IModule` 而无需更改核心代码
+- **灵活性**：多种输出格式和目标
+- **性能**：使用 worker 池进行异步事件处理
+- **可扩展性**：协议解析器和输出写入器是可插拔的
+
+**来源：** [cli/cmd/root.go:250-403](https://github.com/gojue/ecapture/blob/ca085d05/cli/cmd/root.go#L250-L403), [user/module/imodule.go:236-262](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L236-L262), [user/module/imodule.go:285-448](https://github.com/gojue/ecapture/blob/ca085d05/user/module/imodule.go#L285-L448)

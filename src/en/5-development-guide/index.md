@@ -5,683 +5,736 @@
 
 The following files were used as context for generating this wiki page:
 
-- [.github/workflows/codeql-analysis.yml](https://github.com/gojue/ecapture/blob/0766a93b/.github/workflows/codeql-analysis.yml)
-- [.github/workflows/go-c-cpp.yml](https://github.com/gojue/ecapture/blob/0766a93b/.github/workflows/go-c-cpp.yml)
-- [.github/workflows/release.yml](https://github.com/gojue/ecapture/blob/0766a93b/.github/workflows/release.yml)
-- [Makefile](https://github.com/gojue/ecapture/blob/0766a93b/Makefile)
-- [builder/Dockerfile](https://github.com/gojue/ecapture/blob/0766a93b/builder/Dockerfile)
-- [builder/Makefile.release](https://github.com/gojue/ecapture/blob/0766a93b/builder/Makefile.release)
-- [builder/init_env.sh](https://github.com/gojue/ecapture/blob/0766a93b/builder/init_env.sh)
-- [cli/cmd/root.go](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/root.go)
-- [functions.mk](https://github.com/gojue/ecapture/blob/0766a93b/functions.mk)
-- [user/config/iconfig.go](https://github.com/gojue/ecapture/blob/0766a93b/user/config/iconfig.go)
-- [user/module/imodule.go](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go)
-- [user/module/probe_openssl.go](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl.go)
+- [.github/workflows/codeql-analysis.yml](https://github.com/gojue/ecapture/blob/ca085d05/.github/workflows/codeql-analysis.yml)
+- [.github/workflows/go-c-cpp.yml](https://github.com/gojue/ecapture/blob/ca085d05/.github/workflows/go-c-cpp.yml)
+- [.github/workflows/release.yml](https://github.com/gojue/ecapture/blob/ca085d05/.github/workflows/release.yml)
+- [Makefile](https://github.com/gojue/ecapture/blob/ca085d05/Makefile)
+- [builder/Dockerfile](https://github.com/gojue/ecapture/blob/ca085d05/builder/Dockerfile)
+- [builder/Makefile.release](https://github.com/gojue/ecapture/blob/ca085d05/builder/Makefile.release)
+- [builder/init_env.sh](https://github.com/gojue/ecapture/blob/ca085d05/builder/init_env.sh)
+- [functions.mk](https://github.com/gojue/ecapture/blob/ca085d05/functions.mk)
 
 </details>
 
 
 
-This guide is intended for developers who want to contribute to eCapture, add new capture modules, modify existing functionality, or understand the codebase architecture. It covers the development environment setup, key interfaces, build system, and extension points.
-
-For detailed information about specific development tasks, see:
-- [Build System](5.1-build-system.md) - Comprehensive build system documentation
-- [eBPF Program Development](5.2-ebpf-program-development.md) - Writing eBPF programs
-- [Adding New Modules](5.3-adding-new-modules.md) - Creating new capture modules
-- [Event Processing and Parsers](5.4-event-processing-and-parsers.md) - Event handling and protocol parsing
+This document provides comprehensive guidance for developers contributing to eCapture. It covers the build system, development workflow, testing procedures, and release process. For information about implementing new capture modules, see [Adding New Modules](5.3-adding-new-modules.md). For eBPF program development details, see [eBPF Program Development](5.2-ebpf-program-development.md).
 
 ---
 
-## Development Environment Requirements
+## Development Environment Setup
 
-eCapture requires specific tools and dependencies for development. The project provides an automated setup script for Ubuntu-based systems.
+### Prerequisites
 
-### Required Tools
+eCapture requires the following tools and libraries for development:
 
-| Tool | Minimum Version | Purpose |
-|------|----------------|---------|
-| `clang` | 9+ (14 recommended) | eBPF bytecode compilation |
-| `llvm` | 9+ (14 recommended) | eBPF toolchain |
-| `golang` | 1.24+ | Application compilation |
-| `gcc` | Any recent | Cross-compilation support |
-| `linux-headers` | Matching kernel | Non-CO-RE compilation |
-| `libelf-dev` | - | ELF file parsing |
-| `bpftool` | - | eBPF bytecode generation |
+| Component | Minimum Version | Purpose |
+|-----------|----------------|---------|
+| Go | 1.24 | User-space program compilation |
+| Clang | 9+ (14 recommended) | eBPF program compilation |
+| LLVM | 9+ (14 recommended) | eBPF bytecode generation |
+| Linux Kernel | 4.18+ | eBPF support |
+| libelf-dev | - | ELF file parsing |
+| Linux headers | - | Kernel structure definitions |
 
-### Automated Setup
+### Environment Initialization Script
 
-The project provides [builder/init_env.sh:1-106](https://github.com/gojue/ecapture/blob/0766a93b/builder/init_env.sh#L1-L106) which automatically installs dependencies on Ubuntu 20.04-24.04 for both x86_64 and aarch64 architectures. It:
+The project provides an automated environment setup script at [builder/init_env.sh:1-106](https://github.com/gojue/ecapture/blob/ca085d05/builder/init_env.sh#L1-L106). This script:
 
-1. Detects Ubuntu version and selects appropriate clang version
-2. Installs compilation toolchain and cross-compilation tools
-3. Extracts and prepares Linux kernel headers
-4. Installs Go 1.24.6
-5. Clones the repository with submodules
+1. Detects the Ubuntu version and selects appropriate Clang version ([builder/init_env.sh:16-39](https://github.com/gojue/ecapture/blob/ca085d05/builder/init_env.sh#L16-L39))
+2. Installs required packages via apt-get ([builder/init_env.sh:72-74](https://github.com/gojue/ecapture/blob/ca085d05/builder/init_env.sh#L72-L74))
+3. Configures cross-compilation toolchain ([builder/init_env.sh:43-61](https://github.com/gojue/ecapture/blob/ca085d05/builder/init_env.sh#L43-L61))
+4. Prepares Linux kernel sources for eBPF compilation ([builder/init_env.sh:81-89](https://github.com/gojue/ecapture/blob/ca085d05/builder/init_env.sh#L81-L89))
+5. Downloads and installs Go ([builder/init_env.sh:94-97](https://github.com/gojue/ecapture/blob/ca085d05/builder/init_env.sh#L94-L97))
 
-**Sources:** [builder/init_env.sh:1-106](https://github.com/gojue/ecapture/blob/0766a93b/builder/init_env.sh#L1-L106), [.github/workflows/go-c-cpp.yml:16-33](https://github.com/gojue/ecapture/blob/0766a93b/.github/workflows/go-c-cpp.yml#L16-L33)
+**Architecture Detection:**
+The script automatically detects the host architecture and configures cross-compilation:
+- On x86_64: Sets up aarch64 cross-compilation ([builder/init_env.sh:48-52](https://github.com/gojue/ecapture/blob/ca085d05/builder/init_env.sh#L48-L52))
+- On aarch64: Sets up x86_64 cross-compilation ([builder/init_env.sh:53-58](https://github.com/gojue/ecapture/blob/ca085d05/builder/init_env.sh#L53-L58))
 
----
-
-## Core Development Interfaces
-
-eCapture's architecture is built around three key interfaces that developers must understand to extend functionality.
-
-### IModule Interface
-
-The `IModule` interface defines the contract for all capture modules. Every module (OpenSSL, GoTLS, Bash, etc.) implements this interface.
-
-```mermaid
-graph TB
-    subgraph "IModule Interface Definition"
-        IMODULE["IModule<br/>(user/module/imodule.go)"]
-        
-        INIT["Init()<br/>Context, Logger, Config, Writer"]
-        START["Start()<br/>Attach eBPF probes"]
-        RUN["Run()<br/>Event loop"]
-        EVENTS["Events()<br/>Return eBPF maps"]
-        DECODE["Decode()<br/>[]byte → IEventStruct"]
-        DECODEFUN["DecodeFun()<br/>Map → EventStruct factory"]
-        DISPATCH["Dispatcher()<br/>Handle events"]
-        CLOSE["Close()<br/>Cleanup"]
-        
-        IMODULE --> INIT
-        IMODULE --> START
-        IMODULE --> RUN
-        IMODULE --> EVENTS
-        IMODULE --> DECODE
-        IMODULE --> DECODEFUN
-        IMODULE --> DISPATCH
-        IMODULE --> CLOSE
-    end
-    
-    subgraph "Base Implementation"
-        MODULE["Module struct<br/>(embeddable base)"]
-        
-        READER["reader []IClose<br/>perf/ringbuf readers"]
-        PROCESSOR["processor *EventProcessor<br/>Event aggregation"]
-        LOGGER["logger *zerolog.Logger"]
-        CTX["ctx context.Context"]
-        
-        MODULE --> READER
-        MODULE --> PROCESSOR
-        MODULE --> LOGGER
-        MODULE --> CTX
-    end
-    
-    subgraph "Concrete Modules"
-        OPENSSL["MOpenSSLProbe<br/>user/module/probe_openssl.go"]
-        GOTLS["MGoTLSProbe"]
-        BASH["MBashProbe"]
-        
-        OPENSSL -.->|"embeds"| MODULE
-        GOTLS -.->|"embeds"| MODULE
-        BASH -.->|"embeds"| MODULE
-        
-        OPENSSL -.->|"implements"| IMODULE
-        GOTLS -.->|"implements"| IMODULE
-        BASH -.->|"implements"| IMODULE
-    end
+**Manual Execution:**
+```bash
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/gojue/ecapture/master/builder/init_env.sh)"
 ```
 
-#### IModule Method Contract
-
-| Method | Purpose | Typical Implementation |
-|--------|---------|----------------------|
-| `Init()` | Initialize module state, parse config, setup maps | Load eBPF bytecode selection logic, initialize caches |
-| `Start()` | Attach eBPF programs to hooks | Call `bpfManager.Start()`, attach uprobes/kprobes/TC |
-| `Run()` | Begin event processing | Start event readers, run processor |
-| `Events()` | Return eBPF maps for event reading | Return perf/ringbuf maps |
-| `Decode()` | Deserialize raw bytes to event structs | Parse event type, deserialize fields |
-| `DecodeFun()` | Map eBPF map to event decoder | Return appropriate `IEventStruct` factory |
-| `Dispatcher()` | Handle decoded events | Route to output, update state, save keys |
-| `Close()` | Cleanup resources | Stop readers, close files, detach probes |
-
-**Sources:** [user/module/imodule.go:47-75](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L47-L75), [user/module/imodule.go:83-108](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L83-L108)
-
-### IConfig Interface
-
-All modules receive configuration through the `IConfig` interface, which provides both common settings and module-specific options.
-
-```mermaid
-graph LR
-    subgraph "IConfig Interface"
-        ICONFIG["IConfig<br/>(user/config/iconfig.go)"]
-        
-        METHODS["GetPid()/SetPid()<br/>GetUid()/SetUid()<br/>GetBTF()/SetBTF()<br/>GetDebug()/SetDebug()<br/>GetHex()/SetHex()<br/>GetPerCpuMapSize()<br/>Check()"]
-        
-        ICONFIG --> METHODS
-    end
-    
-    subgraph "Base Config"
-        BASE["BaseConfig struct"]
-        FIELDS["Pid uint64<br/>Uid uint64<br/>BtfMode uint8<br/>Debug bool<br/>IsHex bool<br/>PerCpuMapSize int"]
-        
-        BASE --> FIELDS
-        BASE -.->|"implements"| ICONFIG
-    end
-    
-    subgraph "Module-Specific Configs"
-        OPENSSLCONF["OpensslConfig<br/>(user/config/config_openssl.go)"]
-        GOTLSCONF["GoTLSConfig"]
-        BASHCONF["BashConfig"]
-        
-        OPENSSLCONF -.->|"embeds"| BASE
-        GOTLSCONF -.->|"embeds"| BASE
-        BASHCONF -.->|"embeds"| BASE
-        
-        SSLFIELDS["SslVersion string<br/>Model string (text/pcap/keylog)<br/>PcapFile string<br/>KeylogFile string<br/>IsAndroid bool<br/>CGroupPath string"]
-        
-        OPENSSLCONF --> SSLFIELDS
-    end
-```
-
-#### Common Configuration Fields
-
-| Field | Type | Purpose | Example |
-|-------|------|---------|---------|
-| `Pid` | `uint64` | Target process ID (0 = all) | `1234` |
-| `Uid` | `uint64` | Target user ID (0 = all) | `1000` |
-| `BtfMode` | `uint8` | BTF mode (0=auto, 1=core, 2=non-core) | `0` |
-| `Debug` | `bool` | Enable debug logging | `true` |
-| `IsHex` | `bool` | Hex output mode | `false` |
-| `PerCpuMapSize` | `int` | eBPF map size per CPU (pages) | `1024` |
-
-**Sources:** [user/config/iconfig.go:24-70](https://github.com/gojue/ecapture/blob/0766a93b/user/config/iconfig.go#L24-L70), [user/config/iconfig.go:95-112](https://github.com/gojue/ecapture/blob/0766a93b/user/config/iconfig.go#L95-L112)
-
-### IEventStruct Interface
-
-Events flowing from eBPF to userspace implement `IEventStruct`, enabling polymorphic event handling.
-
-| Method | Return Type | Purpose |
-|--------|-------------|---------|
-| `Decode([]byte)` | `error` | Deserialize from raw bytes |
-| `String()` | `string` | Human-readable text format |
-| `StringHex()` | `string` | Hexadecimal text format |
-| `Clone()` | `IEventStruct` | Create new instance for decoding |
-| `EventType()` | `EventType` | Event classification |
-| `ToProtobufEvent()` | `*pb.Event` | Convert to protobuf |
-
-**Sources:** [user/event/event.go](https://github.com/gojue/ecapture/blob/0766a93b/user/event/event.go) (referenced in imports)
-
----
-
-## Module Development Lifecycle
-
-Understanding the lifecycle of a module from initialization to shutdown is essential for development.
-
-```mermaid
-stateDiagram-v2
-    [*] --> Registration: init() calls RegisteFunc()
-    
-    Registration --> Initialization: CLI invokes GetModuleFunc()
-    
-    Initialization --> Configuration: mod.Init(ctx, logger, config)
-    Configuration --> BytecodeSelection: Detect versions/offsets
-    BytecodeSelection --> EBPFLoad: Load appropriate .o file
-    
-    EBPFLoad --> ProbeAttach: mod.Start()
-    ProbeAttach --> EventReading: mod.Run()
-    
-    EventReading --> EventLoop: perfEventReader/ringbufEventReader
-    EventLoop --> Decoding: mod.Decode(map, bytes)
-    Decoding --> Dispatching: mod.Dispatcher(event)
-    
-    Dispatching --> Processing: EventProcessor.Write()
-    Processing --> Output: eventCollector.Write()
-    
-    Output --> EventLoop: Continue
-    
-    EventLoop --> Cleanup: ctx.Done() or Signal
-    Cleanup --> Detach: mod.Close()
-    Detach --> [*]
-    
-    note right of Registration
-        user/module/probe_openssl.go:777-786
-        Factory function registration
-    end note
-    
-    note right of Configuration
-        user/module/probe_openssl.go:109-176
-        Parse config, setup state
-    end note
-    
-    note right of BytecodeSelection
-        user/module/probe_openssl.go:179-278
-        getSslBpfFile(), detectOpenssl()
-    end note
-    
-    note right of EventLoop
-        user/module/imodule.go:285-306
-        readEvents() dispatches readers
-    end note
-    
-    note right of Processing
-        pkg/event_processor/
-        Aggregation, filtering, formatting
-    end note
-```
-
-### Lifecycle Phase Details
-
-**1. Registration Phase**
-- Module factory function is registered via `RegisteFunc()` in `init()`
-- Example: [user/module/probe_openssl.go:777-786](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl.go#L777-L786)
-- Factory creates module instance implementing `IModule`
-
-**2. Initialization Phase** 
-- `Init(ctx, logger, config, eventCollector)` called by CLI
-- Module parses configuration: [user/module/probe_openssl.go:109-176](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl.go#L109-L176)
-- Sets up internal state: connection maps, key caches, etc.
-- Determines BTF mode and kernel version
-
-**3. Bytecode Selection Phase**
-- Modules detect target library versions (e.g., OpenSSL 1.0.x-3.5.x)
-- Select appropriate eBPF bytecode: `_core.o` vs `_noncore.o` vs `_less52.o`
-- Example: [user/module/probe_openssl.go:179-278](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl.go#L179-L278)
-
-**4. Probe Attachment Phase**
-- `Start()` method attaches eBPF programs to hooks
-- Uses `ebpfmanager` library for lifecycle management
-- Configures constant editors for PID/UID filtering
-
-**5. Event Reading Phase**
-- `Run()` starts event readers for each eBPF map
-- Readers implemented in [user/module/imodule.go:308-350](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L308-L350) (perf) and [user/module/imodule.go:353-391](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L353-L391) (ringbuf)
-- Each event triggers `Decode()` → `Dispatcher()` pipeline
-
-**6. Event Processing Phase**
-- `EventProcessor` aggregates, filters, and formats events
-- Handles connection lifecycle and protocol parsing
-- Outputs to configured destinations (file, websocket, stdout)
-
-**7. Cleanup Phase**
-- `Close()` stops readers, detaches probes, closes files
-- Triggered by context cancellation or OS signal
-
-**Sources:** [user/module/imodule.go:110-171](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L110-L171), [user/module/imodule.go:236-262](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L236-L262), [user/module/probe_openssl.go:109-176](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl.go#L109-L176), [user/module/probe_openssl.go:280-350](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl.go#L280-L350)
-
----
-
-## Development Workflow
-
-The eCapture development workflow integrates local development, testing, and CI/CD automation.
-
-```mermaid
-graph TB
-    subgraph "Local Development"
-        EDIT["Edit Code<br/>Go/C/eBPF"]
-        COMPILE["make env && make"]
-        TEST["make test-race<br/>or<br/>make e2e"]
-        DEBUG["Run with -d flag<br/>Check logs"]
-        
-        EDIT --> COMPILE
-        COMPILE --> TEST
-        TEST --> DEBUG
-        DEBUG -.->|"iterate"| EDIT
-    end
-    
-    subgraph "Build Variants"
-        CORE["make<br/>(CO-RE mode)"]
-        NONCORE["make nocore<br/>(non-CO-RE)"]
-        CROSS["CROSS_ARCH=arm64 make<br/>(cross-compile)"]
-        ANDROID["ANDROID=1 CROSS_ARCH=arm64 make nocore"]
-        
-        COMPILE --> CORE
-        COMPILE --> NONCORE
-        COMPILE --> CROSS
-        COMPILE --> ANDROID
-    end
-    
-    subgraph "CI/CD Pipeline"
-        PR["Pull Request"]
-        CITEST["GitHub Actions<br/>go-c-cpp.yml"]
-        LINT["golangci-lint"]
-        MULTIARCH["Build x86_64 & arm64<br/>Build CO-RE & non-CO-RE"]
-        RELEASE["Tag Push<br/>release.yml"]
-        ARTIFACTS["Build Artifacts<br/>*.tar.gz, *.deb<br/>Docker images"]
-        
-        PR --> CITEST
-        CITEST --> LINT
-        CITEST --> MULTIARCH
-        RELEASE --> ARTIFACTS
-    end
-    
-    subgraph "Release Process"
-        TAG["Create Tag<br/>v0.x.y"]
-        BUILDRPM["make rpm<br/>(optional)"]
-        BUILDDEB["make deb"]
-        PUBLISH["make publish<br/>GitHub Release"]
-        DOCKER["Docker Hub<br/>Multi-arch push"]
-        
-        TAG --> BUILDDEB
-        TAG --> BUILDRPM
-        TAG --> DOCKER
-        BUILDDEB --> PUBLISH
-    end
-    
-    EDIT -.->|"ready"| PR
-    ARTIFACTS --> DOCKER
-```
-
-### Local Build Commands
-
-| Command | Purpose | Output |
-|---------|---------|--------|
-| `make env` | Display build environment variables | Configuration info |
-| `make` or `make all` | Build CO-RE + non-CO-RE bytecode and binary | `bin/ecapture` |
-| `make nocore` | Build non-CO-RE bytecode only | `bin/ecapture` (non-CO-RE) |
-| `make clean` | Remove build artifacts | Clean workspace |
-| `CROSS_ARCH=arm64 make` | Cross-compile for ARM64 | `bin/ecapture` (arm64) |
-| `DEBUG=1 make` | Build with debug symbols | Debug-enabled binary |
-| `make test-race` | Run tests with race detector | Test results |
-| `make e2e` | Run end-to-end tests | Integration test results |
-| `make format` | Format C code with clang-format | Formatted code |
-
-### CI/CD Automation
-
-The project uses GitHub Actions for continuous integration:
-
-**Pull Request Checks** [.github/workflows/go-c-cpp.yml:1-128](https://github.com/gojue/ecapture/blob/0766a93b/.github/workflows/go-c-cpp.yml#L1-L128)
-1. **Build on Ubuntu 22.04 x86_64**
-   - Install toolchain (clang-14, gcc-aarch64-linux-gnu)
-   - Build CO-RE mode
-   - Run golangci-lint
-   - Build non-CO-RE mode
-   - Cross-compile to arm64 (CO-RE and Android non-CO-RE)
-   - Run race detector tests
-
-2. **Build on Ubuntu 22.04 ARM64**
-   - Mirror of x86_64 workflow
-   - Cross-compile to x86_64
-
-**Release Automation** [.github/workflows/release.yml:1-129](https://github.com/gojue/ecapture/blob/0766a93b/.github/workflows/release.yml#L1-L129)
-1. Trigger on tag push (`v*`)
-2. Build for amd64 and arm64
-3. Generate release notes from previous tag
-4. Create tar.gz archives and checksums
-5. Build multi-arch Docker images
-6. Publish to GitHub Releases and Docker Hub
-
-**Sources:** [.github/workflows/go-c-cpp.yml:1-128](https://github.com/gojue/ecapture/blob/0766a93b/.github/workflows/go-c-cpp.yml#L1-L128), [.github/workflows/release.yml:1-129](https://github.com/gojue/ecapture/blob/0766a93b/.github/workflows/release.yml#L1-L129), [Makefile:1-269](https://github.com/gojue/ecapture/blob/0766a93b/Makefile#L1-L269)
+Sources: [builder/init_env.sh:1-106](https://github.com/gojue/ecapture/blob/ca085d05/builder/init_env.sh#L1-L106)
 
 ---
 
 ## Build System Architecture
 
-The eCapture build system is sophisticated, handling multiple architectures, kernel versions, and compilation modes.
+### Makefile Structure
+
+The build system consists of three primary files:
 
 ```mermaid
 graph TB
-    subgraph "Makefile Structure"
-        MAIN["Makefile<br/>(orchestration)"]
-        VARS["variables.mk<br/>(detection & config)"]
-        FUNCS["functions.mk<br/>(helpers)"]
-        RELEASE["builder/Makefile.release<br/>(packaging)"]
-        
-        MAIN --> VARS
-        MAIN --> FUNCS
-        RELEASE --> VARS
-        RELEASE --> FUNCS
-    end
+    Main[Makefile]
+    Vars[variables.mk]
+    Funcs[functions.mk]
+    Release[builder/Makefile.release]
     
-    subgraph "variables.mk - Environment Detection"
-        HOST_ARCH["HOST_ARCH<br/>uname -m"]
-        CROSS_ARCH["CROSS_ARCH<br/>from args"]
-        TARGET_ARCH["TARGET_ARCH<br/>computed"]
-        GOARCH["GOARCH<br/>(amd64/arm64)"]
-        LINUX_ARCH["LINUX_ARCH<br/>(x86/arm64)"]
-        CLANG_VER["CLANG_VERSION<br/>extracted"]
-        GO_VER["GO_VERSION<br/>extracted"]
-        
-        HOST_ARCH --> TARGET_ARCH
-        CROSS_ARCH --> TARGET_ARCH
-        TARGET_ARCH --> GOARCH
-        TARGET_ARCH --> LINUX_ARCH
-    end
+    Main -->|includes| Vars
+    Main -->|includes| Funcs
+    Release -->|includes| Vars
+    Release -->|includes| Funcs
     
-    subgraph "Compilation Paths"
-        KERN_C["kern/*.c<br/>eBPF programs"]
-        
-        CORE_COMPILE["clang -target bpfel<br/>-g -O2 -D__TARGET_ARCH_XXX<br/>→ *_core.o"]
-        
-        NONCORE_COMPILE["clang + llc<br/>-I kernel-headers<br/>→ *_noncore.o"]
-        
-        LESS52["KERNEL_LESS_5_2<br/>variant compilation<br/>→ *_less52.o"]
-        
-        KERN_C --> CORE_COMPILE
-        KERN_C --> NONCORE_COMPILE
-        CORE_COMPILE --> LESS52
-        NONCORE_COMPILE --> LESS52
-    end
+    Vars -->|defines| BuildVars["Build Variables<br/>GOARCH, LINUX_ARCH<br/>VERSION_NUM, CLANG_VERSION"]
+    Funcs -->|defines| BuildFuncs["Build Functions<br/>gobuild, release_tar<br/>version checks"]
     
-    subgraph "Asset Embedding"
-        BYTECODE["user/bytecode/*.o<br/>27+ variants"]
-        GOBINDATA["go-bindata<br/>embed bytecode"]
-        ASSETS["assets/ebpf_probe.go<br/>Asset() func"]
-        
-        BYTECODE --> GOBINDATA
-        GOBINDATA --> ASSETS
-    end
-    
-    subgraph "Go Compilation"
-        LIBPCAP["lib/libpcap<br/>static build"]
-        GOSRC["Go source<br/>user/*, cli/*, pkg/*"]
-        GOBUILD["CGO_ENABLED=1<br/>static linking<br/>version injection"]
-        BINARY["bin/ecapture<br/>self-contained"]
-        
-        ASSETS --> GOBUILD
-        LIBPCAP --> GOBUILD
-        GOSRC --> GOBUILD
-        GOBUILD --> BINARY
-    end
-    
-    subgraph "Release Artifacts"
-        TARBALL["*.tar.gz<br/>platform archives"]
-        DEB["*.deb<br/>Debian packages"]
-        CHECKSUM["checksum-*.txt<br/>SHA256 sums"]
-        
-        BINARY --> TARBALL
-        BINARY --> DEB
-        TARBALL --> CHECKSUM
-        DEB --> CHECKSUM
-    end
+    Main -->|targets| CoreTargets["all, nocore<br/>ebpf, build<br/>clean, test"]
+    Release -->|targets| RelTargets["snapshot, build_deb<br/>publish"]
 ```
 
-### Key Build Concepts
+**Build System Components:**
+- `Makefile`: Main build orchestration ([Makefile:1-245](https://github.com/gojue/ecapture/blob/ca085d05/Makefile#L1-L245))
+- `variables.mk`: Environment detection and variable definitions
+- `functions.mk`: Reusable build functions ([functions.mk:1-76](https://github.com/gojue/ecapture/blob/ca085d05/functions.mk#L1-L76))
+- `builder/Makefile.release`: Release packaging and distribution ([builder/Makefile.release:1-151](https://github.com/gojue/ecapture/blob/ca085d05/builder/Makefile.release#L1-L151))
 
-**1. Dual Compilation Mode**
-- **CO-RE (Compile Once - Run Everywhere)**: Uses BTF, works on any kernel with BTF enabled
-  - Compiled with `clang -target bpfel` to `*_core.o`
-  - Portable across kernel versions
-- **Non-CO-RE**: Requires kernel headers, specific to kernel version
-  - Compiled with kernel headers to `*_noncore.o`
-  - Necessary for kernels without BTF or Android
+Sources: [Makefile:1-11](https://github.com/gojue/ecapture/blob/ca085d05/Makefile#L1-L11), [functions.mk:1-76](https://github.com/gojue/ecapture/blob/ca085d05/functions.mk#L1-L76), [builder/Makefile.release:1-10](https://github.com/gojue/ecapture/blob/ca085d05/builder/Makefile.release#L1-L10)
 
-**2. Kernel Version Variants**
-- Kernel < 5.2 has different eBPF helpers
-- Separate `*_less52.o` files compiled with `-DKERNEL_LESS_5_2`
-- Runtime selection based on `kernel.HostVersion()`
+### Build Targets Overview
 
-**3. Cross-Compilation Support**
-- `CROSS_ARCH` variable triggers cross-compilation
-- Requires cross-toolchain: `gcc-aarch64-linux-gnu` or `gcc-x86-64-linux-gnu`
-- Kernel headers for target architecture: `/usr/src/linux-source-*/arch/{x86,arm64}`
+| Target | Purpose | Bytecode Included |
+|--------|---------|-------------------|
+| `all` | Full build with CO-RE and non-CO-RE | Both |
+| `nocore` | Build with non-CO-RE only | Non-CO-RE only |
+| `ebpf` | Compile CO-RE eBPF bytecode | CO-RE |
+| `ebpf_noncore` | Compile non-CO-RE eBPF bytecode | Non-CO-RE |
+| `assets` | Generate Go embedded bytecode | Both |
+| `build` | Compile Go binary | - |
+| `clean` | Remove build artifacts | - |
+| `test-race` | Run unit tests with race detector | - |
+| `e2e` | Run end-to-end tests | - |
 
-**4. Asset Embedding**
-- All eBPF bytecode embedded into Go binary via `go-bindata`
-- No runtime dependency on `.o` files
-- Runtime selects appropriate bytecode from `assets.Asset()`
-
-**5. Version Injection**
-- Git version injected via ldflags: [functions.mk:47-54](https://github.com/gojue/ecapture/blob/0766a93b/functions.mk#L47-L54)
-- Format: `os_arch:vX.Y.Z-date-commit:kernel_version`
-- Bytecode mode injected: `ByteCodeFiles=core|noncore|all`
-
-**Sources:** [Makefile:1-269](https://github.com/gojue/ecapture/blob/0766a93b/Makefile#L1-L269), [variables.mk:1-200](https://github.com/gojue/ecapture/blob/0766a93b/variables.mk#L1-L200), [functions.mk:1-76](https://github.com/gojue/ecapture/blob/0766a93b/functions.mk#L1-L76), [builder/Makefile.release:1-151](https://github.com/gojue/ecapture/blob/0766a93b/builder/Makefile.release#L1-L151)
+Sources: [Makefile:4-14](https://github.com/gojue/ecapture/blob/ca085d05/Makefile#L4-L14), [Makefile:106-245](https://github.com/gojue/ecapture/blob/ca085d05/Makefile#L106-L245)
 
 ---
 
-## Key Code Patterns for Developers
+## Build Process Flow
 
-### Pattern 1: Module Registration
+### Complete Build Pipeline
 
-All modules register themselves in `init()` using a factory pattern:
-
-```go
-// user/module/probe_openssl.go:777-786
-func init() {
-    RegisteFunc(NewOpenSSLProbe)
-}
-
-func NewOpenSSLProbe() IModule {
-    mod := &MOpenSSLProbe{}
-    mod.name = ModuleNameOpenssl
-    mod.mType = ProbeTypeUprobe
-    return mod
-}
+```mermaid
+graph TB
+    Start[make all]
+    
+    subgraph "Phase 1: eBPF Compilation"
+        AutoGen[autogen<br/>Generate vmlinux.h]
+        CheckClang[.checkver_clang<br/>Verify clang >= 9]
+        CheckGo[.checkver_go<br/>Verify go >= 1.24]
+        
+        CoreCompile[CO-RE Compilation<br/>kern/*.c → *_core.o]
+        NonCoreCompile[Non-CO-RE Compilation<br/>kern/*.c → *_noncore.o]
+    end
+    
+    subgraph "Phase 2: Asset Embedding"
+        Bindata[go-bindata<br/>Embed *.o files]
+        AssetsGo[assets/ebpf_probe.go<br/>Generated Go code]
+    end
+    
+    subgraph "Phase 3: Go Compilation"
+        LibPcap[Build libpcap<br/>lib/libpcap/libpcap.a]
+        GoBuild[go build<br/>Static linking]
+        Binary[bin/ecapture<br/>Final executable]
+    end
+    
+    Start --> CheckClang
+    Start --> CheckGo
+    CheckClang --> AutoGen
+    CheckGo --> AutoGen
+    
+    AutoGen --> CoreCompile
+    AutoGen --> NonCoreCompile
+    
+    CoreCompile --> Bindata
+    NonCoreCompile --> Bindata
+    
+    Bindata --> AssetsGo
+    
+    AssetsGo --> LibPcap
+    LibPcap --> GoBuild
+    GoBuild --> Binary
 ```
 
-The CLI retrieves modules via `GetModuleFunc(modName)`.
+Sources: [Makefile:6-11](https://github.com/gojue/ecapture/blob/ca085d05/Makefile#L6-L11), [Makefile:133-201](https://github.com/gojue/ecapture/blob/ca085d05/Makefile#L133-L201)
 
-### Pattern 2: eBPF Bytecode Selection
+### CO-RE vs Non-CO-RE Compilation
 
-Modules implement version detection and bytecode selection:
-
-```go
-// 1. Detect library version
-verString, err := m.detectOpenssl(soPath)
-
-// 2. Map version to bytecode file
-bpfFile, found := m.sslVersionBpfMap[verString]
-
-// 3. Apply CO-RE/non-CO-RE suffix
-filename := m.geteBPFName("user/bytecode/" + bpfFile)
-// Result: user/bytecode/openssl_3_0_kern_core.o
-
-// 4. Load from embedded assets
-byteBuf, err := assets.Asset(filename)
+**CO-RE (Compile Once, Run Everywhere):**
+```bash
+clang -D__TARGET_ARCH_x86 \
+  -target bpfel \
+  -c kern/openssl.c \
+  -o user/bytecode/openssl_kern_core.o \
+  -g -fno-ident
 ```
 
-Reference: [user/module/probe_openssl.go:179-278](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl.go#L179-L278), [user/module/imodule.go:191-214](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L191-L214)
+- Produces kernel-agnostic bytecode ([Makefile:122-127](https://github.com/gojue/ecapture/blob/ca085d05/Makefile#L122-L127))
+- Requires kernel with BTF (BPF Type Format) support
+- Uses `vmlinux.h` generated by `bpftool btf dump` ([Makefile:130-131](https://github.com/gojue/ecapture/blob/ca085d05/Makefile#L130-L131))
+- Smaller file size, portable across kernel versions
 
-### Pattern 3: Event Dispatching
-
-Events flow through a type-switching dispatcher:
-
-```go
-// user/module/probe_openssl.go:733-754
-func (m *MOpenSSLProbe) Dispatcher(eventStruct event.IEventStruct) {
-    switch ev := eventStruct.(type) {
-    case *event.ConnDataEvent:
-        if ev.IsDestroy == 0 {
-            m.AddConn(ev.Pid, ev.Fd, ev.Tuple, ev.Sock)
-        } else {
-            m.DelConn(ev.Sock)
-        }
-    case *event.MasterSecretEvent:
-        m.saveMasterSecret(ev)
-    case *event.TcSkbEvent:
-        m.dumpTcSkb(ev)
-    case *event.SSLDataEvent:
-        m.dumpSslData(ev)
-    }
-}
+**Non-CO-RE (Kernel-Specific):**
+```bash
+clang -I /usr/src/linux-source/arch/x86/include \
+  -c kern/openssl.c -o - | \
+llc -march=bpf -filetype=obj \
+  -o user/bytecode/openssl_kern_noncore.o
 ```
 
-### Pattern 4: eBPF Manager Setup
+- Requires kernel headers for target kernel ([Makefile:144-159](https://github.com/gojue/ecapture/blob/ca085d05/Makefile#L144-L159))
+- Works on older kernels without BTF support
+- Kernel-specific, must rebuild for different kernel versions
+- Larger file size due to kernel structure definitions
 
-Modules use `ebpfmanager` for probe lifecycle:
+**Build Variables:**
+- `KERN_SRC_PATH`: Kernel source path ([Makefile:147-154](https://github.com/gojue/ecapture/blob/ca085d05/Makefile#L147-L154))
+- `KERN_BUILD_PATH`: Kernel build path ([Makefile:148-152](https://github.com/gojue/ecapture/blob/ca085d05/Makefile#L148-L152))
+- `LINUX_ARCH`: Target architecture (x86, arm64) ([Makefile:122](https://github.com/gojue/ecapture/blob/ca085d05/Makefile#L122))
 
-```go
-m.bpfManager = &manager.Manager{
-    Probes: []*manager.Probe{
-        {Section: "uprobe/SSL_write", ElfFuncName: "SSL_write"},
-        {Section: "uretprobe/SSL_write", ElfFuncName: "SSL_write"},
-        // ... more probes
-    },
-    Maps: []*manager.Map{
-        {Name: "events"},
-        {Name: "mastersecret_events"},
-    },
-}
+Sources: [Makefile:117-159](https://github.com/gojue/ecapture/blob/ca085d05/Makefile#L117-L159)
 
-m.bpfManagerOptions = manager.Options{
-    ConstantEditors: m.constantEditor(), // PID/UID filtering
-}
+### Asset Embedding Process
 
-// Load and start
-byteBuf, _ := assets.Asset(bpfFileName)
-m.bpfManager.InitWithOptions(bytes.NewReader(byteBuf), m.bpfManagerOptions)
-m.bpfManager.Start()
-```
+The build system uses `go-bindata` to embed all eBPF bytecode files into the Go binary:
 
-**Sources:** [user/module/probe_openssl.go:733-754](https://github.com/gojue/ecapture/blob/0766a93b/user/module/probe_openssl.go#L733-L754), [user/module/imodule.go:191-214](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L191-L214)
+1. **Compile eBPF Programs**: Produces `*.o` files in `user/bytecode/`
+2. **Generate Go Code**: `go-bindata` reads all `.o` files ([Makefile:164](https://github.com/gojue/ecapture/blob/ca085d05/Makefile#L164))
+3. **Create Asset Package**: Generates `assets/ebpf_probe.go` ([Makefile:164](https://github.com/gojue/ecapture/blob/ca085d05/Makefile#L164))
+4. **Embed in Binary**: Go build includes embedded assets
+
+This approach eliminates the need to distribute separate bytecode files alongside the binary.
+
+Sources: [Makefile:162-171](https://github.com/gojue/ecapture/blob/ca085d05/Makefile#L162-L171)
 
 ---
 
-## Testing and Debugging
+## Building eCapture
+
+### Standard Build (Native Architecture)
+
+**Full build with both CO-RE and non-CO-RE:**
+```bash
+make clean
+make env          # Display build environment
+make all          # Build everything
+```
+
+**Non-CO-RE only (for older kernels):**
+```bash
+make clean
+make nocore
+```
+
+The `nocore` target is useful when:
+- Target system lacks BTF support
+- Deploying to specific kernel version
+- Reducing binary size by excluding CO-RE bytecode
+
+Sources: [Makefile:4-14](https://github.com/gojue/ecapture/blob/ca085d05/Makefile#L4-L14)
+
+### Cross-Compilation
+
+**Build for ARM64 on x86_64:**
+```bash
+make clean
+CROSS_ARCH=arm64 make env
+CROSS_ARCH=arm64 make all
+```
+
+**Build for x86_64 on ARM64:**
+```bash
+make clean
+CROSS_ARCH=amd64 make env
+CROSS_ARCH=amd64 make all
+```
+
+**Cross-Compilation Requirements:**
+- Cross-compilation toolchain installed ([.github/workflows/go-c-cpp.yml:19](https://github.com/gojue/ecapture/blob/ca085d05/.github/workflows/go-c-cpp.yml#L19))
+  - For ARM64: `gcc-aarch64-linux-gnu`
+  - For x86_64: `gcc-x86-64-linux-gnu`
+- Prepared kernel headers for target architecture ([.github/workflows/go-c-cpp.yml:31](https://github.com/gojue/ecapture/blob/ca085d05/.github/workflows/go-c-cpp.yml#L31))
+
+**libpcap Cross-Compilation:**
+The build system automatically configures libpcap for cross-compilation:
+```bash
+CC=aarch64-linux-gnu-gcc AR=aarch64-linux-gnu-ar \
+  ./configure --host=aarch64-linux-gnu
+```
+
+Sources: [Makefile:56-65](https://github.com/gojue/ecapture/blob/ca085d05/Makefile#L56-L65), [Makefile:176-184](https://github.com/gojue/ecapture/blob/ca085d05/Makefile#L176-L184), [.github/workflows/go-c-cpp.yml:56-65](https://github.com/gojue/ecapture/blob/ca085d05/.github/workflows/go-c-cpp.yml#L56-L65)
+
+### Android Builds
+
+**Build for Android (ARM64):**
+```bash
+make clean
+CROSS_ARCH=arm64 make env
+ANDROID=1 CROSS_ARCH=arm64 make nocore
+```
+
+**Android-Specific Considerations:**
+- Android builds use non-CO-RE only ([.github/workflows/go-c-cpp.yml:61-65](https://github.com/gojue/ecapture/blob/ca085d05/.github/workflows/go-c-cpp.yml#L61-L65))
+- Special handling for BoringSSL versions (Android 12-16)
+- Network byte order adjustments for ARM architecture
+
+Sources: [Makefile:95](https://github.com/gojue/ecapture/blob/ca085d05/Makefile#L95), [.github/workflows/go-c-cpp.yml:61-65](https://github.com/gojue/ecapture/blob/ca085d05/.github/workflows/go-c-cpp.yml#L61-L65)
+
+### Build Environment Variables
+
+| Variable | Description | Example |
+|----------|-------------|---------|
+| `CROSS_ARCH` | Target architecture | `arm64`, `amd64` |
+| `ANDROID` | Android build flag | `1` (enable) |
+| `DEBUG` | Debug build flag | `1` (enable debug symbols) |
+| `SNAPSHOT_VERSION` | Override version string | `v0.8.0` |
+
+**Environment Display:**
+```bash
+make env
+```
+
+This command displays all build variables including:
+- Host architecture detection
+- Kernel version
+- Compiler versions
+- Target architecture settings
+- Version information
+
+Sources: [Makefile:19-63](https://github.com/gojue/ecapture/blob/ca085d05/Makefile#L19-L63)
+
+---
+
+## Testing
 
 ### Unit Tests
 
-Run unit tests with race detection:
+**Run unit tests:**
+```bash
+go test -v ./...
+```
+
+**Run with race detector:**
 ```bash
 make test-race
 ```
 
-This executes `go test -v -race ./...` with proper CGO flags for libpcap.
+The race detector build ([Makefile:216-224](https://github.com/gojue/ecapture/blob/ca085d05/Makefile#L216-L224)):
+- Enables `CGO_ENABLED=1` for C integration
+- Links with libpcap statically
+- Uses race detector to identify data races
+
+Sources: [Makefile:216-224](https://github.com/gojue/ecapture/blob/ca085d05/Makefile#L216-L224)
 
 ### End-to-End Tests
 
-Run module-specific E2E tests:
-```bash
-make e2e-tls      # TLS module tests
-make e2e-gnutls   # GnuTLS module tests
-make e2e-gotls    # GoTLS module tests
-make e2e          # All E2E tests
+The project includes E2E test scripts for each major module:
+
+```mermaid
+graph LR
+    E2E[make e2e]
+    
+    TLS[e2e-tls<br/>test/e2e/tls_e2e_test.sh]
+    GnuTLS[e2e-gnutls<br/>test/e2e/gnutls_e2e_test.sh]
+    GoTLS[e2e-gotls<br/>test/e2e/gotls_e2e_test.sh]
+    
+    E2E --> TLS
+    E2E --> GnuTLS
+    E2E --> GoTLS
+    
+    TLS --> TestOpenSSL["Test OpenSSL<br/>versions 1.0.x - 3.x"]
+    GnuTLS --> TestGnuTLS["Test GnuTLS<br/>library hooks"]
+    GoTLS --> TestGo["Test Go TLS<br/>ABI detection"]
 ```
 
-Reference: [Makefile:240-268](https://github.com/gojue/ecapture/blob/0766a93b/Makefile#L240-L268)
-
-### Debug Mode
-
-Enable debug logging:
+**Run specific E2E test:**
 ```bash
-./ecapture tls -d          # Debug to stdout
-./ecapture tls -d -l /tmp/debug.log  # Debug to file
+make e2e-tls       # Test TLS/SSL capture
+make e2e-gnutls    # Test GnuTLS capture
+make e2e-gotls     # Test Go TLS capture
 ```
 
-Debug mode enables:
-- Verbose eBPF verifier output
-- Connection tracking logs
-- Event decode details
-- Processor state information
+**Run all E2E tests:**
+```bash
+make e2e
+```
 
-### Common Development Issues
-
-| Issue | Cause | Solution |
-|-------|-------|----------|
-| eBPF verifier errors | Bytecode incompatible with kernel | Check kernel version, try `-b 2` for non-CO-RE |
-| Module not found | Factory not registered | Add `init()` with `RegisteFunc()` call |
-| Events not captured | Wrong hooks/offsets | Verify library version detection logic |
-| Compilation errors | Missing headers | Run `make env` to check KERN_SRC_PATH |
-| Cross-compile fails | Missing toolchain | Install `gcc-aarch64-linux-gnu` or `gcc-x86-64-linux-gnu` |
-
-**Sources:** [Makefile:240-268](https://github.com/gojue/ecapture/blob/0766a93b/Makefile#L240-L268), [user/module/imodule.go:110-171](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L110-L171)
+Sources: [Makefile:226-244](https://github.com/gojue/ecapture/blob/ca085d05/Makefile#L226-L244)
 
 ---
 
-## Next Steps for Developers
+## CI/CD Pipeline
 
-For detailed information on specific development tasks:
+### GitHub Actions Workflow Architecture
 
-- **[Build System](5.1-build-system.md)**: Deep dive into Makefile structure, variables, cross-compilation, and asset embedding
-- **[eBPF Program Development](5.2-ebpf-program-development.md)**: Writing eBPF C programs, using helpers, map operations, and debugging
-- **[Adding New Modules](5.3-adding-new-modules.md)**: Step-by-step guide to creating a new capture module with complete lifecycle implementation
-- **[Event Processing and Parsers](5.4-event-processing-and-parsers.md)**: Implementing event structures, protocol parsers, and output formatting
+```mermaid
+graph TB
+    subgraph "Trigger Events"
+        Push[Push to master]
+        PR[Pull Request]
+        Tag[Tag push v*]
+    end
+    
+    subgraph "go-c-cpp.yml Workflow"
+        Job1[build-on-ubuntu2204<br/>x86_64 runner]
+        Job2[build-on-ubuntu2204-arm64<br/>arm64 runner]
+        
+        Job1Steps["1. Install compilers<br/>2. Build CO-RE<br/>3. golangci-lint<br/>4. Build non-CO-RE<br/>5. Cross-compile arm64<br/>6. Android build<br/>7. Run tests"]
+        
+        Job2Steps["1. Install compilers<br/>2. Build CO-RE<br/>3. golangci-lint<br/>4. Build non-CO-RE<br/>5. Cross-compile amd64<br/>6. Android build<br/>7. Run tests"]
+        
+        Job1 --> Job1Steps
+        Job2 --> Job2Steps
+    end
+    
+    subgraph "release.yml Workflow"
+        ReleaseJob1[build-on-ubuntu2204<br/>Release artifacts]
+        ReleaseJob2[build-docker-image<br/>Multi-arch images]
+        
+        ReleaseSteps["1. Build amd64<br/>2. Build arm64<br/>3. Create DEB packages<br/>4. Generate checksums<br/>5. Create GitHub release"]
+        
+        DockerSteps["1. Build amd64 image<br/>2. Build arm64 image<br/>3. Push to Docker Hub"]
+        
+        ReleaseJob1 --> ReleaseSteps
+        ReleaseJob2 --> DockerSteps
+    end
+    
+    Push --> Job1
+    Push --> Job2
+    PR --> Job1
+    PR --> Job2
+    Tag --> ReleaseJob1
+    Tag --> ReleaseJob2
+```
 
-Additional resources:
-- [Architecture](../2-architecture/index.md): High-level system architecture and component interaction
-- [Command Line Interface](../1-overview/1.2-command-line-interface.md): CLI structure and command patterns
-- [Configuration System](../2-architecture/2.3-configuration-system.md): IConfig implementation and runtime updates
+Sources: [.github/workflows/go-c-cpp.yml:1-128](https://github.com/gojue/ecapture/blob/ca085d05/.github/workflows/go-c-cpp.yml#L1-L128), [.github/workflows/release.yml:1-129](https://github.com/gojue/ecapture/blob/ca085d05/.github/workflows/release.yml#L1-L129)
 
-**Sources:** [cli/cmd/root.go:80-403](https://github.com/gojue/ecapture/blob/0766a93b/cli/cmd/root.go#L80-L403), [user/module/imodule.go:47-480](https://github.com/gojue/ecapture/blob/0766a93b/user/module/imodule.go#L47-L480), [user/config/iconfig.go:1-212](https://github.com/gojue/ecapture/blob/0766a93b/user/config/iconfig.go#L1-L212), [Makefile:1-269](https://github.com/gojue/ecapture/blob/0766a93b/Makefile#L1-L269)
+### CI Build Matrix
+
+The CI system builds and tests multiple configurations:
+
+| Architecture | Native Build | Cross-Compilation | Android |
+|--------------|--------------|-------------------|---------|
+| x86_64 | ✓ CO-RE + non-CO-RE | ✓ arm64 target | ✓ arm64 |
+| arm64 | ✓ CO-RE + non-CO-RE | ✓ amd64 target | ✓ amd64 |
+
+**CI Build Steps:**
+
+1. **Setup Environment** ([.github/workflows/go-c-cpp.yml:16-33](https://github.com/gojue/ecapture/blob/ca085d05/.github/workflows/go-c-cpp.yml#L16-L33)):
+   - Install Go 1.24.6
+   - Install Clang 14, LLVM tools
+   - Extract and prepare Linux kernel sources
+
+2. **Native CO-RE Build** ([.github/workflows/go-c-cpp.yml:38-44](https://github.com/gojue/ecapture/blob/ca085d05/.github/workflows/go-c-cpp.yml#L38-L44)):
+   ```bash
+   make clean
+   make env
+   DEBUG=1 make -j8
+   ```
+
+3. **Code Quality Check** ([.github/workflows/go-c-cpp.yml:45-50](https://github.com/gojue/ecapture/blob/ca085d05/.github/workflows/go-c-cpp.yml#L45-L50)):
+   - Run `golangci-lint` on Go code
+   - Version: v2.1
+
+4. **Non-CO-RE Build** ([.github/workflows/go-c-cpp.yml:51-55](https://github.com/gojue/ecapture/blob/ca085d05/.github/workflows/go-c-cpp.yml#L51-L55)):
+   ```bash
+   make clean
+   make nocore
+   ```
+
+5. **Cross-Compilation** ([.github/workflows/go-c-cpp.yml:56-65](https://github.com/gojue/ecapture/blob/ca085d05/.github/workflows/go-c-cpp.yml#L56-L65)):
+   ```bash
+   CROSS_ARCH=arm64 make env
+   CROSS_ARCH=arm64 make -j8
+   ANDROID=1 CROSS_ARCH=arm64 make nocore -j8
+   ```
+
+6. **Test Execution** ([.github/workflows/go-c-cpp.yml:66-67](https://github.com/gojue/ecapture/blob/ca085d05/.github/workflows/go-c-cpp.yml#L66-L67)):
+   ```bash
+   go test -v -race ./...
+   ```
+
+Sources: [.github/workflows/go-c-cpp.yml:9-127](https://github.com/gojue/ecapture/blob/ca085d05/.github/workflows/go-c-cpp.yml#L9-L127)
+
+### Compiler Version Management
+
+The CI system ensures consistent compiler versions:
+
+**Clang/LLVM Setup:**
+```bash
+for tool in "clang" "llc" "llvm-strip"
+do
+  sudo rm -f /usr/bin/$tool
+  sudo ln -s /usr/bin/$tool-14 /usr/bin/$tool
+done
+```
+
+This creates symlinks to enforce Clang 14 usage ([.github/workflows/go-c-cpp.yml:20-24](https://github.com/gojue/ecapture/blob/ca085d05/.github/workflows/go-c-cpp.yml#L20-L24)).
+
+**Kernel Source Preparation:**
+```bash
+cd /usr/src
+source_file=$(find . -maxdepth 1 -name "*linux-source*.tar.bz2")
+sudo tar -xf $source_file
+cd $source_dir
+sudo make ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu- prepare V=0
+```
+
+Prepares kernel headers for cross-compilation ([.github/workflows/go-c-cpp.yml:25-32](https://github.com/gojue/ecapture/blob/ca085d05/.github/workflows/go-c-cpp.yml#L25-L32)).
+
+Sources: [.github/workflows/go-c-cpp.yml:16-33](https://github.com/gojue/ecapture/blob/ca085d05/.github/workflows/go-c-cpp.yml#L16-L33)
+
+---
+
+## Release Process
+
+### Release Workflow
+
+```mermaid
+graph TB
+    Start[Create git tag v*]
+    
+    subgraph "Build Phase"
+        Build1[Build amd64 artifacts<br/>make release]
+        Build2[Build arm64 artifacts<br/>CROSS_ARCH=arm64]
+        
+        Build1 --> Archive1[ecapture-v*.tar.gz]
+        Build1 --> DEB1[ecapture-v*.deb]
+        
+        Build2 --> Archive2[ecapture-v*-arm64.tar.gz]
+        Build2 --> DEB2[ecapture-v*-arm64.deb]
+    end
+    
+    subgraph "Docker Phase"
+        Docker[docker buildx build]
+        Docker --> ImageAMD64[linux/amd64 image]
+        Docker --> ImageARM64[linux/arm64 image]
+        
+        ImageAMD64 --> DockerHub
+        ImageARM64 --> DockerHub
+    end
+    
+    subgraph "Publish Phase"
+        GenChecksum[Generate checksums<br/>sha256sum]
+        GenNotes[Generate release notes<br/>GitHub API]
+        
+        Archive1 --> GenChecksum
+        Archive2 --> GenChecksum
+        DEB1 --> GenChecksum
+        DEB2 --> GenChecksum
+        
+        GenChecksum --> Release[Create GitHub Release]
+        GenNotes --> Release
+    end
+    
+    Start --> Build1
+    Start --> Build2
+    Start --> Docker
+    
+    Build1 --> GenChecksum
+    Build2 --> GenChecksum
+```
+
+Sources: [.github/workflows/release.yml:1-129](https://github.com/gojue/ecapture/blob/ca085d05/.github/workflows/release.yml#L1-L129), [builder/Makefile.release:1-151](https://github.com/gojue/ecapture/blob/ca085d05/builder/Makefile.release#L1-L151)
+
+### Release Targets
+
+**Create snapshot (development build):**
+```bash
+make -f builder/Makefile.release snapshot
+```
+
+**Create release (specific version):**
+```bash
+SNAPSHOT_VERSION=v0.8.0 make -f builder/Makefile.release release
+```
+
+**Publish to GitHub:**
+```bash
+SNAPSHOT_VERSION=v0.8.0 make -f builder/Makefile.release publish
+```
+
+The `release` target orchestrates ([builder/Makefile.release:10](https://github.com/gojue/ecapture/blob/ca085d05/builder/Makefile.release#L10)):
+1. `snapshot`: Build Linux artifacts
+2. `build_deb`: Create DEB packages
+3. `snapshot_android`: Build Android artifacts
+
+Sources: [builder/Makefile.release:10-151](https://github.com/gojue/ecapture/blob/ca085d05/builder/Makefile.release#L10-L151)
+
+### Packaging Formats
+
+#### TAR.GZ Archives
+
+**Archive Contents:**
+- `ecapture` binary
+- `LICENSE`
+- `CHANGELOG.md`
+- `README.md` and `README_CN.md`
+
+**Naming Convention:**
+```
+ecapture-{VERSION}-{OS}-{ARCH}[-nocore].tar.gz
+```
+
+Examples:
+- `ecapture-v0.8.0-linux-amd64.tar.gz` (CO-RE + non-CO-RE)
+- `ecapture-v0.8.0-android-arm64-nocore.tar.gz` (non-CO-RE only)
+
+**Archive Creation** ([builder/Makefile.release:62-76](https://github.com/gojue/ecapture/blob/ca085d05/builder/Makefile.release#L62-L76)):
+```bash
+$(CMD_MKDIR) -p $(TAR_DIR)
+$(CMD_CP) LICENSE $(TAR_DIR)/LICENSE
+$(CMD_CP) bin/ecapture $(TAR_DIR)/ecapture
+$(CMD_TAR) -czf $(OUT_ARCHIVE) $(TAR_DIR)
+```
+
+Sources: [builder/Makefile.release:62-76](https://github.com/gojue/ecapture/blob/ca085d05/builder/Makefile.release#L62-L76), [functions.mk:62-76](https://github.com/gojue/ecapture/blob/ca085d05/functions.mk#L62-L76)
+
+#### DEB Packages
+
+**Package Structure:**
+```
+ecapture-v0.8.0-amd64.deb
+├── DEBIAN/
+│   └── control
+└── usr/
+    └── local/
+        └── bin/
+            └── ecapture
+```
+
+**Control File Fields** ([builder/Makefile.release:143-149](https://github.com/gojue/ecapture/blob/ca085d05/builder/Makefile.release#L143-L149)):
+- Package: ecapture
+- Version: Extracted from git tag
+- Architecture: amd64 or arm64
+- Maintainer: CFC4N <cfc4ncs@gmail.com>
+- Description: capture SSL/TLS text content without CA cert by eBPF
+
+**Build Process:**
+```bash
+make -f builder/Makefile.release deb
+```
+
+Creates DEB package using `dpkg-deb --build` ([builder/Makefile.release:151](https://github.com/gojue/ecapture/blob/ca085d05/builder/Makefile.release#L151)).
+
+Sources: [builder/Makefile.release:132-151](https://github.com/gojue/ecapture/blob/ca085d05/builder/Makefile.release#L132-L151)
+
+#### Docker Images
+
+**Multi-Architecture Build:**
+```bash
+docker buildx build \
+  --platform linux/amd64,linux/arm64 \
+  --build-arg VERSION=v0.8.0 \
+  -t ecapture:v0.8.0 \
+  -t ecapture:latest \
+  --push .
+```
+
+**Dockerfile Stages** ([builder/Dockerfile:1-39](https://github.com/gojue/ecapture/blob/ca085d05/builder/Dockerfile#L1-L39)):
+
+1. **Builder Stage**: Ubuntu 22.04 base
+   - Install compilers (Clang 14, Go 1.24.6)
+   - Build eCapture with `make all`
+   
+2. **Runtime Stage**: Alpine Linux
+   - Copy only the `ecapture` binary
+   - Set ENTRYPOINT to `/ecapture`
+
+**Image Tags:**
+- `{username}/ecapture:v{VERSION}` (version-specific)
+- `{username}/ecapture:latest` (latest release)
+
+Sources: [.github/workflows/release.yml:101-129](https://github.com/gojue/ecapture/blob/ca085d05/.github/workflows/release.yml#L101-L129), [builder/Dockerfile:1-39](https://github.com/gojue/ecapture/blob/ca085d05/builder/Dockerfile#L1-L39)
+
+### Release Notes Generation
+
+The release workflow automatically generates release notes:
+
+1. **Get Previous Tag** ([.github/workflows/release.yml:63-67](https://github.com/gojue/ecapture/blob/ca085d05/.github/workflows/release.yml#L63-L67)):
+   ```bash
+   PREVIOUS=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+   ```
+
+2. **Generate Notes via GitHub API** ([.github/workflows/release.yml:68-80](https://github.com/gojue/ecapture/blob/ca085d05/.github/workflows/release.yml#L68-L80)):
+   ```bash
+   gh api --method POST \
+     /repos/$REPO/releases/generate-notes \
+     -f tag_name=$TAG \
+     -f previous_tag_name=$PREVIOUS_TAG
+   ```
+
+3. **Create Release** ([builder/Makefile.release:124](https://github.com/gojue/ecapture/blob/ca085d05/builder/Makefile.release#L124)):
+   ```bash
+   gh release create $(VERSION) $$FILES \
+     --title "eCapture $(VERSION)" \
+     --notes-file $(RELEASE_NOTES)
+   ```
+
+Sources: [.github/workflows/release.yml:63-87](https://github.com/gojue/ecapture/blob/ca085d05/.github/workflows/release.yml#L63-L87), [builder/Makefile.release:114-124](https://github.com/gojue/ecapture/blob/ca085d05/builder/Makefile.release#L114-L124)
+
+---
+
+## Development Workflow Summary
+
+### Typical Development Cycle
+
+1. **Setup Environment:**
+   ```bash
+   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/gojue/ecapture/master/builder/init_env.sh)"
+   ```
+
+2. **Clone and Build:**
+   ```bash
+   git clone https://github.com/gojue/ecapture.git
+   cd ecapture
+   make env          # Verify environment
+   make all          # Build everything
+   ```
+
+3. **Make Changes:**
+   - Modify eBPF programs in `kern/`
+   - Modify Go code in `cli/`, `user/`, or other packages
+
+4. **Test:**
+   ```bash
+   make clean
+   make all
+   go test -v ./...
+   make e2e          # If testing modules
+   ```
+
+5. **Format Code:**
+   ```bash
+   make format       # Format C code with clang-format
+   ```
+
+6. **Commit and Push:**
+   ```bash
+   git add .
+   git commit -m "Your change description"
+   git push origin your-branch
+   ```
+
+7. **Create Pull Request:**
+   - CI automatically runs on x86_64 and arm64
+   - Both native and cross-compilation builds tested
+   - Code quality checked with golangci-lint
+
+### Key Build Commands Reference
+
+| Command | Purpose | Use Case |
+|---------|---------|----------|
+| `make env` | Show build environment | Verify configuration |
+| `make all` | Full build (CO-RE + non-CO-RE) | Development |
+| `make nocore` | Non-CO-RE only build | Older kernels |
+| `make clean` | Remove build artifacts | Clean rebuild |
+| `make test-race` | Run tests with race detector | Find concurrency issues |
+| `make e2e` | Run E2E tests | Integration testing |
+| `make format` | Format C code | Code style |
+| `CROSS_ARCH=arm64 make` | Cross-compile for ARM64 | ARM target |
+| `ANDROID=1 make nocore` | Build for Android | Mobile deployment |
+
+Sources: [Makefile:1-245](https://github.com/gojue/ecapture/blob/ca085d05/Makefile#L1-L245), [builder/Makefile.release:1-151](https://github.com/gojue/ecapture/blob/ca085d05/builder/Makefile.release#L1-L151)

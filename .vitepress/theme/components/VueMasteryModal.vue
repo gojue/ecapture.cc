@@ -84,7 +84,9 @@ watch(
 <style scoped>
 #vuemastery-action {
   font-size: 16px;
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   border-radius: 8px;
   transition: background-color 0.5s, color 0.5s;
   position: relative;
@@ -93,6 +95,7 @@ watch(
   color: #fff;
   margin-right: 18px;
   padding: 8px 1em 8px 3em;
+  line-height: 1.5;
 }
 
 .dark #vuemastery-action {
@@ -109,13 +112,15 @@ watch(
 }
 
 .icon-play {
-  display: inline;
+  display: inline-block;
   position: absolute;
   left: 15px;
-  top: 8px;
+  top: 50%;
+  transform: translateY(-50%);
   margin-left: 2px;
   fill: currentColor;
   width: 1.5em;
+  height: 1.5em;
 }
 
 .vuemastery-modal-mask {

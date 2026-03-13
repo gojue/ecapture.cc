@@ -1,18 +1,43 @@
+/* Tech-themed badges with new color palette */
+.vt-badge {
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-weight: 600;
+  font-size: 12px;
+  transition: all 0.3s ease;
+  border: 1px solid transparent;
+}
+
+.vt-badge:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(67, 170, 139, 0.2);
+}
+
+.vt-badge.wip {
+  background: linear-gradient(135deg, #F8961E, #F9C74F);
+  color: white;
+  border-color: #F3722C;
+}
+
 .vt-badge.wip:before {
   content: 'WIP';
 }
 
 .vt-badge.ts {
-  background-color: #3178c6;
+  background: linear-gradient(135deg, #43AA8B, #90BE6D);
+  color: white;
+  border-color: #43AA8B;
 }
+
 .vt-badge.ts:before {
   content: 'TS';
 }
 
 .vt-badge.dev-only,
 .vt-badge.experimental {
-  color: var(--vt-c-text-light-1);
-  background-color: var(--vt-c-yellow);
+  color: white;
+  background: linear-gradient(135deg, #F9C74F, #F8961E);
+  border-color: #F3722C;
 }
 
 .vt-badge.dev-only:before {
@@ -26,3 +51,13 @@
 .vt-badge[data-text]:before {
   content: attr(data-text);
 }
+
+/* Dark mode enhancements */
+.dark .vt-badge {
+  box-shadow: 0 0 10px rgba(92, 208, 174, 0.1);
+}
+
+.dark .vt-badge:hover {
+  box-shadow: 0 4px 12px rgba(92, 208, 174, 0.3);
+}
+

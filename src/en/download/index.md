@@ -38,14 +38,16 @@ onMounted(async () => {
   try {
     const response = await fetch(convertToCDNUrl('https://api.github.com/repos/gojue/ecapture/releases'))
     const data = await response.json()
-    releases.value = Array.isArray(data) ? data.map(release => ({
+    // Only keep the first 5 releases
+    const limitedData = Array.isArray(data) ? data.slice(0, 5) : []
+    releases.value = limitedData.map(release => ({
       ...release,
       body: convertMarkdownToHtml(release.body),
       assets: (release.assets || []).map(asset => ({
         ...asset,
         browser_download_url: convertToCDNUrl(asset.browser_download_url)
       }))
-    })) : []
+    }))
   } catch (error) {
     console.error('Error fetching releases:', error)
     releases.value = []
