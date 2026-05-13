@@ -14,9 +14,9 @@ const releases = ref([])
 const loading = ref(true)
 const route = useRoute()
 
-const CDN_DOMAIN = 'image.cnxct.com/gojue'    // assets 镜像域名
-const GITHUB_DOMAIN = 'github.com/gojue'    // assets download domain
-const GITHUB_API_DOMAIN = 'api.github.com/repos/gojue'    // github api domain
+const CDN_DOMAIN = 'https://image.cnxct.com'    // assets 镜像域名
+const GITHUB_DOMAIN = 'https://github.com'    // assets download domain
+const GITHUB_API_DOMAIN = 'https://api.github.com'    // github api domain
 
 // 根据当前路径判断是否使用 CDN
 const shouldUseCDN = () => {
@@ -25,7 +25,7 @@ const shouldUseCDN = () => {
 // 将 GitHub 下载链接转换为 CDN 链接
 const convertToCDNUrl = (url) => {
   if (!url) return url
-  return shouldUseCDN() ? url.replace(GITHUB_DOMAIN, CDN_DOMAIN).replace(GITHUB_API_DOMAIN, CDN_DOMAIN) : url
+  return shouldUseCDN() ? url.replace(GITHUB_API_DOMAIN, CDN_DOMAIN).replace(GITHUB_DOMAIN, CDN_DOMAIN) : url
 }
 
 // 转换 Markdown 为 HTML

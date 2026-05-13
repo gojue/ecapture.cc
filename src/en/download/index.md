@@ -14,20 +14,6 @@ const releases = ref([])
 const loading = ref(true)
 const route = useRoute()
 
-const CDN_DOMAIN = 'image.cnxct.com/gojue'    // assets 镜像域名
-const GITHUB_DOMAIN = 'github.com/gojue'    // assets download domain
-const GITHUB_API_DOMAIN = 'api.github.com/repos/gojue'    // github api domain
-
-// 根据当前路径判断是否使用 CDN
-const shouldUseCDN = () => {
-  return route.path.includes('/zh/')
-}
-// 将 GitHub 下载链接转换为 CDN 链接
-const convertToCDNUrl = (url) => {
-  if (!url) return url
-  return shouldUseCDN() ? url.replace(GITHUB_DOMAIN, CDN_DOMAIN).replace(GITHUB_API_DOMAIN, CDN_DOMAIN) : url
-}
-
 // 转换 Markdown 为 HTML
 const convertMarkdownToHtml = (markdown) => {
   if (!markdown) return ''
@@ -36,7 +22,7 @@ const convertMarkdownToHtml = (markdown) => {
 
 onMounted(async () => {
   try {
-    const response = await fetch(convertToCDNUrl('https://api.github.com/repos/gojue/ecapture/releases'))
+    const response = await fetch('https://api.github.com/repos/gojue/ecapture/releases')
     const data = await response.json()
     // Only keep the first 5 releases
     const limitedData = Array.isArray(data) ? data.slice(0, 5) : []
@@ -45,7 +31,7 @@ onMounted(async () => {
       body: convertMarkdownToHtml(release.body),
       assets: (release.assets || []).map(asset => ({
         ...asset,
-        browser_download_url: convertToCDNUrl(asset.browser_download_url)
+        browser_download_url: asset.browser_download_url
       }))
     }))
   } catch (error) {
