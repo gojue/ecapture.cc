@@ -1,7 +1,7 @@
 export const fetchReleaseTag = () => {
     const isZh = window.location.href.includes('/zh/')
     const baseUrl = isZh 
-        ? 'https://image.cnxct.com/ecapture/releases'
+        ? 'https://image.cnxct.com/repos/gojue/ecapture/releases'
         : 'https://api.github.com/repos/gojue/ecapture/releases'
 
     return fetch(baseUrl)

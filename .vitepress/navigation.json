@@ -2,28 +2,32 @@
   "nav": {
     "en": [
       {
-        "text": "Overview",
-        "link": "/en/1-overview/index"
+        "text": "Introducing",
+        "link": "/en/1-introducing-ecapture/index"
+      },
+      {
+        "text": "Getting",
+        "link": "/en/2-getting-started/index"
+      },
+      {
+        "text": "Probe",
+        "link": "/en/3-probe-reference/index"
+      },
+      {
+        "text": "Integration",
+        "link": "/en/4-integration-and-deployment/index"
       },
       {
         "text": "Architecture",
-        "link": "/en/2-architecture/index"
+        "link": "/en/7-architecture/index"
       },
       {
-        "text": "Capture",
-        "link": "/en/3-capture-modules/index"
+        "text": "Developer",
+        "link": "/en/8-developer-guide/index"
       },
       {
-        "text": "Output",
-        "link": "/en/4-output-formats/index"
-      },
-      {
-        "text": "Development",
-        "link": "/en/5-development-guide/index"
-      },
-      {
-        "text": "Troubleshooting",
-        "link": "/en/6-troubleshooting-and-faq/index"
+        "text": "FAQ",
+        "link": "/en/9-faq-and-troubleshooting/index"
       },
       {
         "text": "Download",
@@ -57,28 +61,32 @@
     ],
     "zh": [
       {
-        "text": "概述",
-        "link": "/zh/1-overview/index"
+        "text": "简介",
+        "link": "/zh/1-introducing-ecapture/index"
       },
       {
-        "text": "架构设计",
-        "link": "/zh/2-architecture/index"
+        "text": "快速上手",
+        "link": "/zh/2-getting-started/index"
       },
       {
-        "text": "捕获模块",
-        "link": "/zh/3-capture-modules/index"
+        "text": "探针参考手册",
+        "link": "/zh/3-probe-reference/index"
       },
       {
-        "text": "输出格式",
-        "link": "/zh/4-output-formats/index"
+        "text": "集成与部署",
+        "link": "/zh/4-integration-and-deployment/index"
       },
       {
-        "text": "开发指南",
-        "link": "/zh/5-development-guide/index"
+        "text": "系统架构",
+        "link": "/zh/7-architecture/index"
       },
       {
-        "text": "常见问题",
-        "link": "/zh/6-troubleshooting-and-faq/index"
+        "text": "开发者指南",
+        "link": "/zh/8-developer-guide/index"
+      },
+      {
+        "text": "故障排查",
+        "link": "/zh/9-faq-and-troubleshooting/index"
       },
       {
         "text": "下载",
@@ -116,200 +124,175 @@
     ]
   },
   "sidebar": {
-    "/en/1-overview/": [
+    "/en/1-introducing-ecapture/": [
       {
-        "text": "Overview",
+        "text": "Introducing eCapture",
         "items": [
           {
-            "text": "Overview",
-            "link": "/en/1-overview/index"
+            "text": "Introducing eCapture",
+            "link": "/en/1-introducing-ecapture/index"
           },
           {
-            "text": "Command Line Interface",
-            "link": "/en/1-overview/1.2-command-line-interface"
+            "text": "Introduction and Core Capabilities",
+            "link": "/en/1-introducing-ecapture/1.1-introduction-and-core-capabilities"
           },
           {
-            "text": "Dependencies and System Requirements",
-            "link": "/en/1-overview/1.3-dependencies-and-system-requirements"
-          },
-          {
-            "text": "Installation and Quick Start",
-            "link": "/en/1-overview/1.1-installation-and-quick-start"
+            "text": "Supported Platforms and Versions",
+            "link": "/en/1-introducing-ecapture/1.2-supported-platforms-and-versions"
           }
         ]
       }
     ],
-    "/en/2-architecture/": [
+    "/en/2-getting-started/": [
+      {
+        "text": "Getting Started",
+        "items": [
+          {
+            "text": "Getting Started",
+            "link": "/en/2-getting-started/index"
+          },
+          {
+            "text": "Installation and Prerequisites",
+            "link": "/en/2-getting-started/2.1-installation-and-prerequisites"
+          },
+          {
+            "text": "Minimum Privileges",
+            "link": "/en/2-getting-started/2.2-minimum-privileges"
+          },
+          {
+            "text": "Output Formats (text / pcap / keylog)",
+            "link": "/en/2-getting-started/2.4-output-formats-text--pcap--keylog"
+          },
+          {
+            "text": "Quick Start (Run the First Example in 5 Minutes)",
+            "link": "/en/2-getting-started/2.3-quick-start-run-the-first-example-in-5-minutes"
+          }
+        ]
+      }
+    ],
+    "/en/3-probe-reference/": [
+      {
+        "text": "Probe Reference",
+        "items": [
+          {
+            "text": "Probe Reference",
+            "link": "/en/3-probe-reference/index"
+          },
+          {
+            "text": "Database Traffic Capture (MySQL / PostgreSQL)",
+            "link": "/en/3-probe-reference/3.5-database-traffic-capture-mysql--postgresql"
+          },
+          {
+            "text": "GnuTLS Capture",
+            "link": "/en/3-probe-reference/3.3-gnutls-capture"
+          },
+          {
+            "text": "GoTLS Capture",
+            "link": "/en/3-probe-reference/3.2-gotls-capture"
+          },
+          {
+            "text": "NSS / NSPR Capture",
+            "link": "/en/3-probe-reference/3.4-nss--nspr-capture"
+          },
+          {
+            "text": "Shell Auditing (Bash / Zsh)",
+            "link": "/en/3-probe-reference/3.6-shell-auditing-bash--zsh"
+          },
+          {
+            "text": "TLS/SSL Plaintext Capture (OpenSSL / BoringSSL)",
+            "link": "/en/3-probe-reference/3.1-tlsssl-plaintext-capture-openssl--boringssl"
+          }
+        ]
+      }
+    ],
+    "/en/4-integration-and-deployment/": [
+      {
+        "text": "Integration and Deployment",
+        "items": [
+          {
+            "text": "Integration and Deployment",
+            "link": "/en/4-integration-and-deployment/index"
+          },
+          {
+            "text": "Logging and Output Configuration",
+            "link": "/en/4-integration-and-deployment/4.3-logging-and-output-configuration"
+          },
+          {
+            "text": "Performance Overhead and Benchmarks",
+            "link": "/en/4-integration-and-deployment/4.4-performance-overhead-and-benchmarks"
+          },
+          {
+            "text": "Remote Dynamic Configuration API",
+            "link": "/en/4-integration-and-deployment/4.2-remote-dynamic-configuration-api"
+          },
+          {
+            "text": "Remote Event Streaming (eCaptureQ WebSocket)",
+            "link": "/en/4-integration-and-deployment/4.1-remote-event-streaming-ecaptureq-websocket"
+          }
+        ]
+      }
+    ],
+    "/en/7-architecture/": [
       {
         "text": "Architecture",
         "items": [
           {
             "text": "Architecture",
-            "link": "/en/2-architecture/index"
-          },
-          {
-            "text": "Configuration System",
-            "link": "/en/2-architecture/2.4-configuration-system"
-          },
-          {
-            "text": "eBPF Engine",
-            "link": "/en/2-architecture/2.1-ebpf-engine"
-          },
-          {
-            "text": "eBPF Maps and Data Structures",
-            "link": "/en/2-architecture/2.9-ebpf-maps-and-data-structures"
+            "link": "/en/7-architecture/index"
           },
           {
             "text": "Event Processing Pipeline",
-            "link": "/en/2-architecture/2.2-event-processing-pipeline"
+            "link": "/en/7-architecture/7.3-event-processing-pipeline"
           },
           {
-            "text": "Event Structures and Types",
-            "link": "/en/2-architecture/2.3-event-structures-and-types"
+            "text": "Probe Framework and Extension Mechanism",
+            "link": "/en/7-architecture/7.2-probe-framework-and-extension-mechanism"
           },
           {
-            "text": "Module System and Lifecycle",
-            "link": "/en/2-architecture/2.5-module-system-and-lifecycle"
-          },
-          {
-            "text": "Network Connection Tracking",
-            "link": "/en/2-architecture/2.7-network-connection-tracking"
-          },
-          {
-            "text": "Protocol Parsing",
-            "link": "/en/2-architecture/2.8-protocol-parsing"
-          },
-          {
-            "text": "Version Detection and Bytecode Selection",
-            "link": "/en/2-architecture/2.6-version-detection-and-bytecode-selection"
+            "text": "Three-layer Architecture",
+            "link": "/en/7-architecture/7.1-three-layer-architecture"
           }
         ]
       }
     ],
-    "/en/3-capture-modules/": [
+    "/en/8-developer-guide/": [
       {
-        "text": "Capture Modules",
+        "text": "Developer Guide",
         "items": [
           {
-            "text": "Capture Modules",
-            "link": "/en/3-capture-modules/index"
+            "text": "Developer Guide",
+            "link": "/en/8-developer-guide/index"
           },
           {
-            "text": "BoringSSL Module",
-            "link": "/en/3-capture-modules/3.1.2-boringssl-module"
+            "text": "Compilation and Build",
+            "link": "/en/8-developer-guide/8.1-compilation-and-build"
           },
           {
-            "text": "Database Query Auditing",
-            "link": "/en/3-capture-modules/3.2.2-database-query-auditing"
+            "text": "How to Add a New Probe",
+            "link": "/en/8-developer-guide/8.2-how-to-add-a-new-probe"
           },
           {
-            "text": "GnuTLS and NSS Modules",
-            "link": "/en/3-capture-modules/3.1.4-gnutls-and-nss-modules"
-          },
-          {
-            "text": "Go TLS Module",
-            "link": "/en/3-capture-modules/3.1.3-go-tls-module"
-          },
-          {
-            "text": "Master Secret Extraction",
-            "link": "/en/3-capture-modules/3.1.5-master-secret-extraction"
-          },
-          {
-            "text": "Network Packet Capture with TC",
-            "link": "/en/3-capture-modules/3.3-network-packet-capture-with-tc"
-          },
-          {
-            "text": "OpenSSL Module",
-            "link": "/en/3-capture-modules/3.1.1-openssl-module"
-          },
-          {
-            "text": "Shell Command Auditing",
-            "link": "/en/3-capture-modules/3.2.1-shell-command-auditing"
-          },
-          {
-            "text": "System Audit Modules",
-            "link": "/en/3-capture-modules/3.2-system-audit-modules"
-          },
-          {
-            "text": "TLS/SSL Capture Modules",
-            "link": "/en/3-capture-modules/3.1-tlsssl-capture-modules"
+            "text": "Testing Strategy and CI/CD",
+            "link": "/en/8-developer-guide/8.3-testing-strategy-and-cicd"
           }
         ]
       }
     ],
-    "/en/4-output-formats/": [
+    "/en/9-faq-and-troubleshooting/": [
       {
-        "text": "Output Formats",
+        "text": "FAQ and Troubleshooting",
         "items": [
           {
-            "text": "Output Formats",
-            "link": "/en/4-output-formats/index"
+            "text": "FAQ and Troubleshooting",
+            "link": "/en/9-faq-and-troubleshooting/index"
           },
           {
-            "text": "PCAP Integration",
-            "link": "/en/4-output-formats/4.2-pcap-integration"
+            "text": "Detection and Defense",
+            "link": "/en/9-faq-and-troubleshooting/9.1-detection-and-defense"
           },
           {
-            "text": "Protobuf and External Integration",
-            "link": "/en/4-output-formats/4.4-protobuf-and-external-integration"
-          },
-          {
-            "text": "Text Output Mode",
-            "link": "/en/4-output-formats/4.1-text-output-mode"
-          },
-          {
-            "text": "TLS Key Logging",
-            "link": "/en/4-output-formats/4.3-tls-key-logging"
-          }
-        ]
-      }
-    ],
-    "/en/5-development-guide/": [
-      {
-        "text": "Development Guide",
-        "items": [
-          {
-            "text": "Development Guide",
-            "link": "/en/5-development-guide/index"
-          },
-          {
-            "text": "Adding New Modules",
-            "link": "/en/5-development-guide/5.3-adding-new-modules"
-          },
-          {
-            "text": "Build System",
-            "link": "/en/5-development-guide/5.1-build-system"
-          },
-          {
-            "text": "CI/CD and Release Process",
-            "link": "/en/5-development-guide/5.5-cicd-and-release-process"
-          },
-          {
-            "text": "eBPF Program Development",
-            "link": "/en/5-development-guide/5.2-ebpf-program-development"
-          },
-          {
-            "text": "eBPF Program Structure",
-            "link": "/en/5-development-guide/5.2.1-ebpf-program-structure"
-          },
-          {
-            "text": "Event Processing and Parsers",
-            "link": "/en/5-development-guide/5.4-event-processing-and-parsers"
-          },
-          {
-            "text": "Structure Offset Calculation",
-            "link": "/en/5-development-guide/5.2.2-structure-offset-calculation"
-          }
-        ]
-      }
-    ],
-    "/en/6-troubleshooting-and-faq/": [
-      {
-        "text": "Troubleshooting and FAQ",
-        "items": [
-          {
-            "text": "Troubleshooting and FAQ",
-            "link": "/en/6-troubleshooting-and-faq/index"
+            "text": "Glossary",
+            "link": "/en/9-faq-and-troubleshooting/9.2-glossary"
           }
         ]
       }
@@ -325,210 +308,185 @@
         ]
       }
     ],
-    "/zh/1-overview/": [
+    "/zh/1-introducing-ecapture/": [
       {
-        "text": "概述",
+        "text": "eCapture 简介",
         "items": [
           {
-            "text": "概述",
-            "link": "/zh/1-overview/index"
+            "text": "eCapture 简介",
+            "link": "/zh/1-introducing-ecapture/index"
           },
           {
-            "text": "依赖与系统要求",
-            "link": "/zh/1-overview/1.3-dependencies-and-system-requirements"
+            "text": "支持的平台与版本",
+            "link": "/zh/1-introducing-ecapture/1.2-supported-platforms-and-versions"
           },
           {
-            "text": "命令行接口",
-            "link": "/zh/1-overview/1.2-command-line-interface"
-          },
-          {
-            "text": "安装与快速入门",
-            "link": "/zh/1-overview/1.1-installation-and-quick-start"
+            "text": "核心功能与特性",
+            "link": "/zh/1-introducing-ecapture/1.1-introduction-and-core-capabilities"
           }
         ]
       }
     ],
-    "/zh/2-architecture/": [
+    "/zh/2-getting-started/": [
       {
-        "text": "架构",
+        "text": "快速上手",
         "items": [
           {
-            "text": "架构",
-            "link": "/zh/2-architecture/index"
+            "text": "快速上手",
+            "link": "/zh/2-getting-started/index"
           },
           {
-            "text": "eBPF 引擎",
-            "link": "/zh/2-architecture/2.1-ebpf-engine"
+            "text": "最小权限配置",
+            "link": "/zh/2-getting-started/2.2-minimum-privileges"
           },
           {
-            "text": "eBPF 映射与数据结构",
-            "link": "/zh/2-architecture/2.9-ebpf-maps-and-data-structures"
+            "text": "安装指南与先决条件",
+            "link": "/zh/2-getting-started/2.1-installation-and-prerequisites"
           },
           {
-            "text": "事件处理流程",
-            "link": "/zh/2-architecture/2.2-event-processing-pipeline"
+            "text": "快速开始（5分钟运行首个示例）",
+            "link": "/zh/2-getting-started/2.3-quick-start-run-the-first-example-in-5-minutes"
           },
           {
-            "text": "事件结构与类型",
-            "link": "/zh/2-architecture/2.3-event-structures-and-types"
-          },
-          {
-            "text": "协议解析",
-            "link": "/zh/2-architecture/2.8-protocol-parsing"
-          },
-          {
-            "text": "模块系统与生命周期",
-            "link": "/zh/2-architecture/2.5-module-system-and-lifecycle"
-          },
-          {
-            "text": "版本检测与字节码选择",
-            "link": "/zh/2-architecture/2.6-version-detection-and-bytecode-selection"
-          },
-          {
-            "text": "网络连接跟踪",
-            "link": "/zh/2-architecture/2.7-network-connection-tracking"
-          },
-          {
-            "text": "配置系统",
-            "link": "/zh/2-architecture/2.4-configuration-system"
+            "text": "输出格式说明 (text / pcap / keylog)",
+            "link": "/zh/2-getting-started/2.4-output-formats-text--pcap--keylog"
           }
         ]
       }
     ],
-    "/zh/3-capture-modules/": [
+    "/zh/3-probe-reference/": [
       {
-        "text": "捕获模块",
+        "text": "探针参考手册",
         "items": [
           {
-            "text": "捕获模块",
-            "link": "/zh/3-capture-modules/index"
+            "text": "探针参考手册",
+            "link": "/zh/3-probe-reference/index"
           },
           {
-            "text": "BoringSSL 模块",
-            "link": "/zh/3-capture-modules/3.1.2-boringssl-module"
+            "text": "GnuTLS 捕获",
+            "link": "/zh/3-probe-reference/3.3-gnutls-capture"
           },
           {
-            "text": "GnuTLS 与 NSS 模块",
-            "link": "/zh/3-capture-modules/3.1.4-gnutls-and-nss-modules"
+            "text": "GoTLS 捕获",
+            "link": "/zh/3-probe-reference/3.2-gotls-capture"
           },
           {
-            "text": "Go TLS 模块",
-            "link": "/zh/3-capture-modules/3.1.3-go-tls-module"
+            "text": "NSS / NSPR 捕获",
+            "link": "/zh/3-probe-reference/3.4-nss--nspr-capture"
           },
           {
-            "text": "OpenSSL 模块",
-            "link": "/zh/3-capture-modules/3.1.1-openssl-module"
+            "text": "Shell 命令审计 (Bash / Zsh)",
+            "link": "/zh/3-probe-reference/3.6-shell-auditing-bash--zsh"
           },
           {
-            "text": "Shell 命令审计",
-            "link": "/zh/3-capture-modules/3.2.1-shell-command-auditing"
+            "text": "TLS/SSL 明文捕获 (OpenSSL / BoringSSL)",
+            "link": "/zh/3-probe-reference/3.1-tlsssl-plaintext-capture-openssl--boringssl"
           },
           {
-            "text": "TLS/SSL 捕获模块",
-            "link": "/zh/3-capture-modules/3.1-tlsssl-capture-modules"
-          },
-          {
-            "text": "主密钥提取",
-            "link": "/zh/3-capture-modules/3.1.5-master-secret-extraction"
-          },
-          {
-            "text": "基于 TC 的网络数据包捕获",
-            "link": "/zh/3-capture-modules/3.3-network-packet-capture-with-tc"
-          },
-          {
-            "text": "数据库查询审计",
-            "link": "/zh/3-capture-modules/3.2.2-database-query-auditing"
-          },
-          {
-            "text": "系统审计模块",
-            "link": "/zh/3-capture-modules/3.2-system-audit-modules"
+            "text": "数据库流量捕获 (MySQL / PostgreSQL)",
+            "link": "/zh/3-probe-reference/3.5-database-traffic-capture-mysql--postgresql"
           }
         ]
       }
     ],
-    "/zh/4-output-formats/": [
+    "/zh/4-integration-and-deployment/": [
       {
-        "text": "输出格式",
+        "text": "集成与部署",
         "items": [
           {
-            "text": "输出格式",
-            "link": "/zh/4-output-formats/index"
+            "text": "集成与部署",
+            "link": "/zh/4-integration-and-deployment/index"
           },
           {
-            "text": "PCAP 集成",
-            "link": "/zh/4-output-formats/4.2-pcap-integration"
+            "text": "性能开销与基准测试",
+            "link": "/zh/4-integration-and-deployment/4.4-performance-overhead-and-benchmarks"
           },
           {
-            "text": "Protobuf 与外部集成",
-            "link": "/zh/4-output-formats/4.4-protobuf-and-external-integration"
+            "text": "日志与输出配置",
+            "link": "/zh/4-integration-and-deployment/4.3-logging-and-output-configuration"
           },
           {
-            "text": "TLS 密钥日志",
-            "link": "/zh/4-output-formats/4.3-tls-key-logging"
+            "text": "远程事件流 (eCaptureQ WebSocket)",
+            "link": "/zh/4-integration-and-deployment/4.1-remote-event-streaming-ecaptureq-websocket"
           },
           {
-            "text": "文本输出模式",
-            "link": "/zh/4-output-formats/4.1-text-output-mode"
+            "text": "远程动态配置 API",
+            "link": "/zh/4-integration-and-deployment/4.2-remote-dynamic-configuration-api"
           }
         ]
       }
     ],
-    "/zh/5-development-guide/": [
+    "/zh/7-architecture/": [
       {
-        "text": "开发指南",
+        "text": "系统架构",
         "items": [
           {
-            "text": "开发指南",
-            "link": "/zh/5-development-guide/index"
+            "text": "系统架构",
+            "link": "/zh/7-architecture/index"
           },
           {
-            "text": "CI/CD 与发布流程",
-            "link": "/zh/5-development-guide/5.5-cicd-and-release-process"
+            "text": "三层架构设计",
+            "link": "/zh/7-architecture/7.1-three-layer-architecture"
           },
           {
-            "text": "eBPF 程序开发",
-            "link": "/zh/5-development-guide/5.2-ebpf-program-development"
+            "text": "事件处理流水线",
+            "link": "/zh/7-architecture/7.3-event-processing-pipeline"
           },
           {
-            "text": "eBPF 程序结构",
-            "link": "/zh/5-development-guide/5.2.1-ebpf-program-structure"
-          },
-          {
-            "text": "事件处理与解析器",
-            "link": "/zh/5-development-guide/5.4-event-processing-and-parsers"
-          },
-          {
-            "text": "构建系统",
-            "link": "/zh/5-development-guide/5.1-build-system"
-          },
-          {
-            "text": "添加新模块",
-            "link": "/zh/5-development-guide/5.3-adding-new-modules"
-          },
-          {
-            "text": "结构体偏移量计算",
-            "link": "/zh/5-development-guide/5.2.2-structure-offset-calculation"
+            "text": "探针框架与扩展机制",
+            "link": "/zh/7-architecture/7.2-probe-framework-and-extension-mechanism"
           }
         ]
       }
     ],
-    "/zh/6-troubleshooting-and-faq/": [
+    "/zh/8-developer-guide/": [
       {
-        "text": "常见问题",
+        "text": "开发者指南",
         "items": [
           {
-            "text": "常见问题",
-            "link": "/zh/6-troubleshooting-and-faq/index"
+            "text": "开发者指南",
+            "link": "/zh/8-developer-guide/index"
+          },
+          {
+            "text": "如何添加新探针",
+            "link": "/zh/8-developer-guide/8.2-how-to-add-a-new-probe"
+          },
+          {
+            "text": "测试策略与 CI/CD",
+            "link": "/zh/8-developer-guide/8.3-testing-strategy-and-cicd"
+          },
+          {
+            "text": "源码编译指南",
+            "link": "/zh/8-developer-guide/8.1-compilation-and-build"
+          }
+        ]
+      }
+    ],
+    "/zh/9-faq-and-troubleshooting/": [
+      {
+        "text": "故障排查",
+        "items": [
+          {
+            "text": "故障排查",
+            "link": "/zh/9-faq-and-troubleshooting/index"
+          },
+          {
+            "text": "术语表",
+            "link": "/zh/9-faq-and-troubleshooting/9.2-glossary"
+          },
+          {
+            "text": "检测与防御",
+            "link": "/zh/9-faq-and-troubleshooting/9.1-detection-and-defense"
           }
         ]
       }
     ],
     "/zh/download/": [
       {
-        "text": "从国内CDN下载.",
+        "text": "Download 高速下载",
         "items": [
           {
-            "text": "从国内CDN下载.",
+            "text": "Download 高速下载",
             "link": "/zh/download/index"
           }
         ]

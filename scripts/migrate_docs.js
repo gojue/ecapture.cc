@@ -136,12 +136,43 @@ function getTitle(filePath) {
     return path.basename(filePath, '.md');
 }
 
-function getFirstWordOfTitle(filePath) {
-    const title = getTitle(filePath);
-    if (title) {
-        return title.split(' ')[0];
+/**
+ * Return a nav-friendly title for the given index.md file.
+ *
+ * Processing steps (applied in order):
+ *  1. Special override: 'download' directory always returns '下载' / 'Download'.
+ *  2. Strip the brand name "eCapture" and collapse surrounding whitespace.
+ *  3. Language-specific length control:
+ *     - zh : keep the full (already concise) Chinese title.
+ *     - en : keep only the first word — maximally compact for crowded nav bars.
+ *  4. Fallback: if stripping leaves an empty string, return the raw title unchanged.
+ */
+function getNavTitle(filePath, lang) {
+    const raw = getTitle(filePath);
+    if (!raw) return null;
+
+    // 1. Special override for download section
+    if (path.basename(path.dirname(filePath)) === 'download') {
+        return lang === 'zh' ? '下载' : 'Download';
     }
-    return null;
+
+    // 2. Remove "eCapture" and tidy whitespace
+    const stripped = raw.replace(/eCapture/g, '').replace(/\s+/g, ' ').trim();
+    const title = stripped || raw; // fallback if title was only "eCapture"
+
+    // 3. Language-specific length control
+    if (lang === 'en') {
+        // If title contains " and ", keep only the part before it (e.g. "Build System and CI/CD" → "Build System")
+        const andIdx = title.toLowerCase().indexOf(' and ');
+        if (andIdx !== -1) {
+            return title.slice(0, andIdx).trim();
+        }
+        // No "and" — keep only the first word for maximum brevity
+        return title.split(/\s+/)[0];
+    }
+
+    // zh (and any other language): use the full stripped title
+    return title;
 }
 
 function generateNav(lang) {
@@ -155,19 +186,10 @@ function generateNav(lang) {
         if (entry.isDirectory()) {
             const indexPath = path.join(langDir, entry.name, 'index.md');
             if (fs.existsSync(indexPath)) {
-                titleWord = getFirstWordOfTitle(indexPath);
-                if (titleWord) {
-                    if (lang === 'zh') {
-                        if (entry.name === 'download') {
-                            titleWord = '下载';
-                        }
-                        tmpTitles = entry.name.split('与')
-                        if (tmpTitles.length > 1) {
-                            titleWord = tmpTitles[0];
-                        }
-                    }
+                const navTitle = getNavTitle(indexPath, lang);
+                if (navTitle) {
                     items.push({
-                        text: titleWord,
+                        text: navTitle,
                         link: `/${lang}/${entry.name}/index`,
                         dirName: entry.name
                     });

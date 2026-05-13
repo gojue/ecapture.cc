@@ -33,12 +33,12 @@
 
 ### 平台支持
 
-| 架构 | 最低内核版本 | 状态 |
-|------|-------------|------|
-| x86_64 (amd64) | Linux 4.18+ | ✅ 完全支持 |
-| aarch64 (arm64) | Linux 5.5+ | ✅ 完全支持 |
-| Android ARM64 | Android 12+ | ✅ 支持 (BoringSSL) |
-| Windows / macOS | N/A | ❌ 不支持 |
+| 架构                    | 最低内核版本 | 状态 |
+|-----------------------|-------------|------|
+| x86_64 (amd64)        | Linux 4.18+ | ✅ 完全支持 |
+| aarch64 (arm64)       | Linux 5.5+ | ✅ 完全支持 |
+| Android (amd64/arm64) | Android 12+ | ✅ 支持 (BoringSSL) |
+| Windows / macOS       | N/A | ❌ 不支持 |
 
 ---
 
@@ -114,6 +114,73 @@ pnpm docs:build
 ### 部署到生产环境
 
 当更改推送到主分支时，文档会通过 [Vercel](https://vercel.com/) 自动部署到 [https://ecapture.cc](https://ecapture.cc)。
+
+---
+
+## 🔄 从 Wiki 生成最新文档
+
+文档内容由 [Devin AI Wiki](https://app.devin.ai/org/gojue/wiki/gojue/ecapture?branch=master) 生成。按照以下步骤将文档更新为最新 Wiki 内容：
+
+### 第 1 步 — 刷新 Wiki
+
+打开 Devin AI Wiki 页面并触发刷新，确保 Wiki 反映最新源代码：
+
+👉 [https://app.devin.ai/org/gojue/wiki/gojue/ecapture?branch=master](https://app.devin.ai/org/gojue/wiki/gojue/ecapture?branch=master)
+
+### 第 2 步 — 下载最新 `wiki.json`
+
+下载完整的多语言 Wiki 并覆盖 `scripts/wiki.json`：
+
+```bash
+curl -o scripts/wiki.json \
+  "https://app.devin.ai/api/wiki/get_full_multi_language_wiki?repo_name=gojue%2Fecapture&branch_name=master"
+```
+
+### 第 3–6 步 — 一键更新与预览
+
+脚本 `scripts/update_docs.sh` 将第 3–6 步合并为一条命令：
+
+```bash
+# 生成文档并启动预览服务
+bash scripts/update_docs.sh
+
+# 仅生成文档，不启动预览服务
+bash scripts/update_docs.sh --no-dev
+```
+
+也可以逐步手动执行：
+
+**第 3 步** — 清除文档缓存：
+```bash
+rm -rf docs/en docs/zh
+```
+
+**第 4 步** — 从 Wiki 生成文档：
+```bash
+node scripts/generate_docs.js
+```
+
+**第 5 步** — 将文档迁移到 `src/`：
+```bash
+node scripts/migrate_docs.js
+```
+
+**第 6 步** — 本地预览：
+```bash
+pnpm run dev
+```
+
+打开浏览器，确认渲染后的文档显示正确。
+
+### 第 7 步 — 提交并推送
+
+确认无误后，提交更改：
+
+```bash
+git add .
+git commit -m "docs: update from latest wiki"
+git push
+```
 
 ---
 

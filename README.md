@@ -33,12 +33,12 @@ This repository hosts the **official documentation website** for [eCapture (旁�
 
 ### Platform Support
 
-| Architecture | Minimum Kernel | Status |
-|--------------|----------------|--------|
-| x86_64 (amd64) | Linux 4.18+ | ✅ Fully Supported |
-| aarch64 (arm64) | Linux 5.5+ | ✅ Fully Supported |
-| Android ARM64 | Android 12+ | ✅ Supported (BoringSSL) |
-| Windows / macOS | N/A | ❌ Not Supported |
+| Architecture          | Minimum Kernel | Status |
+|-----------------------|----------------|--------|
+| x86_64 (amd64)        | Linux 4.18+ | ✅ Fully Supported |
+| aarch64 (arm64)       | Linux 5.5+ | ✅ Fully Supported |
+| Android (amd64/arm64) | Android 12+ | ✅ Supported (BoringSSL) |
+| Windows / macOS       | N/A | ❌ Not Supported |
 
 ---
 
@@ -114,6 +114,73 @@ pnpm docs:build
 ### Deploy to Production
 
 The documentation is automatically deployed to [https://ecapture.cc](https://ecapture.cc) via [Vercel](https://vercel.com/) when changes are pushed to the main branch.
+
+---
+
+## 🔄 Updating Docs from Wiki
+
+The documentation content is generated from [Devin AI Wiki](https://app.devin.ai/org/gojue/wiki/gojue/ecapture?branch=master). Follow these steps to refresh the docs with the latest wiki content:
+
+### Step 1 — Refresh the Wiki
+
+Open the Devin AI Wiki page and trigger a refresh to ensure the wiki reflects the latest source code:
+
+👉 [https://app.devin.ai/org/gojue/wiki/gojue/ecapture?branch=master](https://app.devin.ai/org/gojue/wiki/gojue/ecapture?branch=master)
+
+### Step 2 — Download the Latest `wiki.json`
+
+Download the full multi-language wiki and overwrite `scripts/wiki.json`:
+
+```bash
+curl -o scripts/wiki.json \
+  "https://app.devin.ai/api/wiki/get_full_multi_language_wiki?repo_name=gojue%2Fecapture&branch_name=master"
+```
+
+### Step 3–6 — One-click Update & Preview
+
+A helper script `scripts/update_docs.sh` automates Steps 3–6 in one command:
+
+```bash
+# Generate docs and start the preview server
+bash scripts/update_docs.sh
+
+# Generate docs only, without starting the preview server
+bash scripts/update_docs.sh --no-dev
+```
+
+Or run each step manually:
+
+**Step 3** — Clear the doc cache:
+```bash
+rm -rf docs/en docs/zh
+```
+
+**Step 4** — Generate docs from wiki:
+```bash
+node scripts/generate_docs.js
+```
+
+**Step 5** — Migrate docs to `src/`:
+```bash
+node scripts/migrate_docs.js
+```
+
+**Step 6** — Preview locally:
+```bash
+pnpm run dev
+```
+
+Open your browser and verify the rendered documentation looks correct.
+
+### Step 7 — Commit and Push
+
+Once everything looks good, commit the changes:
+
+```bash
+git add .
+git commit -m "docs: update from latest wiki"
+git push
+```
 
 ---
 

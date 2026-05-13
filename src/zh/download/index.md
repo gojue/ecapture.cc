@@ -14,7 +14,7 @@ const releases = ref([])
 const loading = ref(true)
 const route = useRoute()
 
-const CDN_DOMAIN = 'image.cnxct.com'    // assets 镜像域名
+const CDN_DOMAIN = 'image.cnxct.com/gojue'    // assets 镜像域名
 const GITHUB_DOMAIN = 'github.com/gojue'    // assets download domain
 const GITHUB_API_DOMAIN = 'api.github.com/repos/gojue'    // github api domain
 
