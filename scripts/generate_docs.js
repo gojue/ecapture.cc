@@ -5,6 +5,24 @@ const wikiData = require('./wiki.json');
 
 const outputDir = path.join(__dirname, '../docs');
 
+function isRepoSourceLink(target) {
+    const repoPath = target.replace(/^((\.\.\/)+|\.\/)/, '');
+    const basename = path.basename(repoPath);
+
+    if (!repoPath || target.startsWith('#')) {
+        return false;
+    }
+
+    return /\.(md|go|c|h|yml|yaml|json|toml|sh|svg|mk|mod|sum|proto|spec)$/i.test(repoPath) ||
+        basename.startsWith('.') ||
+        repoPath.includes('Dockerfile') ||
+        repoPath.includes('Makefile') ||
+        repoPath === 'LICENSE' ||
+        repoPath === 'CHANGELOG' ||
+        repoPath === 'README' ||
+        repoPath === 'README_CN';
+}
+
 // Function to convert title to a slug format
 function titleToSlug(title) {
     return title.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '');
@@ -82,12 +100,12 @@ function processPages(pages, lang, idToSlugMap, basePath, metadata) {
             let content = page.content;
             // Unified link replacement
             const { repo_name, commit_hash } = metadata;
-            content = content.replace(/(\[.*?\])\((.*?)\)/g, (match, text, target) => {
+            content = content.replace(/(\[.*?])\((.*?)\)/g, (match, text, target) => {
                 // 1. Handle empty target []() - likely source file reference
                 if (!target || target.trim() === '') {
                     // Extract filename from text [filename]
                     // Matches [file] or [file:start] or [file:start-end]
-                    const fileMatch = text.match(/^\[([\w\/\.-]+)(?::(\d+)(?:-(\d+))?)?\]$/);
+                    const fileMatch = text.match(/^\[([\w\/.-]+)(?::(\d+)(?:-(\d+))?)?]$/);
                     if (fileMatch && repo_name && commit_hash) {
                         const file = fileMatch[1];
                         const start = fileMatch[2];
@@ -113,14 +131,8 @@ function processPages(pages, lang, idToSlugMap, basePath, metadata) {
                 // 3. Handle source file links (README, main.go, etc.)
                 if (!target.match(/^(http|https|mailto):/) && !target.startsWith('#')) {
                      if (repo_name && commit_hash) {
-                         // Check for common source file extensions or specific files
-                         if (target.match(/\.(md|go|c|h|yml|json|toml|sh|svg|mk|mod|sum)$/) ||
-                             target.includes('Dockerfile') ||
-                             target.includes('Makefile') ||
-                             target === 'LICENSE' ||
-                             target === 'CHANGELOG' ||
-                             target === 'README' ||
-                             target === 'README_CN') {
+                         // Check for common source file extensions, dotfiles, or specific repo files
+                         if (isRepoSourceLink(target)) {
 
                              let repoPath = target;
                              // Remove relative path prefixes to get repo-relative path
