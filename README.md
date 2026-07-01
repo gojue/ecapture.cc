@@ -46,49 +46,51 @@ This repository hosts the **official documentation website** for [eCapture (ÊóÅË
 
 The documentation is organized into the following sections:
 
-### 1. Overview
-- [Introduction](src/en/1-overview/index.md) - System purpose and capabilities
-- [Installation & Quick Start](src/en/1-overview/1.1-installation-and-quick-start.md) - Get started quickly
-- [Command Line Interface](src/en/1-overview/1.2-command-line-interface.md) - CLI reference
-- [Dependencies & Requirements](src/en/1-overview/1.3-dependencies-and-system-requirements.md) - System prerequisites
+### 1. Introducing eCapture
+- [Introduction](src/en/1-introducing-ecapture/index.md) - System purpose and capabilities
+- [Introduction and Core Capabilities](src/en/1-introducing-ecapture/1.1-introduction-and-core-capabilities.md) - Core features
+- [Supported Platforms and Versions](src/en/1-introducing-ecapture/1.2-supported-platforms-and-versions.md) - Platform support
 
-### 2. Architecture
-- [Architecture Overview](src/en/2-architecture/index.md) - Five-layer system design
-- [eBPF Engine](src/en/2-architecture/2.1-ebpf-engine.md) - eBPF program management
-- [Event Processing Pipeline](src/en/2-architecture/2.2-event-processing-pipeline.md) - Data flow and processing
-- [Configuration System](src/en/2-architecture/2.3-configuration-system.md) - Configuration management
-- [Module System & Lifecycle](src/en/2-architecture/2.4-module-system-and-lifecycle.md) - Module architecture
-- [Version Detection](src/en/2-architecture/2.5-version-detection-and-bytecode-selection.md) - Dynamic bytecode selection
-- [Connection Tracking](src/en/2-architecture/2.6-network-connection-tracking.md) - Network flow management
+### 2. Getting Started
+- [Installation and Prerequisites](src/en/2-getting-started/2.1-installation-and-prerequisites.md) - Installation guide
+- [Minimum Privileges](src/en/2-getting-started/2.2-minimum-privileges.md) - Privilege configuration
+- [Quick Start](src/en/2-getting-started/2.3-quick-start-run-the-first-example-in-5-minutes.md) - Run the first example in 5 minutes
+- [Output Formats](src/en/2-getting-started/2.4-output-formats-text--pcap--keylog.md) - Text, PCAP, and KeyLog output
 
-### 3. Capture Modules
-- [Modules Overview](src/en/3-capture-modules/index.md) - Module registry
-- **TLS/SSL Modules**
-  - [OpenSSL Module](src/en/3-capture-modules/3.1.1-openssl-module.md) - OpenSSL/BoringSSL/LibreSSL
-  - [Go TLS Module](src/en/3-capture-modules/3.1.2-go-tls-module.md) - Go crypto/tls
-  - [GnuTLS & NSS Modules](src/en/3-capture-modules/3.1.3-gnutls-and-nss-modules.md) - GnuTLS and Firefox/Chrome NSS
-  - [Master Secret Extraction](src/en/3-capture-modules/3.1.4-master-secret-extraction.md) - Key extraction mechanics
-- **System Audit Modules**
-  - [Shell Command Auditing](src/en/3-capture-modules/3.2.1-shell-command-auditing.md) - Bash/Zsh monitoring
-  - [Database Query Auditing](src/en/3-capture-modules/3.2.2-database-query-auditing.md) - MySQL/PostgreSQL queries
-- [Network Packet Capture (TC)](src/en/3-capture-modules/3.3-network-packet-capture-with-tc.md) - TC eBPF programs
+### 3. Probe Reference
+- [Probe Reference Overview](src/en/3-probe-reference/index.md) - Module registry
+- **TLS/SSL Probes**
+  - [TLS/SSL Plaintext Capture](src/en/3-probe-reference/3.1-tlsssl-plaintext-capture-openssl--boringssl.md) - OpenSSL/BoringSSL
+  - [GoTLS Capture](src/en/3-probe-reference/3.2-gotls-capture.md) - Go crypto/tls
+  - [GnuTLS Capture](src/en/3-probe-reference/3.3-gnutls-capture.md) - GnuTLS support
+  - [NSS/NSPR Capture](src/en/3-probe-reference/3.4-nss--nspr-capture.md) - Firefox/Chrome NSS
+- **System Audit Probes**
+  - [Shell Auditing](src/en/3-probe-reference/3.6-shell-auditing-bash--zsh.md) - Bash/Zsh monitoring
+  - [Database Traffic Capture](src/en/3-probe-reference/3.5-database-traffic-capture-mysql--postgresql.md) - MySQL/PostgreSQL queries
 
-### 4. Output Formats
-- [Text Output Mode](src/en/4-output-formats/4.1-text-output-mode.md) - Console/file output
-- [PCAP Integration](src/en/4-output-formats/4.2-pcap-integration.md) - Wireshark-compatible format
-- [TLS Key Logging](src/en/4-output-formats/4.3-tls-key-logging.md) - SSLKEYLOGFILE format
-- [Protobuf & External Integration](src/en/4-output-formats/4.4-protobuf-and-external-integration.md) - WebSocket/TCP streaming
+### 4. Integration and Deployment
+- [Integration Overview](src/en/4-integration-and-deployment/index.md) - Deployment and integration guide
+- [Remote Event Streaming](src/en/4-integration-and-deployment/4.1-remote-event-streaming-ecaptureq-websocket.md) - WebSocket/TCP streaming
+- [Remote Dynamic Configuration API](src/en/4-integration-and-deployment/4.2-remote-dynamic-configuration-api.md) - Remote configuration
+- [Logging and Output Configuration](src/en/4-integration-and-deployment/4.3-logging-and-output-configuration.md) - Logging configuration
+- [Performance Overhead and Benchmarks](src/en/4-integration-and-deployment/4.4-performance-overhead-and-benchmarks.md) - Performance data
 
-### 5. Development Guide
-- [Build System](src/en/5-development-guide/5.1-build-system.md) - Compilation and build process
-- **eBPF Program Development**
-  - [Program Structure](src/en/5-development-guide/5.2.1-ebpf-program-structure.md) - eBPF code organization
-  - [Structure Offset Calculation](src/en/5-development-guide/5.2.2-structure-offset-calculation.md) - Memory layout handling
-- [Adding New Modules](src/en/5-development-guide/5.3-adding-new-modules.md) - Extend eCapture
-- [Event Processing & Parsers](src/en/5-development-guide/5.4-event-processing-and-parsers.md) - Custom parsers
+### 5. Architecture
+- [Architecture Overview](src/en/7-architecture/index.md) - System architecture design
+- [Three-layer Architecture](src/en/7-architecture/7.1-three-layer-architecture.md) - Three-layer system design
+- [Probe Framework and Extension Mechanism](src/en/7-architecture/7.2-probe-framework-and-extension-mechanism.md) - Probe framework
+- [Event Processing Pipeline](src/en/7-architecture/7.3-event-processing-pipeline.md) - Event data flow
 
-### 6. Troubleshooting & FAQ
-- [Common Issues](src/en/6-troubleshooting-and-faq/index.md) - Solutions to frequent problems
+### 6. Developer Guide
+- [Developer Guide Overview](src/en/8-developer-guide/index.md) - Developer documentation
+- [Compilation and Build](src/en/8-developer-guide/8.1-compilation-and-build.md) - Compilation and build process
+- [How to Add a New Probe](src/en/8-developer-guide/8.2-how-to-add-a-new-probe.md) - Extend eCapture with new probes
+- [Testing Strategy and CI/CD](src/en/8-developer-guide/8.3-testing-strategy-and-cicd.md) - Testing and CI/CD pipeline
+
+### 7. FAQ and Troubleshooting
+- [FAQ Overview](src/en/9-faq-and-troubleshooting/index.md) - Solutions to frequent problems
+- [Detection and Defense](src/en/9-faq-and-troubleshooting/9.1-detection-and-defense.md) - Detection and defense strategies
+- [Glossary](src/en/9-faq-and-troubleshooting/9.2-glossary.md) - Key terms and concepts
 
 ---
 
