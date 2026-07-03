@@ -109,7 +109,7 @@ onMounted(() => {
 
       <p class="actions">
         <vue-mastery-modal />
-        <a class="get-started tech-button" href="/en/1-overview/">
+        <a class="get-started tech-button" href="/en/1-introducing-ecapture/">
           <span class="button-content">
             <span class="button-text">Get Started</span>
             <svg

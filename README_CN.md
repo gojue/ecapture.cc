@@ -46,49 +46,51 @@
 
 文档分为以下几个部分：
 
-### 1. 概述
-- [简介](src/zh/1-overview/index.md) - 系统目的与功能
-- [安装与快速入门](src/zh/1-overview/1.1-installation-and-quick-start.md) - 快速开始
-- [命令行界面](src/zh/1-overview/1.2-command-line-interface.md) - CLI 参考
-- [依赖与系统要求](src/zh/1-overview/1.3-dependencies-and-system-requirements.md) - 系统先决条件
+### 1. eCapture 简介
+- [简介](src/zh/1-introducing-ecapture/index.md) - 系统目的与功能
+- [核心功能与特性](src/zh/1-introducing-ecapture/1.1-introduction-and-core-capabilities.md) - 核心能力
+- [支持的平台与版本](src/zh/1-introducing-ecapture/1.2-supported-platforms-and-versions.md) - 平台支持
 
-### 2. 架构设计
-- [架构概述](src/zh/2-architecture/index.md) - 五层系统设计
-- [eBPF 引擎](src/zh/2-architecture/2.1-ebpf-engine.md) - eBPF 程序管理
-- [事件处理管道](src/zh/2-architecture/2.2-event-processing-pipeline.md) - 数据流和处理
-- [配置系统](src/zh/2-architecture/2.3-configuration-system.md) - 配置管理
-- [模块系统与生命周期](src/zh/2-architecture/2.4-module-system-and-lifecycle.md) - 模块架构
-- [版本检测](src/zh/2-architecture/2.5-version-detection-and-bytecode-selection.md) - 动态字节码选择
-- [连接跟踪](src/zh/2-architecture/2.6-network-connection-tracking.md) - 网络流管理
+### 2. 快速上手
+- [安装指南与先决条件](src/zh/2-getting-started/2.1-installation-and-prerequisites.md) - 安装指南
+- [最小权限配置](src/zh/2-getting-started/2.2-minimum-privileges.md) - 权限配置
+- [快速开始](src/zh/2-getting-started/2.3-quick-start-run-the-first-example-in-5-minutes.md) - 5分钟运行首个示例
+- [输出格式说明](src/zh/2-getting-started/2.4-output-formats-text--pcap--keylog.md) - 文本、PCAP 和 KeyLog 输出
 
-### 3. 捕获模块
-- [模块概述](src/zh/3-capture-modules/index.md) - 模块注册表
-- **TLS/SSL 模块**
-  - [OpenSSL 模块](src/zh/3-capture-modules/3.1.1-openssl-module.md) - OpenSSL/BoringSSL/LibreSSL
-  - [Go TLS 模块](src/zh/3-capture-modules/3.1.2-go-tls-module.md) - Go crypto/tls
-  - [GnuTLS 与 NSS 模块](src/zh/3-capture-modules/3.1.3-gnutls-and-nss-modules.md) - GnuTLS 和 Firefox/Chrome NSS
-  - [Master Secret 提取](src/zh/3-capture-modules/3.1.4-master-secret-extraction.md) - 密钥提取机制
-- **系统审计模块**
-  - [Shell 命令审计](src/zh/3-capture-modules/3.2.1-shell-command-auditing.md) - Bash/Zsh 监控
-  - [数据库查询审计](src/zh/3-capture-modules/3.2.2-database-query-auditing.md) - MySQL/PostgreSQL 查询
-- [网络数据包捕获 (TC)](src/zh/3-capture-modules/3.3-network-packet-capture-with-tc.md) - TC eBPF 程序
+### 3. 探针参考手册
+- [探针参考手册](src/zh/3-probe-reference/index.md) - 模块注册表
+- **TLS/SSL 探针**
+  - [TLS/SSL 明文捕获](src/zh/3-probe-reference/3.1-tlsssl-plaintext-capture-openssl--boringssl.md) - OpenSSL/BoringSSL
+  - [GoTLS 捕获](src/zh/3-probe-reference/3.2-gotls-capture.md) - Go crypto/tls
+  - [GnuTLS 捕获](src/zh/3-probe-reference/3.3-gnutls-capture.md) - GnuTLS 支持
+  - [NSS/NSPR 捕获](src/zh/3-probe-reference/3.4-nss--nspr-capture.md) - Firefox/Chrome NSS
+- **系统审计探针**
+  - [Shell 命令审计](src/zh/3-probe-reference/3.6-shell-auditing-bash--zsh.md) - Bash/Zsh 监控
+  - [数据库流量捕获](src/zh/3-probe-reference/3.5-database-traffic-capture-mysql--postgresql.md) - MySQL/PostgreSQL 查询
 
-### 4. 输出格式
-- [文本输出模式](src/zh/4-output-formats/4.1-text-output-mode.md) - 控制台/文件输出
-- [PCAP 集成](src/zh/4-output-formats/4.2-pcap-integration.md) - Wireshark 兼容格式
-- [TLS 密钥日志](src/zh/4-output-formats/4.3-tls-key-logging.md) - SSLKEYLOGFILE 格式
-- [Protobuf 与外部集成](src/zh/4-output-formats/4.4-protobuf-and-external-integration.md) - WebSocket/TCP 流
+### 4. 集成与部署
+- [集成与部署概览](src/zh/4-integration-and-deployment/index.md) - 部署与集成指南
+- [远程事件流](src/zh/4-integration-and-deployment/4.1-remote-event-streaming-ecaptureq-websocket.md) - WebSocket/TCP 流
+- [远程动态配置 API](src/zh/4-integration-and-deployment/4.2-remote-dynamic-configuration-api.md) - 远程配置
+- [日志与输出配置](src/zh/4-integration-and-deployment/4.3-logging-and-output-configuration.md) - 日志配置
+- [性能开销与基准测试](src/zh/4-integration-and-deployment/4.4-performance-overhead-and-benchmarks.md) - 性能数据
 
-### 5. 开发指南
-- [构建系统](src/zh/5-development-guide/5.1-build-system.md) - 编译和构建过程
-- **eBPF 程序开发**
-  - [程序结构](src/zh/5-development-guide/5.2.1-ebpf-program-structure.md) - eBPF 代码组织
-  - [结构体偏移计算](src/zh/5-development-guide/5.2.2-structure-offset-calculation.md) - 内存布局处理
-- [添加新模块](src/zh/5-development-guide/5.3-adding-new-modules.md) - 扩展 eCapture
-- [事件处理与解析器](src/zh/5-development-guide/5.4-event-processing-and-parsers.md) - 自定义解析器
+### 5. 系统架构
+- [架构概览](src/zh/7-architecture/index.md) - 系统架构设计
+- [三层架构设计](src/zh/7-architecture/7.1-three-layer-architecture.md) - 三层系统设计
+- [探针框架与扩展机制](src/zh/7-architecture/7.2-probe-framework-and-extension-mechanism.md) - 探针框架
+- [事件处理流水线](src/zh/7-architecture/7.3-event-processing-pipeline.md) - 事件数据流
 
-### 6. 故障排除与常见问题
-- [常见问题](src/zh/6-troubleshooting-and-faq/index.md) - 常见问题的解决方案
+### 6. 开发者指南
+- [开发者指南概览](src/zh/8-developer-guide/index.md) - 开发者文档
+- [源码编译指南](src/zh/8-developer-guide/8.1-compilation-and-build.md) - 编译和构建过程
+- [如何添加新探针](src/zh/8-developer-guide/8.2-how-to-add-a-new-probe.md) - 扩展 eCapture 新探针
+- [测试策略与 CI/CD](src/zh/8-developer-guide/8.3-testing-strategy-and-cicd.md) - 测试和 CI/CD 流水线
+
+### 7. 故障排查与常见问题
+- [故障排查概览](src/zh/9-faq-and-troubleshooting/index.md) - 常见问题的解决方案
+- [检测与防御](src/zh/9-faq-and-troubleshooting/9.1-detection-and-defense.md) - 检测与防御策略
+- [术语表](src/zh/9-faq-and-troubleshooting/9.2-glossary.md) - 关键术语和概念
 
 ---
 
