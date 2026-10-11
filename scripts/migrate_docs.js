@@ -140,27 +140,21 @@ function getTitle(filePath) {
  * Return a nav-friendly title for the given index.md file.
  *
  * Processing steps (applied in order):
- *  1. Special override: 'download' directory always returns '下载' / 'Download'.
- *  2. Strip the brand name "eCapture" and collapse surrounding whitespace.
- *  3. Language-specific length control:
+ *  1. Strip the brand name "eCapture" and collapse surrounding whitespace.
+ *  2. Language-specific length control:
  *     - zh : keep the full (already concise) Chinese title.
  *     - en : keep only the first word — maximally compact for crowded nav bars.
- *  4. Fallback: if stripping leaves an empty string, return the raw title unchanged.
+ *  3. Fallback: if stripping leaves an empty string, return the raw title unchanged.
  */
 function getNavTitle(filePath, lang) {
     const raw = getTitle(filePath);
     if (!raw) return null;
 
-    // 1. Special override for download section
-    if (path.basename(path.dirname(filePath)) === 'download') {
-        return lang === 'zh' ? '下载' : 'Download';
-    }
-
-    // 2. Remove "eCapture" and tidy whitespace
+    // Remove "eCapture" and tidy whitespace
     const stripped = raw.replace(/eCapture/g, '').replace(/\s+/g, ' ').trim();
     const title = stripped || raw; // fallback if title was only "eCapture"
 
-    // 3. Language-specific length control
+    // Language-specific length control
     if (lang === 'en') {
         // If title contains " and ", keep only the part before it (e.g. "Build System and CI/CD" → "Build System")
         const andIdx = title.toLowerCase().indexOf(' and ');
@@ -184,6 +178,9 @@ function generateNav(lang) {
 
     for (let entry of entries) {
         if (entry.isDirectory()) {
+            // The global floating shortcut links to the download page, so it
+            // should not also consume space in the navigation menu.
+            if (entry.name === 'download') continue;
             const indexPath = path.join(langDir, entry.name, 'index.md');
             if (fs.existsSync(indexPath)) {
                 const navTitle = getNavTitle(indexPath, lang);
@@ -284,15 +281,12 @@ const navEn = generateNav('en');
 navEn.push({
         text: 'Projects',
         items: [
+            { text: 'BLOG', link: 'https://www.cnxct.com'},
             { text: 'eCapture', link: 'https://github.com/gojue/ecapture'},
             { text: 'eBPFManager', link: 'https://github.com/gojue/ebpfmanager'},
             { text: 'eBPFSlide', link: 'https://github.com/gojue/ebpf-slide'},
             { text: 'eHIDSAgent', link: 'https://github.com/gojue/ehids-agent'}
         ]
-    },
-    {
-        text: 'BLOG',
-        link: 'https://www.cnxct.com'
     });
 
 const navZh = generateNav('zh');
@@ -300,15 +294,12 @@ const navZh = generateNav('zh');
 navZh.push({
         text: '其他项目',
         items: [
+            { text: '作者博客', link: 'https://www.cnxct.com'},
             { text: 'eBPFManager', link: 'https://github.com/gojue/ebpfmanager'},
             { text: 'eBPF幻灯片', link: 'https://github.com/gojue/ebpf-slide'},
             { text: 'eHIDSAgent', link: 'https://github.com/gojue/ehids-agent'},
             { text: 'eCapture旁观者', link: 'https://github.com/gojue/ecapture'}
         ]
-    },
-    {
-        text: '作者博客',
-        link: 'https://www.cnxct.com'
     });
 
 console.log('Generating sidebar...');

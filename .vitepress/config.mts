@@ -8,7 +8,12 @@ import { headerPlugin } from './headerMdPlugin'
 import navigation from './navigation.json'
 
 export default withMermaid(defineConfigWithTheme<ThemeConfig>({
-  extends: baseConfig,
+  extends: async () => {
+    const base = await baseConfig()
+    // The upstream theme preloads /logo.svg and a fixed font filename that
+    // this site does not ship. Our own head entries below provide the icons.
+    return { ...base, head: [] }
+  },
   lang: 'en-US',
   title: 'eCapture',
   description: 'eCapture captures TLS plaintext with eBPF through TLS, GoTLS and GnuTLS probes. Supports Linux x86_64, ARM64 and LoongArch64, plus Android x86_64 and ARM64.',

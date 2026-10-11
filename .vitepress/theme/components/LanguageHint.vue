@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vitepress'
+import { localePath } from './localePath'
 
 const router = useRouter()
 const show = ref(false)
@@ -34,8 +35,8 @@ onMounted(() => {
 const handleSwitch = () => {
   const currentPath = window.location.pathname
   const newPath = isZh.value
-    ? ('/' === currentPath ? '/zh/' : currentPath.replace('/en/', '/zh/'))
-    : ('/zh/' === currentPath ? '/' :currentPath.replace('/zh/', '/en/'))
+    ? localePath(currentPath, 'zh')
+    : localePath(currentPath, 'en')
   router.go(newPath)
   show.value = false
 }
@@ -126,4 +127,4 @@ const handleClose = () => {
     font-size: 13px;
   }
 }
-</style> 
+</style>

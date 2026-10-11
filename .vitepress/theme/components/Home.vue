@@ -111,7 +111,7 @@ onMounted(() => {
 
       <p class="actions">
         <vue-mastery-modal />
-        <a class="get-started tech-button" href="/en/1-introducing-ecapture/">
+        <a class="get-started tech-button" href="/en/1-getting-started/">
           <span class="button-content">
             <span class="button-text">Get Started</span>
             <svg
@@ -129,7 +129,7 @@ onMounted(() => {
           </span>
           <span class="button-glow"></span>
         </a>
-        <a id="github_download" class="setup tech-button-alt" href="/en/download" target="_blank">
+        <a id="github_download" class="setup tech-button-alt" href="/en/download/" target="_blank">
           <span class="button-content">
             <svg class="download-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/>

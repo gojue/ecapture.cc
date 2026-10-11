@@ -2,40 +2,36 @@
   "nav": {
     "en": [
       {
-        "text": "Introducing",
-        "link": "/en/1-introducing-ecapture/index"
-      },
-      {
         "text": "Getting",
-        "link": "/en/2-getting-started/index"
+        "link": "/en/1-getting-started/index"
       },
       {
-        "text": "Probe",
-        "link": "/en/3-probe-reference/index"
+        "text": "Core",
+        "link": "/en/2-core-tls-modules/index"
       },
       {
-        "text": "Integration",
-        "link": "/en/4-integration-and-deployment/index"
+        "text": "Capture",
+        "link": "/en/3-capture-modes/index"
+      },
+      {
+        "text": "Advanced",
+        "link": "/en/4-advanced-usage/index"
       },
       {
         "text": "Architecture",
-        "link": "/en/7-architecture/index"
+        "link": "/en/5-architecture-and-probe-development/index"
       },
       {
-        "text": "Developer",
-        "link": "/en/8-developer-guide/index"
-      },
-      {
-        "text": "FAQ",
-        "link": "/en/9-faq-and-troubleshooting/index"
-      },
-      {
-        "text": "Download",
-        "link": "/en/download/index"
+        "text": "Build, Testing,",
+        "link": "/en/6-build-testing-and-release/index"
       },
       {
         "text": "Projects",
         "items": [
+          {
+            "text": "BLOG",
+            "link": "https://www.cnxct.com"
+          },
           {
             "text": "eCapture",
             "link": "https://github.com/gojue/ecapture"
@@ -53,44 +49,32 @@
             "link": "https://github.com/gojue/ehids-agent"
           }
         ]
-      },
-      {
-        "text": "BLOG",
-        "link": "https://www.cnxct.com"
       }
     ],
     "zh": [
       {
-        "text": "简介",
-        "link": "/zh/1-introducing-ecapture/index"
+        "text": "快速入门",
+        "link": "/zh/1-getting-started/index"
       },
       {
-        "text": "快速上手",
-        "link": "/zh/2-getting-started/index"
+        "text": "核心 TLS 模块",
+        "link": "/zh/2-core-tls-modules/index"
       },
       {
-        "text": "探针参考手册",
-        "link": "/zh/3-probe-reference/index"
+        "text": "捕获模式",
+        "link": "/zh/3-capture-modes/index"
       },
       {
-        "text": "集成与部署",
-        "link": "/zh/4-integration-and-deployment/index"
+        "text": "进阶用法",
+        "link": "/zh/4-advanced-usage/index"
       },
       {
-        "text": "系统架构",
-        "link": "/zh/7-architecture/index"
+        "text": "架构与探针开发",
+        "link": "/zh/5-architecture-and-probe-development/index"
       },
       {
-        "text": "开发者指南",
-        "link": "/zh/8-developer-guide/index"
-      },
-      {
-        "text": "故障排查",
-        "link": "/zh/9-faq-and-troubleshooting/index"
-      },
-      {
-        "text": "下载",
-        "link": "/zh/download/index"
+        "text": "构建、测试与发布",
+        "link": "/zh/6-build-testing-and-release/index"
       },
       {
         "text": "场景案例",
@@ -99,6 +83,10 @@
       {
         "text": "其他项目",
         "items": [
+          {
+            "text": "作者博客",
+            "link": "https://www.cnxct.com"
+          },
           {
             "text": "eBPFManager",
             "link": "https://github.com/gojue/ebpfmanager"
@@ -116,183 +104,168 @@
             "link": "https://github.com/gojue/ecapture"
           }
         ]
-      },
-      {
-        "text": "作者博客",
-        "link": "https://www.cnxct.com"
       }
     ]
   },
   "sidebar": {
-    "/en/1-introducing-ecapture/": [
-      {
-        "text": "Introducing eCapture",
-        "items": [
-          {
-            "text": "Introducing eCapture",
-            "link": "/en/1-introducing-ecapture/index"
-          },
-          {
-            "text": "Introduction and Core Capabilities",
-            "link": "/en/1-introducing-ecapture/1.1-introduction-and-core-capabilities"
-          },
-          {
-            "text": "Supported Platforms and Versions",
-            "link": "/en/1-introducing-ecapture/1.2-supported-platforms-and-versions"
-          }
-        ]
-      }
-    ],
-    "/en/2-getting-started/": [
+    "/en/1-getting-started/": [
       {
         "text": "Getting Started",
         "items": [
           {
             "text": "Getting Started",
-            "link": "/en/2-getting-started/index"
+            "link": "/en/1-getting-started/index"
           },
           {
-            "text": "Installation and Prerequisites",
-            "link": "/en/2-getting-started/2.1-installation-and-prerequisites"
+            "text": "Choosing a TLS Probe",
+            "link": "/en/1-getting-started/1.2-choosing-a-tls-probe"
           },
           {
-            "text": "Minimum Privileges",
-            "link": "/en/2-getting-started/2.2-minimum-privileges"
+            "text": "First GnuTLS Capture",
+            "link": "/en/1-getting-started/1.5-first-gnutls-capture"
           },
           {
-            "text": "Output Formats (text / pcap / keylog)",
-            "link": "/en/2-getting-started/2.4-output-formats-text--pcap--keylog"
+            "text": "First GoTLS Capture",
+            "link": "/en/1-getting-started/1.4-first-gotls-capture"
           },
           {
-            "text": "Quick Start (Run the First Example in 5 Minutes)",
-            "link": "/en/2-getting-started/2.3-quick-start-run-the-first-example-in-5-minutes"
+            "text": "First OpenSSL and BoringSSL Capture",
+            "link": "/en/1-getting-started/1.3-first-openssl-and-boringssl-capture"
+          },
+          {
+            "text": "Requirements and Installation",
+            "link": "/en/1-getting-started/1.1-requirements-and-installation"
           }
         ]
       }
     ],
-    "/en/3-probe-reference/": [
+    "/en/2-core-tls-modules/": [
       {
-        "text": "Probe Reference",
+        "text": "Core TLS Modules",
         "items": [
           {
-            "text": "Probe Reference",
-            "link": "/en/3-probe-reference/index"
-          },
-          {
-            "text": "Database Traffic Capture (MySQL / PostgreSQL)",
-            "link": "/en/3-probe-reference/3.5-database-traffic-capture-mysql--postgresql"
+            "text": "Core TLS Modules",
+            "link": "/en/2-core-tls-modules/index"
           },
           {
             "text": "GnuTLS Capture",
-            "link": "/en/3-probe-reference/3.3-gnutls-capture"
+            "link": "/en/2-core-tls-modules/2.3-gnutls-capture"
           },
           {
             "text": "GoTLS Capture",
-            "link": "/en/3-probe-reference/3.2-gotls-capture"
+            "link": "/en/2-core-tls-modules/2.2-gotls-capture"
           },
           {
-            "text": "NSS / NSPR Capture",
-            "link": "/en/3-probe-reference/3.4-nss--nspr-capture"
-          },
-          {
-            "text": "Shell Auditing (Bash / Zsh)",
-            "link": "/en/3-probe-reference/3.6-shell-auditing-bash--zsh"
-          },
-          {
-            "text": "TLS/SSL Plaintext Capture (OpenSSL / BoringSSL)",
-            "link": "/en/3-probe-reference/3.1-tlsssl-plaintext-capture-openssl--boringssl"
+            "text": "TLS Capture (OpenSSL and BoringSSL)",
+            "link": "/en/2-core-tls-modules/2.1-tls-capture-openssl-and-boringssl"
           }
         ]
       }
     ],
-    "/en/4-integration-and-deployment/": [
+    "/en/3-capture-modes/": [
       {
-        "text": "Integration and Deployment",
+        "text": "Capture Modes",
         "items": [
+          {
+            "text": "Capture Modes",
+            "link": "/en/3-capture-modes/index"
+          },
+          {
+            "text": "Choosing Text, Keylog, or pcapng",
+            "link": "/en/3-capture-modes/3.1-choosing-text-keylog-or-pcapng"
+          },
+          {
+            "text": "Event Destinations and Rotation",
+            "link": "/en/3-capture-modes/3.5-event-destinations-and-rotation"
+          },
+          {
+            "text": "Keylog Mode",
+            "link": "/en/3-capture-modes/3.3-keylog-mode"
+          },
+          {
+            "text": "pcapng Mode",
+            "link": "/en/3-capture-modes/3.4-pcapng-mode"
+          },
+          {
+            "text": "Text Mode",
+            "link": "/en/3-capture-modes/3.2-text-mode"
+          },
+          {
+            "text": "Wireshark Decryption Workflows",
+            "link": "/en/3-capture-modes/3.6-wireshark-decryption-workflows"
+          }
+        ]
+      }
+    ],
+    "/en/4-advanced-usage/": [
+      {
+        "text": "Advanced Usage",
+        "items": [
+          {
+            "text": "Advanced Usage",
+            "link": "/en/4-advanced-usage/index"
+          },
           {
             "text": "Integration and Deployment",
-            "link": "/en/4-integration-and-deployment/index"
+            "link": "/en/4-advanced-usage/4.2-integration-and-deployment"
           },
           {
-            "text": "Logging and Output Configuration",
-            "link": "/en/4-integration-and-deployment/4.3-logging-and-output-configuration"
+            "text": "Other Modules",
+            "link": "/en/4-advanced-usage/4.3-other-modules"
           },
           {
-            "text": "Performance Overhead and Benchmarks",
-            "link": "/en/4-integration-and-deployment/4.4-performance-overhead-and-benchmarks"
-          },
-          {
-            "text": "Remote Dynamic Configuration API",
-            "link": "/en/4-integration-and-deployment/4.2-remote-dynamic-configuration-api"
-          },
-          {
-            "text": "Remote Event Streaming (eCaptureQ WebSocket)",
-            "link": "/en/4-integration-and-deployment/4.1-remote-event-streaming-ecaptureq-websocket"
+            "text": "TLS Troubleshooting",
+            "link": "/en/4-advanced-usage/4.1-tls-troubleshooting"
           }
         ]
       }
     ],
-    "/en/7-architecture/": [
+    "/en/5-architecture-and-probe-development/": [
       {
-        "text": "Architecture",
+        "text": "Architecture and Probe Development",
         "items": [
           {
-            "text": "Architecture",
-            "link": "/en/7-architecture/index"
+            "text": "Architecture and Probe Development",
+            "link": "/en/5-architecture-and-probe-development/index"
           },
           {
-            "text": "Event Processing Pipeline",
-            "link": "/en/7-architecture/7.3-event-processing-pipeline"
+            "text": "Event and Output Pipeline",
+            "link": "/en/5-architecture-and-probe-development/5.3-event-and-output-pipeline"
           },
           {
-            "text": "Probe Framework and Extension Mechanism",
-            "link": "/en/7-architecture/7.2-probe-framework-and-extension-mechanism"
+            "text": "Extending a TLS Probe",
+            "link": "/en/5-architecture-and-probe-development/5.4-extending-a-tls-probe"
           },
           {
-            "text": "Three-layer Architecture",
-            "link": "/en/7-architecture/7.1-three-layer-architecture"
+            "text": "Probe Framework and Lifecycle",
+            "link": "/en/5-architecture-and-probe-development/5.2-probe-framework-and-lifecycle"
+          },
+          {
+            "text": "TLS Capture Architecture",
+            "link": "/en/5-architecture-and-probe-development/5.1-tls-capture-architecture"
           }
         ]
       }
     ],
-    "/en/8-developer-guide/": [
+    "/en/6-build-testing-and-release/": [
       {
-        "text": "Developer Guide",
+        "text": "Build, Testing, and Release",
         "items": [
           {
-            "text": "Developer Guide",
-            "link": "/en/8-developer-guide/index"
+            "text": "Build, Testing, and Release",
+            "link": "/en/6-build-testing-and-release/index"
           },
           {
-            "text": "Compilation and Build",
-            "link": "/en/8-developer-guide/8.1-compilation-and-build"
+            "text": "Build and Bytecode Assets",
+            "link": "/en/6-build-testing-and-release/6.1-build-and-bytecode-assets"
           },
           {
-            "text": "How to Add a New Probe",
-            "link": "/en/8-developer-guide/8.2-how-to-add-a-new-probe"
+            "text": "CI, Packaging, and Release",
+            "link": "/en/6-build-testing-and-release/6.3-ci-packaging-and-release"
           },
           {
-            "text": "Testing Strategy and CI/CD",
-            "link": "/en/8-developer-guide/8.3-testing-strategy-and-cicd"
-          }
-        ]
-      }
-    ],
-    "/en/9-faq-and-troubleshooting/": [
-      {
-        "text": "FAQ and Troubleshooting",
-        "items": [
-          {
-            "text": "FAQ and Troubleshooting",
-            "link": "/en/9-faq-and-troubleshooting/index"
-          },
-          {
-            "text": "Detection and Defense",
-            "link": "/en/9-faq-and-troubleshooting/9.1-detection-and-defense"
-          },
-          {
-            "text": "Glossary",
-            "link": "/en/9-faq-and-troubleshooting/9.2-glossary"
+            "text": "TLS Test and E2E Strategy",
+            "link": "/en/6-build-testing-and-release/6.2-tls-test-and-e2e-strategy"
           }
         ]
       }
@@ -308,175 +281,164 @@
         ]
       }
     ],
-    "/zh/1-introducing-ecapture/": [
+    "/zh/1-getting-started/": [
       {
-        "text": "eCapture 简介",
+        "text": "快速入门",
         "items": [
           {
-            "text": "eCapture 简介",
-            "link": "/zh/1-introducing-ecapture/index"
+            "text": "快速入门",
+            "link": "/zh/1-getting-started/index"
           },
           {
-            "text": "支持的平台与版本",
-            "link": "/zh/1-introducing-ecapture/1.2-supported-platforms-and-versions"
+            "text": "初探 GnuTLS 捕获",
+            "link": "/zh/1-getting-started/1.5-first-gnutls-capture"
           },
           {
-            "text": "核心功能与特性",
-            "link": "/zh/1-introducing-ecapture/1.1-introduction-and-core-capabilities"
+            "text": "初探 GoTLS 捕获",
+            "link": "/zh/1-getting-started/1.4-first-gotls-capture"
+          },
+          {
+            "text": "初探 OpenSSL 与 BoringSSL 捕获",
+            "link": "/zh/1-getting-started/1.3-first-openssl-and-boringssl-capture"
+          },
+          {
+            "text": "环境要求与安装",
+            "link": "/zh/1-getting-started/1.1-requirements-and-installation"
+          },
+          {
+            "text": "选择 TLS 探针",
+            "link": "/zh/1-getting-started/1.2-choosing-a-tls-probe"
           }
         ]
       }
     ],
-    "/zh/2-getting-started/": [
+    "/zh/2-core-tls-modules/": [
       {
-        "text": "快速上手",
+        "text": "核心 TLS 模块",
         "items": [
           {
-            "text": "快速上手",
-            "link": "/zh/2-getting-started/index"
-          },
-          {
-            "text": "最小权限配置",
-            "link": "/zh/2-getting-started/2.2-minimum-privileges"
-          },
-          {
-            "text": "安装指南与先决条件",
-            "link": "/zh/2-getting-started/2.1-installation-and-prerequisites"
-          },
-          {
-            "text": "快速开始（5分钟运行首个示例）",
-            "link": "/zh/2-getting-started/2.3-quick-start-run-the-first-example-in-5-minutes"
-          },
-          {
-            "text": "输出格式说明 (text / pcap / keylog)",
-            "link": "/zh/2-getting-started/2.4-output-formats-text--pcap--keylog"
-          }
-        ]
-      }
-    ],
-    "/zh/3-probe-reference/": [
-      {
-        "text": "探针参考手册",
-        "items": [
-          {
-            "text": "探针参考手册",
-            "link": "/zh/3-probe-reference/index"
+            "text": "核心 TLS 模块",
+            "link": "/zh/2-core-tls-modules/index"
           },
           {
             "text": "GnuTLS 捕获",
-            "link": "/zh/3-probe-reference/3.3-gnutls-capture"
+            "link": "/zh/2-core-tls-modules/2.3-gnutls-capture"
           },
           {
             "text": "GoTLS 捕获",
-            "link": "/zh/3-probe-reference/3.2-gotls-capture"
+            "link": "/zh/2-core-tls-modules/2.2-gotls-capture"
           },
           {
-            "text": "NSS / NSPR 捕获",
-            "link": "/zh/3-probe-reference/3.4-nss--nspr-capture"
-          },
-          {
-            "text": "Shell 命令审计 (Bash / Zsh)",
-            "link": "/zh/3-probe-reference/3.6-shell-auditing-bash--zsh"
-          },
-          {
-            "text": "TLS/SSL 明文捕获 (OpenSSL / BoringSSL)",
-            "link": "/zh/3-probe-reference/3.1-tlsssl-plaintext-capture-openssl--boringssl"
-          },
-          {
-            "text": "数据库流量捕获 (MySQL / PostgreSQL)",
-            "link": "/zh/3-probe-reference/3.5-database-traffic-capture-mysql--postgresql"
+            "text": "TLS 捕获 (OpenSSL/BoringSSL)",
+            "link": "/zh/2-core-tls-modules/2.1-tls-capture-openssl-and-boringssl"
           }
         ]
       }
     ],
-    "/zh/4-integration-and-deployment/": [
+    "/zh/3-capture-modes/": [
       {
-        "text": "集成与部署",
+        "text": "捕获模式",
         "items": [
+          {
+            "text": "捕获模式",
+            "link": "/zh/3-capture-modes/index"
+          },
+          {
+            "text": "pcapng 模式",
+            "link": "/zh/3-capture-modes/3.4-pcapng-mode"
+          },
+          {
+            "text": "Wireshark 解密工作流",
+            "link": "/zh/3-capture-modes/3.6-wireshark-decryption-workflows"
+          },
+          {
+            "text": "事件输出与滚动策略",
+            "link": "/zh/3-capture-modes/3.5-event-destinations-and-rotation"
+          },
+          {
+            "text": "密钥日志模式 (Keylog)",
+            "link": "/zh/3-capture-modes/3.3-keylog-mode"
+          },
+          {
+            "text": "文本模式 (Text)",
+            "link": "/zh/3-capture-modes/3.2-text-mode"
+          },
+          {
+            "text": "模式选择：Text、Keylog 或 pcapng",
+            "link": "/zh/3-capture-modes/3.1-choosing-text-keylog-or-pcapng"
+          }
+        ]
+      }
+    ],
+    "/zh/4-advanced-usage/": [
+      {
+        "text": "进阶用法",
+        "items": [
+          {
+            "text": "进阶用法",
+            "link": "/zh/4-advanced-usage/index"
+          },
+          {
+            "text": "TLS 故障排查",
+            "link": "/zh/4-advanced-usage/4.1-tls-troubleshooting"
+          },
+          {
+            "text": "其他模块",
+            "link": "/zh/4-advanced-usage/4.3-other-modules"
+          },
           {
             "text": "集成与部署",
-            "link": "/zh/4-integration-and-deployment/index"
-          },
-          {
-            "text": "性能开销与基准测试",
-            "link": "/zh/4-integration-and-deployment/4.4-performance-overhead-and-benchmarks"
-          },
-          {
-            "text": "日志与输出配置",
-            "link": "/zh/4-integration-and-deployment/4.3-logging-and-output-configuration"
-          },
-          {
-            "text": "远程事件流 (eCaptureQ WebSocket)",
-            "link": "/zh/4-integration-and-deployment/4.1-remote-event-streaming-ecaptureq-websocket"
-          },
-          {
-            "text": "远程动态配置 API",
-            "link": "/zh/4-integration-and-deployment/4.2-remote-dynamic-configuration-api"
+            "link": "/zh/4-advanced-usage/4.2-integration-and-deployment"
           }
         ]
       }
     ],
-    "/zh/7-architecture/": [
+    "/zh/5-architecture-and-probe-development/": [
       {
-        "text": "系统架构",
+        "text": "架构与探针开发",
         "items": [
           {
-            "text": "系统架构",
-            "link": "/zh/7-architecture/index"
+            "text": "架构与探针开发",
+            "link": "/zh/5-architecture-and-probe-development/index"
           },
           {
-            "text": "三层架构设计",
-            "link": "/zh/7-architecture/7.1-three-layer-architecture"
+            "text": "TLS 捕获架构",
+            "link": "/zh/5-architecture-and-probe-development/5.1-tls-capture-architecture"
           },
           {
-            "text": "事件处理流水线",
-            "link": "/zh/7-architecture/7.3-event-processing-pipeline"
+            "text": "事件与输出流水线",
+            "link": "/zh/5-architecture-and-probe-development/5.3-event-and-output-pipeline"
           },
           {
-            "text": "探针框架与扩展机制",
-            "link": "/zh/7-architecture/7.2-probe-framework-and-extension-mechanism"
+            "text": "扩展 TLS 探针",
+            "link": "/zh/5-architecture-and-probe-development/5.4-extending-a-tls-probe"
+          },
+          {
+            "text": "探针框架与生命周期",
+            "link": "/zh/5-architecture-and-probe-development/5.2-probe-framework-and-lifecycle"
           }
         ]
       }
     ],
-    "/zh/8-developer-guide/": [
+    "/zh/6-build-testing-and-release/": [
       {
-        "text": "开发者指南",
+        "text": "构建、测试与发布",
         "items": [
           {
-            "text": "开发者指南",
-            "link": "/zh/8-developer-guide/index"
+            "text": "构建、测试与发布",
+            "link": "/zh/6-build-testing-and-release/index"
           },
           {
-            "text": "如何添加新探针",
-            "link": "/zh/8-developer-guide/8.2-how-to-add-a-new-probe"
+            "text": "CI、打包与发布",
+            "link": "/zh/6-build-testing-and-release/6.3-ci-packaging-and-release"
           },
           {
-            "text": "测试策略与 CI/CD",
-            "link": "/zh/8-developer-guide/8.3-testing-strategy-and-cicd"
+            "text": "TLS 测试与端到端 (E2E) 策略",
+            "link": "/zh/6-build-testing-and-release/6.2-tls-test-and-e2e-strategy"
           },
           {
-            "text": "源码编译指南",
-            "link": "/zh/8-developer-guide/8.1-compilation-and-build"
-          }
-        ]
-      }
-    ],
-    "/zh/9-faq-and-troubleshooting/": [
-      {
-        "text": "故障排查",
-        "items": [
-          {
-            "text": "故障排查",
-            "link": "/zh/9-faq-and-troubleshooting/index"
-          },
-          {
-            "text": "术语表",
-            "link": "/zh/9-faq-and-troubleshooting/9.2-glossary"
-          },
-          {
-            "text": "检测与防御",
-            "link": "/zh/9-faq-and-troubleshooting/9.1-detection-and-defense"
+            "text": "编译构建与字节码资产",
+            "link": "/zh/6-build-testing-and-release/6.1-build-and-bytecode-assets"
           }
         ]
       }

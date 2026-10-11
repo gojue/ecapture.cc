@@ -110,7 +110,7 @@ const translations = {
 }
 
 const copy = computed(() => translations[props.locale])
-const docsLink = computed(() => props.locale === 'zh' ? '/zh/2-getting-started/' : '/en/2-getting-started/')
+const docsLink = computed(() => props.locale === 'zh' ? '/zh/1-getting-started/' : '/en/1-getting-started/')
 const downloadLink = computed(() => props.locale === 'zh' ? '/zh/download/' : '/en/download/')
 </script>
 
