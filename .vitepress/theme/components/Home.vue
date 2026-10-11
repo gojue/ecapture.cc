@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import VueMasteryModal from './VueMasteryModal.vue';
+import PlatformIcon from './PlatformIcon.vue';
 import { ref, onMounted } from 'vue';
 
 const isLoaded = ref(false);
@@ -12,7 +13,7 @@ onMounted(() => {
 
 // Animated encryption/decryption text
 const encryptedChars = '▓▒░█▄▀■□◆◇★☆01';
-const decryptedText = 'SSL/TLS text content';
+const decryptedText = 'SSL/TLS plaintext';
 const displayText = ref(decryptedText);
 
 const animateText = () => {
@@ -81,13 +82,13 @@ onMounted(() => {
     <div class="hero-content">
       <div class="hero-badge">
         <span class="badge-icon">🔒</span>
-        <span class="badge-text">eBPF-Powered Network Security</span>
+        <span class="badge-text">eBPF TLS plaintext capture</span>
       </div>
 
       <h1 class="tagline">
         <span class="tagline-line">Capture</span>
         <span class="accent decrypting-text">{{ displayText }}</span>
-        <span class="tagline-line">without CA certificate</span>
+        <span class="tagline-line">without a CA certificate</span>
       </h1>
 
       <div class="tech-divider">
@@ -97,14 +98,15 @@ onMounted(() => {
       </div>
 
       <p class="description">
-        <span class="description-highlight">eBPF-powered</span> network packet capture and SSL/TLS decryption
+        <span class="description-highlight">Observe plaintext at TLS library boundaries</span> without changing applications or installing a CA certificate.
         <br />
         <span class="platform-badges">
-          <span class="platform-badge">Linux</span>
-          <span class="platform-badge">Android</span>
-          <span class="platform-badge">x86_64</span>
-          <span class="platform-badge">ARM64</span>
+          <span class="platform-badge"><PlatformIcon kind="linux" />Linux x86_64</span>
+          <span class="platform-badge"><PlatformIcon kind="linux" />Linux ARM64</span>
+          <span class="platform-badge"><PlatformIcon kind="loongarch" />Linux LoongArch64</span>
+          <span class="platform-badge"><PlatformIcon kind="android" />Android x86_64 / ARM64</span>
         </span>
+        <span class="platform-note">LoongArch64 requires Linux kernel 6.6+; Android/loong64 is not supported.</span>
       </p>
 
       <p class="actions">
@@ -141,7 +143,7 @@ onMounted(() => {
       <div class="hero-features">
         <div class="feature-item">
           <span class="feature-icon">⚡</span>
-          <span class="feature-text">Zero CA Cert</span>
+          <span class="feature-text">No custom CA</span>
         </div>
         <div class="feature-item">
           <span class="feature-icon">🛡️</span>
@@ -534,10 +536,21 @@ section {
   display: inline-flex;
   gap: 8px;
   margin-top: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.platform-note {
+  display: block;
+  margin-top: 10px;
+  font-size: 13px;
+  line-height: 1.5;
 }
 
 .platform-badge {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 4px 12px;
   background: var(--ec-c-teal-mute);
   border: 1px solid rgba(67, 170, 139, 0.2);

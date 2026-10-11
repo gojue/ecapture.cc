@@ -4,6 +4,28 @@
 export function setupMermaidZoom() {
   if (typeof window === 'undefined') return;
 
+  // A few imported Wiki diagrams have inline Mermaid `style` directives.
+  // Mermaid renders them with !important, so stylesheet rules cannot soften
+  // their colors. Normalize those known fills after every SVG render.
+  function harmonizeLegacyColors(diagram: Element) {
+    const dark = document.documentElement.classList.contains('dark');
+    const palette: Record<string, [string, string]> = {
+      '#ace': ['#e7f0f5', '#274051'],
+      '#afa': ['#e6f3eb', '#244638'],
+      '#f99': ['#f7eceb', '#553a40']
+    };
+
+    diagram.querySelectorAll<SVGElement>('.mermaid svg [style*="fill:#"], svg [style*="fill:#"], svg [data-mermaid-fill-source]').forEach((element) => {
+      const source = element.dataset.mermaidFillSource || element.getAttribute('style')?.match(/fill:\s*(#(?:ace|afa|f99))/i)?.[1].toLowerCase();
+      if (!source) return;
+      const colors = palette[source];
+      if (!colors) return;
+      element.dataset.mermaidFillSource = source;
+      element.style.setProperty('fill', colors[dark ? 1 : 0], 'important');
+      element.style.setProperty('stroke', dark ? '#7ea99b' : '#799b90', 'important');
+    });
+  }
+
   // Function to create lightbox
   function createLightbox(diagramElement: Element) {
     // Create lightbox overlay
@@ -215,6 +237,8 @@ export function setupMermaidZoom() {
     mermaidDiagrams.forEach((diagram) => {
       const diagramEl = diagram as HTMLElement;
 
+      harmonizeLegacyColors(diagramEl);
+
       // Skip if already has handler
       if (diagramEl.dataset.zoomEnabled) return;
 
@@ -255,6 +279,7 @@ export function setupMermaidZoom() {
           if (node.nodeType === 1) { // Element node
             const el = node as Element;
             if (el.classList?.contains('mermaid') ||
+                el.closest?.('.mermaid') ||
                 el.querySelector?.('.mermaid')) {
               shouldReattach = true;
             }

@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import VueMasteryModalZh from './VueMasteryModalZh.vue';
+import PlatformIcon from './PlatformIcon.vue';
 import { ref, onMounted } from 'vue';
 
 const isLoaded = ref(false);
@@ -81,7 +82,7 @@ onMounted(() => {
     <div class="hero-content">
       <div class="hero-badge">
         <span class="badge-icon">🔒</span>
-        <span class="badge-text">基于 eBPF 的网络安全工具</span>
+        <span class="badge-text">基于 eBPF 的 TLS 明文捕获</span>
       </div>
 
       <h1 class="tagline">
@@ -97,14 +98,15 @@ onMounted(() => {
       </div>
 
       <p class="description">
-        <span class="description-highlight">无需CA证书</span>即可捕获 HTTPS/TLS 加密通信的明文内容
+        <span class="description-highlight">无需安装 CA 证书</span>，在 TLS 库边界观察明文，不必修改目标程序。
         <br />
         <span class="platform-badges">
-          <span class="platform-badge">Linux</span>
-          <span class="platform-badge">Android</span>
-          <span class="platform-badge">x86_64</span>
-          <span class="platform-badge">ARM64</span>
+          <span class="platform-badge"><PlatformIcon kind="linux" />Linux x86_64</span>
+          <span class="platform-badge"><PlatformIcon kind="linux" />Linux ARM64</span>
+          <span class="platform-badge"><PlatformIcon kind="loongarch" />Linux LoongArch64</span>
+          <span class="platform-badge"><PlatformIcon kind="android" />Android x86_64 / ARM64</span>
         </span>
+        <span class="platform-note">LoongArch64 需要 Linux 6.6+ 内核；Android 暂不支持 loong64。</span>
       </p>
 
       <p class="actions">
@@ -141,15 +143,15 @@ onMounted(() => {
       <div class="hero-features">
         <div class="feature-item">
           <span class="feature-icon">⚡</span>
-          <span class="feature-text">零证书</span>
+          <span class="feature-text">无需自定义 CA</span>
         </div>
         <div class="feature-item">
           <span class="feature-icon">🛡️</span>
-          <span class="feature-text">内核级</span>
+          <span class="feature-text">内核级捕获</span>
         </div>
         <div class="feature-item">
           <span class="feature-icon">🔍</span>
-          <span class="feature-text">实时捕获</span>
+          <span class="feature-text">实时观察</span>
         </div>
       </div>
     </div>
@@ -534,10 +536,21 @@ section {
   display: inline-flex;
   gap: 8px;
   margin-top: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.platform-note {
+  display: block;
+  margin-top: 10px;
+  font-size: 13px;
+  line-height: 1.5;
 }
 
 .platform-badge {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   padding: 4px 12px;
   background: var(--ec-c-teal-mute);
   border: 1px solid rgba(67, 170, 139, 0.2);

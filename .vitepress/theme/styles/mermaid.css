@@ -21,6 +21,40 @@
   border-color: rgba(92, 208, 174, 0.2);
 }
 
+/* The plugin forces Mermaid's built-in dark theme, while the shared light
+   theme variables still supply cluster and edge-label colors. Keep the SVG
+   legible in both the page and the cloned zoom view. */
+html.dark .mermaid svg .cluster rect,
+html.dark .mermaid-lightbox-content svg .cluster rect {
+  fill: #172b28 !important;
+  stroke: #3b7565 !important;
+}
+
+html.dark .mermaid svg .node .label-container,
+html.dark .mermaid-lightbox-content svg .node .label-container {
+  fill: #203b35 !important;
+  stroke: #569f88 !important;
+}
+
+html.dark .mermaid svg .cluster-label p,
+html.dark .mermaid svg .edgeLabel p,
+html.dark .mermaid svg .node .label p,
+html.dark .mermaid svg .node text,
+html.dark .mermaid-lightbox-content svg .cluster-label p,
+html.dark .mermaid-lightbox-content svg .edgeLabel p,
+html.dark .mermaid-lightbox-content svg .node .label p,
+html.dark .mermaid-lightbox-content svg .node text {
+  color: #e8f5ef !important;
+  fill: #e8f5ef !important;
+}
+
+html.dark .mermaid svg .edgeLabel .labelBkg,
+html.dark .mermaid svg .edgeLabel p,
+html.dark .mermaid-lightbox-content svg .edgeLabel .labelBkg,
+html.dark .mermaid-lightbox-content svg .edgeLabel p {
+  background: #203b35 !important;
+}
+
 .mermaid:hover {
   box-shadow: 0 8px 24px rgba(67, 170, 139, 0.15);
   border-color: var(--ec-c-teal);

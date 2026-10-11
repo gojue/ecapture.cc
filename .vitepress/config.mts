@@ -11,7 +11,7 @@ export default withMermaid(defineConfigWithTheme<ThemeConfig>({
   extends: baseConfig,
   lang: 'en-US',
   title: 'eCapture',
-  description: 'eCapture - Capture SSL/TLS text content without CA certificate using eBPF',
+  description: 'eCapture captures TLS plaintext with eBPF through TLS, GoTLS and GnuTLS probes. Supports Linux x86_64, ARM64 and LoongArch64, plus Android x86_64 and ARM64.',
   srcDir: './src',
   outDir: './dist',
   scrollOffset: 'header',
@@ -19,18 +19,27 @@ export default withMermaid(defineConfigWithTheme<ThemeConfig>({
 
   ignoreDeadLinks: false,
 
-  // Mermaid configuration
+  // Keep generated Wiki diagrams aligned with the site's quiet teal palette.
   mermaid: {
-    // Configure mermaid with better default settings
     theme: 'base',
     themeVariables: {
       fontSize: '16px',
-      primaryColor: '#43AA8B',
-      primaryTextColor: '#fff',
-      primaryBorderColor: '#90BE6D',
-      lineColor: '#F8961E',
-      secondaryColor: '#F9C74F',
-      tertiaryColor: '#F3722C',
+      background: '#f4faf8',
+      primaryColor: '#e5f3ee',
+      primaryTextColor: '#173d34',
+      primaryBorderColor: '#79b7a5',
+      secondaryColor: '#edf5f1',
+      secondaryTextColor: '#173d34',
+      secondaryBorderColor: '#a9cabc',
+      tertiaryColor: '#f3f7f5',
+      tertiaryTextColor: '#2d5146',
+      tertiaryBorderColor: '#cadbd2',
+      lineColor: '#5a9c87',
+      arrowheadColor: '#5a9c87',
+      textColor: '#173d34',
+      clusterBkg: '#f3f7f5',
+      clusterBorder: '#cadbd2',
+      edgeLabelBackground: '#f4faf8',
     },
   },
   transformPageData(pageData) {
@@ -83,7 +92,7 @@ export default withMermaid(defineConfigWithTheme<ThemeConfig>({
 
   themeConfig: {
     editLink: {
-      repo: 'gojue/ecapture.cc#v2',
+      repo: 'gojue/ecapture.cc#master',
       text: 'Edit this page on GitHub',
     },
 
