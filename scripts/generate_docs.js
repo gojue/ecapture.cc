@@ -13,7 +13,7 @@ function isRepoSourceLink(target) {
         return false;
     }
 
-    return /\.(md|go|c|h|yml|yaml|json|toml|sh|svg|mk|mod|sum|proto|spec)$/i.test(repoPath) ||
+    return /\.(md|go|c|h|yml|yaml|json|toml|sh|lua|svg|mk|mod|sum|proto|spec|png|jpe?g|gif|webp)$/i.test(repoPath) ||
         basename.startsWith('.') ||
         repoPath.includes('Dockerfile') ||
         repoPath.includes('Makefile') ||
@@ -100,7 +100,7 @@ function processPages(pages, lang, idToSlugMap, basePath, metadata) {
             let content = page.content;
             // Unified link replacement
             const { repo_name, commit_hash } = metadata;
-            content = content.replace(/(\[.*?])\((.*?)\)/g, (match, text, target) => {
+            content = content.replace(/(!?\[.*?])\((.*?)\)/g, (match, text, target) => {
                 // 1. Handle empty target []() - likely source file reference
                 if (!target || target.trim() === '') {
                     // Extract filename from text [filename]
@@ -137,7 +137,10 @@ function processPages(pages, lang, idToSlugMap, basePath, metadata) {
                              let repoPath = target;
                              // Remove relative path prefixes to get repo-relative path
                              repoPath = repoPath.replace(/^(\.\.\/)+/, '').replace(/^\.\//, '');
-                             return `${text}(https://github.com/${repo_name}/blob/${commit_hash}/${repoPath})`;
+                             const url = text.startsWith('!') && /\.(png|jpe?g|gif|webp|svg)$/i.test(repoPath)
+                                 ? `https://raw.githubusercontent.com/${repo_name}/${commit_hash}/${repoPath}`
+                                 : `https://github.com/${repo_name}/blob/${commit_hash}/${repoPath}`;
+                             return `${text}(${url})`;
                          }
                      }
                 }

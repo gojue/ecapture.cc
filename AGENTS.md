@@ -17,7 +17,7 @@
 | `.vitepress/navigation.json` | 配置实际导入的导航和侧栏数据，由迁移脚本生成 |
 | `scripts/wiki.json`、`scripts/*.js`、`scripts/update_docs.sh` | 上游 Wiki 数据，以及生成、迁移文档的流水线 |
 
-现有章节目录为 `1-introducing-ecapture/`、`2-getting-started/`、`3-probe-reference/`、`4-integration-and-deployment/`、`7-architecture/`、`8-developer-guide/`、`9-faq-and-troubleshooting/`。编号不连续是当前实际结构，不要凭旧 README 或旧构建产物推断路径。
+现有章节目录为 `1-introduction/`、`2-integration-and-deployment/`、`3-developer-guide/`。每种语言使用相同的英文路径；路径以当前 `src/` 和生成脚本为准，不要凭旧 README 或旧构建产物推断。
 
 ## 常用命令
 
@@ -33,7 +33,7 @@ pnpm run clean        # 清理构建输出与 Vite 缓存
 
 ## 内容来源和修改边界
 
-1. 大部分双语章节来自 `scripts/wiki.json` 中的 Devin Wiki 快照，不是由 VitePress 自动生成。`scripts/generate_docs.js` 读取英文页面计划，按页面 ID 和英文标题生成两种语言共用的路径，把 Wiki 页面 ID 链接改为相对 Markdown 链接，并把上游源码引用改为带 `commit_hash` 的 GitHub 链接；输出到被 Git 忽略的 `docs/`。
+1. 大部分双语章节来自 `scripts/wiki.json` 中的 Devin Wiki 快照，不是由 VitePress 自动生成。`scripts/generate_docs.js` 读取英文页面计划，按页面 ID 和英文标题生成两种语言共用的路径；当前快照的部分英文标题实际是中文，需通过脚本中的 `slugOverrides` 映射为英文路径。脚本把 Wiki 页面 ID 链接改为相对 Markdown 链接，并把上游源码引用改为带 `commit_hash` 的 GitHub 链接；输出到被 Git 忽略的 `docs/`。
 2. `scripts/migrate_docs.js` 会**删除并重建** `src/en/`、`src/zh/`，再从 `docs/` 复制内容。它只备份并恢复 `src/zh/download/`、`src/zh/index.md`、`src/en/download/index.md`、`src/zh/usage/`；最后从 Markdown 标题生成 `.vitepress/navigation.json` 和 `.vitepress/sidebar.json`。站点配置只导入前者。
 3. `bash scripts/update_docs.sh --no-dev` 串起生成与迁移；省略 `--no-dev` 时还会启动开发服务器。**只有明确要同步上游 Wiki 时才运行**：该流程会覆盖普通章节中的手工修改，也会移除不在快照或保留清单中的页面。先检查 `git status`、Wiki 快照与预期差异，运行后审查 `src/` 和导航的 diff。
    Wiki 快照由维护者定期更新，可能与已发布章节不同。同步前先比较其 `generated_at`、页面计划和当前 `src/` 路径；不要仅因文件存在就运行重建脚本。

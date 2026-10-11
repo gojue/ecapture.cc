@@ -202,6 +202,8 @@ html.dark .mermaid-lightbox-close:hover {
 
 /* Make mermaid diagrams more visible */
 .mermaid svg {
+  display: block;
+  margin-inline: auto;
   max-width: 100%;
   height: auto;
 }
