@@ -36,7 +36,7 @@ Production deployments require robust configuration management, secure event for
 
 ```mermaid
 graph TD
-    sub-title "Advanced Integration Pipeline"
+    %% Advanced Integration Pipeline
     A["CoreProbe"] --> B["config.BaseConfig"]
     B --> C["outputpipeline.ByteSink"]
     C --> D["--eventaddr"]
@@ -61,7 +61,7 @@ While the core capability of `ecapture` centers on TLS interception, the codebas
 
 ```mermaid
 graph TD
-    sub-title "Non-Core Modules Overview"
+    %% Non-Core Modules Overview
     A["ecapture CLI"] --> B["factory.ProbeTypeBash"]
     A --> C["factory.ProbeTypeZsh"]
     A --> D["factory.ProbeTypeMySQL"]
@@ -106,7 +106,7 @@ Sources: [cli/cmd/common_config_test.go:188-216](https://github.com/gojue/ecaptu
 
 ```mermaid
 graph TD
-    sub-title "Advanced Integration Pipeline"
+    %% Advanced Integration Pipeline
     A["CoreProbe"] --> B["config.BaseConfig"]
     B --> C["outputpipeline.ByteSink"]
     C --> D["--eventaddr"]
@@ -131,7 +131,7 @@ Sources: [cli/cmd/common_config_test.go:25-74](https://github.com/gojue/ecapture
 
 ```mermaid
 graph TD
-    sub-title "Non-Core Modules Overview"
+    %% Non-Core Modules Overview
     A["ecapture CLI"] --> B["factory.ProbeTypeBash"]
     A --> C["factory.ProbeTypeZsh"]
     A --> D["factory.ProbeTypeMySQL"]

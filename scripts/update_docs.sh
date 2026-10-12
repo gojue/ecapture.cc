@@ -2,11 +2,12 @@
 # =============================================================================
 # update_docs.sh
 #
-# 根据 scripts/wiki.json 重新生成并预览文档，对应 README 中的步骤 3-6：
+# 根据 scripts/wiki.json 重新生成并预览文档，对应 README 中的步骤 3-7：
 #   Step 3 — 删除 docs/en 和 docs/zh 缓存目录
 #   Step 4 — 执行 scripts/generate_docs.js
-#   Step 5 — 执行 scripts/migrate_docs.js
-#   Step 6 — 启动 pnpm run dev 预览（可通过 --no-dev 跳过）
+#   Step 5 — 检查生成文档中的 Mermaid 语法
+#   Step 6 — 执行 scripts/migrate_docs.js
+#   Step 7 — 启动 pnpm run dev 预览（可通过 --no-dev 跳过）
 #
 # 用法：
 #   bash scripts/update_docs.sh          # 生成文档并启动预览服务
@@ -83,14 +84,19 @@ step "Step 4 — 从 wiki.json 生成文档（generate_docs.js）"
 node scripts/generate_docs.js
 success "generate_docs.js 执行完毕"
 
-# ── Step 5：迁移文档 ──────────────────────────────────────────────────────────
-step "Step 5 — 将文档迁移到 src/（migrate_docs.js）"
+# ── Step 5：检查 Mermaid 图表，避免错误文档覆盖 src/ ─────────────────────────
+step "Step 5 — 检查生成文档中的 Mermaid 语法"
+node scripts/check_mermaid.mjs docs/en docs/zh
+success "Mermaid 语法检查通过"
+
+# ── Step 6：迁移文档 ──────────────────────────────────────────────────────────
+step "Step 6 — 将文档迁移到 src/（migrate_docs.js）"
 node scripts/migrate_docs.js
 success "migrate_docs.js 执行完毕"
 
-# ── Step 6：本地预览 ──────────────────────────────────────────────────────────
+# ── Step 7：本地预览 ──────────────────────────────────────────────────────────
 if [[ "$START_DEV" == "true" ]]; then
-  step "Step 6 — 启动本地预览（pnpm run dev）"
+  step "Step 7 — 启动本地预览（pnpm run dev）"
   info "按 Ctrl+C 退出预览服务器"
   pnpm run dev
 else

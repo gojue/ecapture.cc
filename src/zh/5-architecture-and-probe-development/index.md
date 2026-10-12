@@ -45,12 +45,12 @@ graph TD
     end
 
     subgraph Probe_Space ["探针执行空间"]
-        Factory --> OpenSSL["openssl.NewProbe() [internal/probe/openssl/openssl_probe.go:61-69](https://github.com/gojue/ecapture/blob/8c9caada/"openssl.NewProbe() [internal/probe/openssl/openssl_probe.go#L61-L69)"]
-        Factory --> GoTLS["gotls.NewProbe() [internal/probe/gotls/gotls_probe.go:70-78](https://github.com/gojue/ecapture/blob/8c9caada/"gotls.NewProbe() [internal/probe/gotls/gotls_probe.go#L70-L78)"]
-        Factory --> GnuTLS["gnutls.NewProbe() [internal/probe/gnutls/gnutls_probe.go:48-55](https://github.com/gojue/ecapture/blob/8c9caada/"gnutls.NewProbe() [internal/probe/gnutls/gnutls_probe.go#L48-L55)"]
-        OpenSSL --> Init["Probe.Initialize() & Start() [internal/probe/openssl/openssl_probe.go:72-163](https://github.com/gojue/ecapture/blob/8c9caada/"Probe.Initialize() & Start() [internal/probe/openssl/openssl_probe.go#L72-L163)"]
-        GoTLS --> GoInit["Probe.Initialize() & Start() [internal/probe/gotls/gotls_probe.go:81-156](https://github.com/gojue/ecapture/blob/8c9caada/"Probe.Initialize() & Start() [internal/probe/gotls/gotls_probe.go#L81-L156)"]
-        GnuTLS --> GnuInit["Probe.Initialize() & Start() [internal/probe/gnutls/gnutls_probe.go:57-116](https://github.com/gojue/ecapture/blob/8c9caada/"Probe.Initialize() & Start() [internal/probe/gnutls/gnutls_probe.go#L57-L116)"]
+        Factory --> OpenSSL["openssl.NewProbe() [internal/probe/openssl/openssl_probe.go:61-69]"]
+        Factory --> GoTLS["gotls.NewProbe() [internal/probe/gotls/gotls_probe.go:70-78]"]
+        Factory --> GnuTLS["gnutls.NewProbe() [internal/probe/gnutls/gnutls_probe.go:48-55]"]
+        OpenSSL --> Init["Probe.Initialize() & Start() [internal/probe/openssl/openssl_probe.go:72-163]"]
+        GoTLS --> GoInit["Probe.Initialize() & Start() [internal/probe/gotls/gotls_probe.go:81-156]"]
+        GnuTLS --> GnuInit["Probe.Initialize() & Start() [internal/probe/gnutls/gnutls_probe.go:57-116]"]
     end
 
     subgraph eBPF_Space ["eBPF 与内核空间"]
@@ -96,19 +96,19 @@ graph TD
     end
 
     subgraph Handlers ["处理器与表示空间"]
-        Dispatcher --> TextH["文本处理器 [docs/agent/output-pipeline.md:14-14](https://github.com/gojue/ecapture/blob/8c9caada/"文本处理器 [docs/agent/output-pipeline.md#L14-L14)"]
-        Dispatcher --> KeylogH["密钥日志处理器 [docs/agent/output-pipeline.md:15-15](https://github.com/gojue/ecapture/blob/8c9caada/"密钥日志处理器 [docs/agent/output-pipeline.md#L15-L15)"]
-        Dispatcher --> PcapH["Pcapng 处理器 [docs/agent/output-pipeline.md:16-16](https://github.com/gojue/ecapture/blob/8c9caada/"Pcapng 处理器 [docs/agent/output-pipeline.md#L16-L16)"]
+        Dispatcher --> TextH["文本处理器 [docs/agent/output-pipeline.md:14-14]"]
+        Dispatcher --> KeylogH["密钥日志处理器 [docs/agent/output-pipeline.md:15-15]"]
+        Dispatcher --> PcapH["Pcapng 处理器 [docs/agent/output-pipeline.md:16-16]"]
     end
 
     subgraph Destinations ["目标空间 (ByteSink)"]
-        TextH --> Sink1["writers.ByteSink [internal/output/writers/factory.go:120-144](https://github.com/gojue/ecapture/blob/8c9caada/"writers.ByteSink [internal/output/writers/factory.go#L120-L144)"]
-        KeylogH --> Sink2["writers.ByteSink [internal/output/writers/factory.go:120-144](https://github.com/gojue/ecapture/blob/8c9caada/"writers.ByteSink [internal/output/writers/factory.go#L120-L144)"]
-        PcapH --> Sink3["writers.ByteSink [internal/output/writers/factory.go:120-144](https://github.com/gojue/ecapture/blob/8c9caada/"writers.ByteSink [internal/output/writers/factory.go#L120-L144)"]
+        TextH --> Sink1["writers.ByteSink [internal/output/writers/factory.go:120-144]"]
+        KeylogH --> Sink2["writers.ByteSink [internal/output/writers/factory.go:120-144]"]
+        PcapH --> Sink3["writers.ByteSink [internal/output/writers/factory.go:120-144]"]
     end
 
     subgraph Publishers ["类型化发布者空间"]
-        Dispatcher --> QPub["eCaptureQ 事件发布者 [docs/agent/output-pipeline.md:17-17](https://github.com/gojue/ecapture/blob/8c9caada/"eCaptureQ 事件发布者 [docs/agent/output-pipeline.md#L17-L17)"]
+        Dispatcher --> QPub["eCaptureQ 事件发布者 [docs/agent/output-pipeline.md:17-17]"]
     end
 
     style PerfBuf fill:_,stroke:#333,stroke-width:2px

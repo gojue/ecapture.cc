@@ -146,6 +146,69 @@ function normalizeInlineSourceCitations(content, metadata) {
     }).join('\n');
 }
 
+// Wiki diagrams sometimes contain prose markers that are not Mermaid syntax.
+// Repair only the known forms; the validation step rejects anything else.
+function normalizeMermaid(content) {
+    const lines = content.split('\n');
+    let opening = null;
+
+    for (let index = 0; index < lines.length; index++) {
+        const marker = lines[index].match(/^ {0,3}(`{3,}|~{3,})(.*)$/);
+        if (!marker) continue;
+        if (!opening) {
+            opening = { index, marker: marker[1][0], length: marker[1].length,
+                mermaid: /^mermaid(?:\s|$)/i.test(marker[2].trim()) };
+            continue;
+        }
+        if (marker[1][0] !== opening.marker || marker[1].length < opening.length || marker[2].trim()) continue;
+        if (opening.mermaid) {
+            const diagram = lines.slice(opening.index + 1, index).map(line =>
+                line.replace(/^(\s*)sub-title\s+"([^"]+)"\s*$/, '$1%% $2')
+                    .replace(/\[([^\]\n]+:\d+(?:-\d+)?)\]\(\)/g, '[$1]')
+                    .replace(/\|([A-Za-z_$][\w.$]*\(\))\|/g, '|"$1"|'));
+            for (let lineIndex = 0; lineIndex < diagram.length; lineIndex++) {
+                const subcode = diagram[lineIndex].match(/^(\s*)subcode\s+\["([^"]+)"\]\s*$/);
+                if (subcode) {
+                    const hasEnd = diagram.slice(lineIndex + 1).some(line => /^\s*end\s*$/.test(line));
+                    diagram[lineIndex] = hasEnd
+                        ? `${subcode[1]}subgraph subcode["${subcode[2]}"]`
+                        : `${subcode[1]}%% ${subcode[2]}`;
+                    continue;
+                }
+
+                const sub = diagram[lineIndex].match(/^(\s*)sub:\s*(.+)$/);
+                if (!sub) continue;
+                // A pseudo-group after its nodes does not tell us which nodes
+                // belong inside it. Keep the flow flat rather than inventing
+                // a potentially inaccurate group boundary.
+                diagram[lineIndex] = `${sub[1]}%% ${sub[2]}`;
+                if (!diagram.some(line => /^\s*subgraph\b/.test(line))) {
+                    const endIndex = diagram.findIndex((line, position) =>
+                        position > lineIndex && /^\s*end\s*$/.test(line));
+                    if (endIndex !== -1) diagram.splice(endIndex, 1);
+                }
+            }
+            lines.splice(opening.index + 1, index - opening.index - 1, ...diagram);
+            index = opening.index + diagram.length + 1;
+        }
+        opening = null;
+    }
+    return lines.join('\n');
+}
+
+function rewriteOutsideFences(content, rewrite) {
+    let fence = null;
+    return content.split('\n').map(line => {
+        const marker = line.match(/^ {0,3}(`{3,}|~{3,})(.*)$/);
+        if (marker) {
+            if (!fence) fence = { marker: marker[1][0], length: marker[1].length };
+            else if (marker[1][0] === fence.marker && marker[1].length >= fence.length && !marker[2].trim()) fence = null;
+            return line;
+        }
+        return fence ? line : rewrite(line);
+    }).join('\n');
+}
+
 // Function to convert title to a slug format
 function titleToSlug(title) {
     if (slugOverrides[title]) return slugOverrides[title];
@@ -225,10 +288,10 @@ function processPages(pages, lang, idToSlugMap, basePath, metadata) {
         }
 
         if (page.content) {
-            let content = normalizeInlineSourceCitations(normalizeSources(page.content, metadata), metadata);
+            let content = normalizeMermaid(normalizeInlineSourceCitations(normalizeSources(page.content, metadata), metadata));
             // Unified link replacement
             const { repo_name, commit_hash } = metadata;
-            content = content.replace(/(!?\[[^\]\n]*\])\(([^)\n]*)\)/g, (match, text, target) => {
+            content = rewriteOutsideFences(content, line => line.replace(/(!?\[[^\]\n]*\])\(([^)\n]*)\)/g, (match, text, target) => {
                 // 1. Handle empty target []() - likely source file reference
                 if (!target || target.trim() === '') {
                     // Devin occasionally prefixes source labels with a comma.
@@ -265,7 +328,7 @@ function processPages(pages, lang, idToSlugMap, basePath, metadata) {
                 }
 
                 return match;
-            });
+            }));
             fs.writeFileSync(filePath, content);
         }
 

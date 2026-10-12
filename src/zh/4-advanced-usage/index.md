@@ -34,7 +34,7 @@ Sources: [cli/cmd/common_config_test.go:188-216](https://github.com/gojue/ecaptu
 
 ```mermaid
 graph TD
-    sub-title "进阶集成流水线"
+    %% 进阶集成流水线
     A["CoreProbe"] --> B["config.BaseConfig"]
     B --> C["outputpipeline.ByteSink"]
     C --> D["--eventaddr"]
@@ -59,7 +59,7 @@ Sources: [cli/cmd/common_config_test.go:25-74](https://github.com/gojue/ecapture
 
 ```mermaid
 graph TD
-    sub-title "非核心模块概览"
+    %% 非核心模块概览
     A["ecapture CLI"] --> B["factory.ProbeTypeBash"]
     A --> C["factory.ProbeTypeZsh"]
     A --> D["factory.ProbeTypeMySQL"]

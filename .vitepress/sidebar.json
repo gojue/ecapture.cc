@@ -8,24 +8,24 @@
           "link": "/en/1-getting-started/index"
         },
         {
+          "text": "Requirements and Installation",
+          "link": "/en/1-getting-started/1.1-requirements-and-installation"
+        },
+        {
           "text": "Choosing a TLS Probe",
           "link": "/en/1-getting-started/1.2-choosing-a-tls-probe"
-        },
-        {
-          "text": "First GnuTLS Capture",
-          "link": "/en/1-getting-started/1.5-first-gnutls-capture"
-        },
-        {
-          "text": "First GoTLS Capture",
-          "link": "/en/1-getting-started/1.4-first-gotls-capture"
         },
         {
           "text": "First OpenSSL and BoringSSL Capture",
           "link": "/en/1-getting-started/1.3-first-openssl-and-boringssl-capture"
         },
         {
-          "text": "Requirements and Installation",
-          "link": "/en/1-getting-started/1.1-requirements-and-installation"
+          "text": "First GoTLS Capture",
+          "link": "/en/1-getting-started/1.4-first-gotls-capture"
+        },
+        {
+          "text": "First GnuTLS Capture",
+          "link": "/en/1-getting-started/1.5-first-gnutls-capture"
         }
       ]
     }
@@ -39,16 +39,16 @@
           "link": "/en/2-core-tls-modules/index"
         },
         {
-          "text": "GnuTLS Capture",
-          "link": "/en/2-core-tls-modules/2.3-gnutls-capture"
+          "text": "TLS Capture (OpenSSL and BoringSSL)",
+          "link": "/en/2-core-tls-modules/2.1-tls-capture-openssl-and-boringssl"
         },
         {
           "text": "GoTLS Capture",
           "link": "/en/2-core-tls-modules/2.2-gotls-capture"
         },
         {
-          "text": "TLS Capture (OpenSSL and BoringSSL)",
-          "link": "/en/2-core-tls-modules/2.1-tls-capture-openssl-and-boringssl"
+          "text": "GnuTLS Capture",
+          "link": "/en/2-core-tls-modules/2.3-gnutls-capture"
         }
       ]
     }
@@ -66,8 +66,8 @@
           "link": "/en/3-capture-modes/3.1-choosing-text-keylog-or-pcapng"
         },
         {
-          "text": "Event Destinations and Rotation",
-          "link": "/en/3-capture-modes/3.5-event-destinations-and-rotation"
+          "text": "Text Mode",
+          "link": "/en/3-capture-modes/3.2-text-mode"
         },
         {
           "text": "Keylog Mode",
@@ -78,8 +78,8 @@
           "link": "/en/3-capture-modes/3.4-pcapng-mode"
         },
         {
-          "text": "Text Mode",
-          "link": "/en/3-capture-modes/3.2-text-mode"
+          "text": "Event Destinations and Rotation",
+          "link": "/en/3-capture-modes/3.5-event-destinations-and-rotation"
         },
         {
           "text": "Wireshark Decryption Workflows",
@@ -97,16 +97,16 @@
           "link": "/en/4-advanced-usage/index"
         },
         {
+          "text": "TLS Troubleshooting",
+          "link": "/en/4-advanced-usage/4.1-tls-troubleshooting"
+        },
+        {
           "text": "Integration and Deployment",
           "link": "/en/4-advanced-usage/4.2-integration-and-deployment"
         },
         {
           "text": "Other Modules",
           "link": "/en/4-advanced-usage/4.3-other-modules"
-        },
-        {
-          "text": "TLS Troubleshooting",
-          "link": "/en/4-advanced-usage/4.1-tls-troubleshooting"
         }
       ]
     }
@@ -120,20 +120,20 @@
           "link": "/en/5-architecture-and-probe-development/index"
         },
         {
-          "text": "Event and Output Pipeline",
-          "link": "/en/5-architecture-and-probe-development/5.3-event-and-output-pipeline"
-        },
-        {
-          "text": "Extending a TLS Probe",
-          "link": "/en/5-architecture-and-probe-development/5.4-extending-a-tls-probe"
+          "text": "TLS Capture Architecture",
+          "link": "/en/5-architecture-and-probe-development/5.1-tls-capture-architecture"
         },
         {
           "text": "Probe Framework and Lifecycle",
           "link": "/en/5-architecture-and-probe-development/5.2-probe-framework-and-lifecycle"
         },
         {
-          "text": "TLS Capture Architecture",
-          "link": "/en/5-architecture-and-probe-development/5.1-tls-capture-architecture"
+          "text": "Event and Output Pipeline",
+          "link": "/en/5-architecture-and-probe-development/5.3-event-and-output-pipeline"
+        },
+        {
+          "text": "Extending a TLS Probe",
+          "link": "/en/5-architecture-and-probe-development/5.4-extending-a-tls-probe"
         }
       ]
     }
@@ -151,12 +151,12 @@
           "link": "/en/6-build-testing-and-release/6.1-build-and-bytecode-assets"
         },
         {
-          "text": "CI, Packaging, and Release",
-          "link": "/en/6-build-testing-and-release/6.3-ci-packaging-and-release"
-        },
-        {
           "text": "TLS Test and E2E Strategy",
           "link": "/en/6-build-testing-and-release/6.2-tls-test-and-e2e-strategy"
+        },
+        {
+          "text": "CI, Packaging, and Release",
+          "link": "/en/6-build-testing-and-release/6.3-ci-packaging-and-release"
         }
       ]
     }
@@ -181,24 +181,24 @@
           "link": "/zh/1-getting-started/index"
         },
         {
-          "text": "初探 GnuTLS 捕获",
-          "link": "/zh/1-getting-started/1.5-first-gnutls-capture"
-        },
-        {
-          "text": "初探 GoTLS 捕获",
-          "link": "/zh/1-getting-started/1.4-first-gotls-capture"
-        },
-        {
-          "text": "初探 OpenSSL 与 BoringSSL 捕获",
-          "link": "/zh/1-getting-started/1.3-first-openssl-and-boringssl-capture"
-        },
-        {
           "text": "环境要求与安装",
           "link": "/zh/1-getting-started/1.1-requirements-and-installation"
         },
         {
           "text": "选择 TLS 探针",
           "link": "/zh/1-getting-started/1.2-choosing-a-tls-probe"
+        },
+        {
+          "text": "初探 OpenSSL 与 BoringSSL 捕获",
+          "link": "/zh/1-getting-started/1.3-first-openssl-and-boringssl-capture"
+        },
+        {
+          "text": "初探 GoTLS 捕获",
+          "link": "/zh/1-getting-started/1.4-first-gotls-capture"
+        },
+        {
+          "text": "初探 GnuTLS 捕获",
+          "link": "/zh/1-getting-started/1.5-first-gnutls-capture"
         }
       ]
     }
@@ -212,16 +212,16 @@
           "link": "/zh/2-core-tls-modules/index"
         },
         {
-          "text": "GnuTLS 捕获",
-          "link": "/zh/2-core-tls-modules/2.3-gnutls-capture"
+          "text": "TLS 捕获 (OpenSSL/BoringSSL)",
+          "link": "/zh/2-core-tls-modules/2.1-tls-capture-openssl-and-boringssl"
         },
         {
           "text": "GoTLS 捕获",
           "link": "/zh/2-core-tls-modules/2.2-gotls-capture"
         },
         {
-          "text": "TLS 捕获 (OpenSSL/BoringSSL)",
-          "link": "/zh/2-core-tls-modules/2.1-tls-capture-openssl-and-boringssl"
+          "text": "GnuTLS 捕获",
+          "link": "/zh/2-core-tls-modules/2.3-gnutls-capture"
         }
       ]
     }
@@ -235,28 +235,28 @@
           "link": "/zh/3-capture-modes/index"
         },
         {
-          "text": "pcapng 模式",
-          "link": "/zh/3-capture-modes/3.4-pcapng-mode"
-        },
-        {
-          "text": "Wireshark 解密工作流",
-          "link": "/zh/3-capture-modes/3.6-wireshark-decryption-workflows"
-        },
-        {
-          "text": "事件输出与滚动策略",
-          "link": "/zh/3-capture-modes/3.5-event-destinations-and-rotation"
-        },
-        {
-          "text": "密钥日志模式 (Keylog)",
-          "link": "/zh/3-capture-modes/3.3-keylog-mode"
+          "text": "模式选择：Text、Keylog 或 pcapng",
+          "link": "/zh/3-capture-modes/3.1-choosing-text-keylog-or-pcapng"
         },
         {
           "text": "文本模式 (Text)",
           "link": "/zh/3-capture-modes/3.2-text-mode"
         },
         {
-          "text": "模式选择：Text、Keylog 或 pcapng",
-          "link": "/zh/3-capture-modes/3.1-choosing-text-keylog-or-pcapng"
+          "text": "密钥日志模式 (Keylog)",
+          "link": "/zh/3-capture-modes/3.3-keylog-mode"
+        },
+        {
+          "text": "pcapng 模式",
+          "link": "/zh/3-capture-modes/3.4-pcapng-mode"
+        },
+        {
+          "text": "事件输出与滚动策略",
+          "link": "/zh/3-capture-modes/3.5-event-destinations-and-rotation"
+        },
+        {
+          "text": "Wireshark 解密工作流",
+          "link": "/zh/3-capture-modes/3.6-wireshark-decryption-workflows"
         }
       ]
     }
@@ -274,12 +274,12 @@
           "link": "/zh/4-advanced-usage/4.1-tls-troubleshooting"
         },
         {
-          "text": "其他模块",
-          "link": "/zh/4-advanced-usage/4.3-other-modules"
-        },
-        {
           "text": "集成与部署",
           "link": "/zh/4-advanced-usage/4.2-integration-and-deployment"
+        },
+        {
+          "text": "其他模块",
+          "link": "/zh/4-advanced-usage/4.3-other-modules"
         }
       ]
     }
@@ -297,16 +297,16 @@
           "link": "/zh/5-architecture-and-probe-development/5.1-tls-capture-architecture"
         },
         {
+          "text": "探针框架与生命周期",
+          "link": "/zh/5-architecture-and-probe-development/5.2-probe-framework-and-lifecycle"
+        },
+        {
           "text": "事件与输出流水线",
           "link": "/zh/5-architecture-and-probe-development/5.3-event-and-output-pipeline"
         },
         {
           "text": "扩展 TLS 探针",
           "link": "/zh/5-architecture-and-probe-development/5.4-extending-a-tls-probe"
-        },
-        {
-          "text": "探针框架与生命周期",
-          "link": "/zh/5-architecture-and-probe-development/5.2-probe-framework-and-lifecycle"
         }
       ]
     }
@@ -320,16 +320,16 @@
           "link": "/zh/6-build-testing-and-release/index"
         },
         {
-          "text": "CI、打包与发布",
-          "link": "/zh/6-build-testing-and-release/6.3-ci-packaging-and-release"
+          "text": "编译构建与字节码资产",
+          "link": "/zh/6-build-testing-and-release/6.1-build-and-bytecode-assets"
         },
         {
           "text": "TLS 测试与端到端 (E2E) 策略",
           "link": "/zh/6-build-testing-and-release/6.2-tls-test-and-e2e-strategy"
         },
         {
-          "text": "编译构建与字节码资产",
-          "link": "/zh/6-build-testing-and-release/6.1-build-and-bytecode-assets"
+          "text": "CI、打包与发布",
+          "link": "/zh/6-build-testing-and-release/6.3-ci-packaging-and-release"
         }
       ]
     }

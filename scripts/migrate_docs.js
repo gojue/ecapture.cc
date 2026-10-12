@@ -136,16 +136,26 @@ function getTitle(filePath) {
     return path.basename(filePath, '.md');
 }
 
-/**
- * Return a nav-friendly title for the given index.md file.
- *
- * Processing steps (applied in order):
- *  1. Strip the brand name "eCapture" and collapse surrounding whitespace.
- *  2. Language-specific length control:
- *     - zh : keep the full (already concise) Chinese title.
- *     - en : keep only the first word — maximally compact for crowded nav bars.
- *  3. Fallback: if stripping leaves an empty string, return the raw title unchanged.
- */
+function trimNavTitleEdges(title) {
+    return title.replace(/^[^\p{L}\p{N}_-]+|[^\p{L}\p{N}_-]+$/gu, '');
+}
+
+function shortenEnglishNavTitle(title) {
+    const cleanTitle = trimNavTitleEdges(title);
+    const parts = cleanTitle.split(/,|\band\b|\s+&\s+/i)
+        .map(part => trimNavTitleEdges(part.trim()))
+        .filter(Boolean);
+
+    // Keep the endpoints of a short list, including two items joined by a conjunction.
+    if (parts.length >= 2 && (/\band\b|\s+&\s+/i.test(cleanTitle) || parts.length >= 3)) {
+        const summary = `${parts[0]} & ${parts[parts.length - 1]}`;
+        if (summary.length <= 20) return summary;
+        if (parts[0].length <= 20) return parts[0];
+    }
+
+    return trimNavTitleEdges(cleanTitle.split(/\s+/)[0]);
+}
+
 function getNavTitle(filePath, lang) {
     const raw = getTitle(filePath);
     if (!raw) return null;
@@ -154,19 +164,12 @@ function getNavTitle(filePath, lang) {
     const stripped = raw.replace(/eCapture/g, '').replace(/\s+/g, ' ').trim();
     const title = stripped || raw; // fallback if title was only "eCapture"
 
-    // Language-specific length control
     if (lang === 'en') {
-        // If title contains " and ", keep only the part before it (e.g. "Build System and CI/CD" → "Build System")
-        const andIdx = title.toLowerCase().indexOf(' and ');
-        if (andIdx !== -1) {
-            return title.slice(0, andIdx).trim();
-        }
-        // No "and" — keep only the first word for maximum brevity
-        return title.split(/\s+/)[0];
+        return shortenEnglishNavTitle(title);
     }
 
     // zh (and any other language): use the full stripped title
-    return title;
+    return trimNavTitleEdges(title);
 }
 
 function generateNav(lang) {
@@ -232,6 +235,30 @@ function generateNav(lang) {
     return items;
 }
 
+function compareSidebarFiles(a, b) {
+    if (a === b) return 0;
+    if (a === 'index.md') return -1;
+    if (b === 'index.md') return 1;
+
+    const sectionNumbers = file => {
+        const match = file.match(/^(\d+(?:\.\d+)*)-/);
+        return match ? match[1].split('.').map(Number) : null;
+    };
+    const aNumbers = sectionNumbers(a);
+    const bNumbers = sectionNumbers(b);
+
+    if (aNumbers && bNumbers) {
+        for (let i = 0; i < Math.max(aNumbers.length, bNumbers.length); i++) {
+            const difference = (aNumbers[i] ?? -1) - (bNumbers[i] ?? -1);
+            if (difference) return difference;
+        }
+    } else if (aNumbers || bNumbers) {
+        return aNumbers ? -1 : 1;
+    }
+
+    return a.localeCompare(b, 'en', { numeric: true });
+}
+
 function generateSidebar(lang) {
     const langDir = path.join(srcDir, lang);
     if (!fs.existsSync(langDir)) return {};
@@ -243,7 +270,8 @@ function generateSidebar(lang) {
     for (let subdir of subdirs) {
         const dirPath = path.join(langDir, subdir.name);
         const files = fs.readdirSync(dirPath)
-            .filter(file => file.endsWith('.md'));
+            .filter(file => file.endsWith('.md'))
+            .sort(compareSidebarFiles);
 
         const items = [];
         for (let file of files) {
@@ -252,13 +280,6 @@ function generateSidebar(lang) {
             const link = `/${lang}/${subdir.name}/${file.replace(/\.md$/, '')}`;
             items.push({ text: title, link });
         }
-
-        // Sort items: index.md first, then others alphabetically
-        items.sort((a, b) => {
-            if (a.link.endsWith('/index')) return -1;
-            if (b.link.endsWith('/index')) return 1;
-            return a.text.localeCompare(b.text);
-        });
 
         const key = `/${lang}/${subdir.name}/`;
         // Use the directory name or index.md title as the group text
@@ -318,7 +339,7 @@ navConfig.nav.en = navEn;
 navConfig.nav.zh = navZh;
 navConfig.sidebar = fullSidebar;
 
-fs.writeFileSync(navFile, JSON.stringify(navConfig, null, 2));
+fs.writeFileSync(navFile, `${JSON.stringify(navConfig, null, 2)}\n`);
 
 // Update sidebar.json if it exists
 const sidebarFile = path.join(rootDir, '../.vitepress/sidebar.json');
