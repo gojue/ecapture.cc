@@ -29,7 +29,7 @@
 
 构建 `eCapture` 需要通过 `clang` 编排基于 C 的 eBPF 字节码编译，并将用户态 Go 应用程序与固定的 `libpcap` 存档进行链接 [docs/compilation.md:59-60](https://github.com/gojue/ecapture/blob/8c9caada/docs/compilation.md#L59-L60)。构建系统支持跨多个架构目标（包括 `amd64`、`arm64` 和 `loong64`）的 CO-RE（一次编译，到处运行）和非 CO-RE 字节码资产 [Makefile:174-185, variables.mk:77-120](https://github.com/gojue/ecapture/blob/8c9caada/Makefile:174-185, variables.mk#L77-L120)。
 
-编译工作流通过顶层 `Makefile` 和 `functions.mk` 进行管理，其中 `make core`、`make nocore` 和 `CROSS_ARCH=<arch> make` 等目标控制着资产的生成 [Makefile:10-15, variables.mk:72](https://github.com/gojue/ecapture/blob/8c9caada/Makefile:10-15, variables.mk#L72)。CGO 被严格启用（`CGO_ENABLED=1`），以便将 `libpcap` 库静态链接到最终的可执行文件中 [variables.mk:54, functions.mk:49-54]。
+编译工作流通过顶层 `Makefile` 和 `functions.mk` 进行管理，其中 `make core`、`make nocore` 和 `TARGET_ARCH=<arch> make` 等目标控制着资产的生成 [Makefile:10-15, variables.mk:72](https://github.com/gojue/ecapture/blob/8c9caada/Makefile:10-15, variables.mk#L72)。CGO 被严格启用（`CGO_ENABLED=1`），以便将 `libpcap` 库静态链接到最终的可执行文件中 [variables.mk:54, functions.mk:49-54]。
 
 ```mermaid
 graph TD

@@ -31,7 +31,7 @@ For deep technical dives, refer to the child pages:
 
 Building `eCapture` requires orchestrating C-based eBPF bytecode compilation via `clang` and linking the user-space Go application with a pinned `libpcap` archive [docs/compilation.md:59-60](https://github.com/gojue/ecapture/blob/8c9caada/docs/compilation.md#L59-L60). The build system supports CO-RE (Compile Once – Run Everywhere) and non-CO-RE bytecode assets across multiple architecture targets including `amd64`, `arm64`, and `loong64` [Makefile:174-185, variables.mk:77-120](https://github.com/gojue/ecapture/blob/8c9caada/Makefile:174-185, variables.mk#L77-L120). 
 
-The compilation workflow is managed via the top-level `Makefile` and `functions.mk`, where targets such as `make core`, `make nocore`, and `CROSS_ARCH=<arch> make` govern asset generation [Makefile:10-15, variables.mk:72](https://github.com/gojue/ecapture/blob/8c9caada/Makefile:10-15, variables.mk#L72). CGO is strictly enabled (`CGO_ENABLED=1`) to statically link the `libpcap` library into the final binary [variables.mk:54, functions.mk:49-54].
+The compilation workflow is managed via the top-level `Makefile` and `functions.mk`, where targets such as `make core`, `make nocore`, and `TARGET_ARCH=<arch> make` govern asset generation [Makefile:10-15, variables.mk:72](https://github.com/gojue/ecapture/blob/8c9caada/Makefile:10-15, variables.mk#L72). CGO is strictly enabled (`CGO_ENABLED=1`) to statically link the `libpcap` library into the final binary [variables.mk:54, functions.mk:49-54].
 
 ```mermaid
 graph TD
