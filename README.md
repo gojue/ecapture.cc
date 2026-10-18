@@ -47,6 +47,12 @@ pnpm run serve
 
 `pnpm run build` writes `dist/` and checks internal links. There is no `docs:dev`, `docs:build` or automated test script in this repository. Vercel uses the `dist/` output declared in `vercel.json`; `netlify.toml` contains an alternative build configuration. Deployment triggers are configured by the hosting service, not this repository.
 
+## Documentation search
+
+The site uses VitePress local search. Its English and Chinese indexes are generated during the build, so no search service, API key, or Vercel environment variables are needed. Search results are available once the site is rebuilt and deployed. The current page language determines which index is searched.
+
+`@vue/theme` is pinned and patched in `patches/` to show VitePress local search in its navigation bar.
+
 For website changes, check both homepages and the affected viewport sizes. For eCapture runtime claims, verify against the [upstream source](https://github.com/gojue/ecapture), its [README](https://github.com/gojue/ecapture/blob/master/README.md), [CHANGELOG](https://github.com/gojue/ecapture/blob/master/CHANGELOG.md) and current release; the imported Wiki may lag.
 
 ## Issues and licenses

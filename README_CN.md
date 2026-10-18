@@ -47,6 +47,12 @@ pnpm run serve
 
 `pnpm run build` 输出到 `dist/`，并检查站内链接。本仓库没有 `docs:dev`、`docs:build` 或自动测试脚本。Vercel 使用 `vercel.json` 指定的 `dist/` 输出；`netlify.toml` 提供另一套构建配置。自动部署触发条件由托管服务配置，不在本仓库声明。
 
+## 文档搜索
+
+本站使用 VitePress 本地搜索，构建时自动生成中英文索引，不需要搜索服务、API Key 或 Vercel 环境变量。重新构建并部署后即可使用搜索；搜索会根据当前页面语言选择对应的索引。
+
+`@vue/theme` 已固定版本，并在 `patches/` 中增加导航栏的本地搜索入口。
+
 修改官网时，应检查中英文首页及相关屏幕宽度。描述 eCapture 的运行行为时，应核对[上游源码](https://github.com/gojue/ecapture)、[README](https://github.com/gojue/ecapture/blob/master/README-zh_Hans.md)、[CHANGELOG](https://github.com/gojue/ecapture/blob/master/CHANGELOG.md) 和当前发行版；导入的 Wiki 可能滞后。
 
 ## 问题反馈与许可证

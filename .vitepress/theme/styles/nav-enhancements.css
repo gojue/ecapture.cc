@@ -6,15 +6,25 @@
 }
 
 .VPNav {
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid rgba(67, 170, 139, 0.15);
   box-shadow: 0 2px 12px rgba(67, 170, 139, 0.08);
+}
+
+/* The mobile menu is fixed inside .VPNav, so keep the blur on its sibling bar. */
+header.VPNav > .VPNavBar {
+  background-color: var(--vp-nav-bg-color);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 
 .dark .VPNav {
   border-bottom-color: rgba(92, 208, 174, 0.2);
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
+}
+
+/* The theme renders an empty Translations card without localeLinks. */
+header.VPNav .VPNavScreen .VPNavBarLocaleScreen {
+  display: none;
 }
 
 /* Navigation links hover effects */
@@ -119,6 +129,11 @@ div[class*='language-']:hover {
   border-radius: 4px;
   font-weight: 500;
   transition: all 0.2s ease;
+}
+
+main .vt-doc :not(pre) > code {
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .dark .vp-doc :not(pre) > code {
@@ -242,31 +257,6 @@ div[class*='language-']:hover {
 .VPBackdrop {
   background: rgba(10, 14, 20, 0.8);
   backdrop-filter: blur(8px);
-}
-
-/* Search box enhancement */
-.DocSearch-Button {
-  background: var(--ec-c-teal-mute);
-  border: 1px solid rgba(67, 170, 139, 0.2);
-  border-radius: 8px;
-  transition: all 0.3s ease;
-}
-
-.dark .DocSearch-Button {
-  background: rgba(92, 208, 174, 0.08);
-  border-color: rgba(92, 208, 174, 0.2);
-}
-
-.DocSearch-Button:hover {
-  background: var(--ec-c-teal-soft);
-  border-color: var(--ec-c-teal);
-  box-shadow: 0 4px 12px rgba(67, 170, 139, 0.2);
-}
-
-.dark .DocSearch-Button:hover {
-  background: rgba(92, 208, 174, 0.15);
-  border-color: #5cd0ae;
-  box-shadow: 0 4px 12px rgba(92, 208, 174, 0.3);
 }
 
 /* Footer enhancements */

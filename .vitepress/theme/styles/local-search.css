@@ -1,0 +1,90 @@
+body.vp-local-search-open {
+  padding-right: var(--vp-local-search-scrollbar-width, 0px);
+}
+
+body.vp-local-search-open .tech-background,
+body.vp-local-search-open .network-capture-effect {
+  width: calc(100% - var(--vp-local-search-scrollbar-width, 0px));
+}
+
+body.vp-local-search-open .download-shortcut,
+body.vp-local-search-open .vp-hint {
+  right: calc(20px + var(--vp-local-search-scrollbar-width, 0px));
+}
+
+@media (min-width: 960px) {
+  body.vp-local-search-open .VPNav {
+    width: calc(100% - var(--vp-local-search-scrollbar-width, 0px));
+  }
+}
+
+@media (min-width: 1440px) {
+  body.vp-local-search-open .VPSidebar {
+    padding-left: calc((100% - var(--vp-screen-max-width) - var(--vp-local-search-scrollbar-width, 0px)) / 2);
+    width: calc((100% - var(--vp-screen-max-width) - var(--vp-local-search-scrollbar-width, 0px)) / 2 + var(--vp-sidebar-width-small));
+  }
+}
+
+@media (max-width: 768px) {
+  body.vp-local-search-open .vp-hint {
+    right: calc(10px + var(--vp-local-search-scrollbar-width, 0px));
+  }
+}
+
+@media (max-width: 640px) {
+  body.vp-local-search-open .download-shortcut {
+    right: calc(12px + var(--vp-local-search-scrollbar-width, 0px));
+  }
+}
+
+.VPLocalSearchBox {
+  --vp-backdrop-bg-color: rgba(0, 0, 0, 0.6);
+  --vp-local-search-bg: var(--vt-c-bg);
+  --vp-local-search-result-bg: var(--vt-c-bg);
+  --vp-local-search-result-border: var(--vt-c-divider);
+  --vp-local-search-result-selected-bg: var(--vt-c-bg-soft);
+  --vp-local-search-result-selected-border: var(--vt-c-brand);
+  --vp-local-search-highlight-bg: var(--vt-c-brand);
+  --vp-local-search-highlight-text: #fff;
+}
+
+.VPLocalSearchBox .result {
+  background: var(--vp-local-search-result-bg);
+  color: var(--vt-c-text-1);
+}
+
+.VPNavBarSearch {
+  display: flex;
+  align-items: center;
+  padding-left: 12px;
+}
+
+.VPLocalSearchButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  margin: 0;
+  padding: 0;
+  color: var(--vt-c-text-2);
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.VPLocalSearchButton svg {
+  width: 18px;
+  height: 18px;
+  flex: none;
+}
+
+.VPLocalSearchButton:hover {
+  color: var(--vt-c-text-1);
+}
+
+.VPLocalSearchButton:focus-visible {
+  outline: 2px solid var(--ec-c-teal);
+  outline-offset: 2px;
+}

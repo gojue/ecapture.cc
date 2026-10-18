@@ -70,6 +70,7 @@ export default withMermaid(defineConfigWithTheme<ThemeConfig>({
       label: 'English',
       lang: 'en-US',
       themeConfig: {
+        i18n: { search: 'Search' },
         nav: navigation.nav.en,
         sidebar: navigation.sidebar,
         socialLinks: [
@@ -84,6 +85,7 @@ export default withMermaid(defineConfigWithTheme<ThemeConfig>({
       lang: 'zh-CN',
       link: '/zh/',
       themeConfig: {
+        i18n: { search: '搜索' },
         nav: navigation.nav.zh,
         sidebar: navigation.sidebar,
         socialLinks: [
@@ -96,6 +98,34 @@ export default withMermaid(defineConfigWithTheme<ThemeConfig>({
   },
 
   themeConfig: {
+    search: {
+      provider: 'local',
+      options: {
+        disableQueryPersistence: true,
+        locales: {
+          zh: {
+            translations: {
+              button: { buttonText: '搜索', buttonAriaLabel: '搜索文档' },
+              modal: {
+                displayDetails: '显示详细结果',
+                resetButtonTitle: '清除搜索',
+                backButtonTitle: '关闭搜索',
+                noResultsText: '没有找到相关结果：',
+                footer: {
+                  selectText: '选择',
+                  selectKeyAriaLabel: '回车',
+                  navigateText: '移动',
+                  navigateUpKeyAriaLabel: '上箭头',
+                  navigateDownKeyAriaLabel: '下箭头',
+                  closeText: '关闭',
+                  closeKeyAriaLabel: 'Esc',
+                },
+              },
+            },
+          },
+        },
+      },
+    },
     editLink: {
       repo: 'gojue/ecapture.cc#master',
       text: 'Edit this page on GitHub',
