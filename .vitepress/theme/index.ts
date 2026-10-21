@@ -11,6 +11,7 @@ import NavTitleBar from './components/NavTitleBar.vue'
 import LanguageHint from './components/LanguageHint.vue'
 import LocaleSwitch from './components/LocaleSwitch.vue'
 import DownloadShortcut from './components/DownloadShortcut.vue'
+import MobileNavWheel from './components/MobileNavWheel.vue'
 import TechBackground from './components/TechBackground.vue'
 import NetworkCaptureEffect from './components/NetworkCaptureEffect.vue'
 import { setupMermaidZoom } from './composables/mermaidZoom'
@@ -28,6 +29,7 @@ export default Object.assign({}, VPTheme, {
         'navbar-title': () => h(NavTitleBar as Component),
       }),
       h(DownloadShortcut as Component),
+      h(MobileNavWheel as Component),
       h(LanguageHint as Component),
       h(LocaleSwitch as Component)
     ].filter(Boolean))

@@ -27,6 +27,28 @@ header.VPNav .VPNavScreen .VPNavBarLocaleScreen {
   display: none;
 }
 
+@media (max-width: 767px) {
+  header.VPNav .VPNavScreen {
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+    touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  header.VPNav .VPNavScreen .container {
+    padding-bottom: max(40px, env(safe-area-inset-bottom));
+  }
+}
+
+@supports (height: 100dvh) {
+  @media (max-width: 767px) {
+    header.VPNav .VPNavScreen {
+      height: calc(100dvh - var(--vt-nav-height) - var(--vt-banner-height, 0px));
+      bottom: auto;
+    }
+  }
+}
+
 /* Navigation links hover effects */
 .VPNavBarMenuLink:hover .link,
 .VPNavBarMenuLink:hover .icon {

@@ -70,7 +70,7 @@ export default withMermaid(defineConfigWithTheme<ThemeConfig>({
       label: 'English',
       lang: 'en-US',
       themeConfig: {
-        i18n: { search: 'Search' },
+        i18n: { search: 'Search', toc: 'On this page', ariaToC: 'Anchors in this article' },
         nav: navigation.nav.en,
         sidebar: navigation.sidebar,
         socialLinks: [
@@ -85,7 +85,7 @@ export default withMermaid(defineConfigWithTheme<ThemeConfig>({
       lang: 'zh-CN',
       link: '/zh/',
       themeConfig: {
-        i18n: { search: '搜索' },
+        i18n: { search: '搜索', toc: '本页锚点', ariaToC: '本文正文的锚点目录' },
         nav: navigation.nav.zh,
         sidebar: navigation.sidebar,
         socialLinks: [

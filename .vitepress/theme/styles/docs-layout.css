@@ -1,0 +1,229 @@
+/* Documentation layout for the @vue/theme components used by this site. */
+html:root {
+  --vp-sidebar-width-small: 224px;
+  --vp-screen-max-width: 1440px;
+}
+
+/* Separate the chapter label from its page links in the site navigation. */
+.VPSidebar .VPSidebarGroup .title {
+  margin-bottom: 8px;
+  padding: 9px 16px;
+  border-left: 3px solid var(--ec-c-teal);
+  border-radius: 0 7px 7px 0;
+  background: var(--ec-c-teal-mute);
+}
+
+.VPSidebarGroup .title::before {
+  content: 'SECTION';
+  display: block;
+  margin-bottom: 3px;
+  color: var(--ec-c-teal);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+
+html:lang(zh) .VPSidebarGroup .title::before {
+  content: '章节分类';
+}
+
+.VPSidebarGroup .title-text {
+  color: var(--vp-c-text-1);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+.VPSidebar .VPSidebarGroup > .link {
+  margin: 2px 0;
+  padding: 6px 16px;
+  border-left: 2px solid transparent;
+  border-radius: 0 6px 6px 0;
+}
+
+.VPSidebarGroup > .link:hover,
+.VPSidebarGroup > .link.active {
+  background: var(--ec-c-teal-mute);
+}
+
+.VPSidebarGroup > .link.active {
+  border-left-color: var(--ec-c-teal);
+}
+
+/* Make the article the primary column while retaining a compact page outline. */
+@media (min-width: 960px) {
+  .VPContentDoc.has-sidebar {
+    padding-right: 40px;
+    padding-left: 40px;
+  }
+
+  .VPContentDoc.has-sidebar .content {
+    max-width: 920px;
+  }
+}
+
+@media (min-width: 1280px) {
+  .VPContentDoc.has-sidebar.has-aside .container {
+    width: 100%;
+  }
+
+  .VPContentDoc.has-sidebar.has-aside .content {
+    flex: 1 1 auto;
+    min-width: 0;
+    max-width: 920px;
+  }
+
+  .VPContentDoc.has-sidebar .aside {
+    width: 212px;
+    padding-left: 28px;
+  }
+
+  .VPContentDoc.has-sidebar .aside-container {
+    width: 184px;
+  }
+}
+
+@media (min-width: 1440px) {
+  .VPContentDoc.has-sidebar {
+    padding-left: 48px;
+  }
+}
+
+/* Show that the right column links target headings in the current article. */
+.VPContentDocOutline {
+  padding-left: 12px;
+  border-left: 1px solid var(--vp-c-divider);
+}
+
+.VPContentDocOutline .outline-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 7px;
+  color: var(--vp-c-text-2);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+}
+
+.VPContentDocOutline .outline-title::before {
+  content: '#';
+  display: inline-grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  background: var(--ec-c-teal-mute);
+  color: var(--ec-c-teal);
+  font-size: 15px;
+  line-height: 1;
+}
+
+.VPContentDocOutline .outline-link {
+  border-radius: 5px;
+  padding-left: 6px;
+}
+
+.VPContentDocOutline .outline-link::before {
+  content: '#';
+  margin-right: 5px;
+  color: var(--vp-c-text-3);
+  font-weight: 500;
+}
+
+.VPContentDocOutline .outline-link:hover,
+.VPContentDocOutline .outline-link.active {
+  background: var(--ec-c-teal-mute);
+  color: var(--vp-c-text-1);
+}
+
+.VPContentDocOutline .outline-link.active::before {
+  color: var(--ec-c-teal);
+}
+
+/* The active-marker position in @vue/theme assumes the original row height. */
+.VPContentDocOutline .outline-marker {
+  left: -14px;
+}
+
+/* The actual article class is .vt-doc, not VitePress default theme's .vp-doc. */
+.vt-doc:has(h1:is(#核心-tls-模块, #core-tls-modules)) table {
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+  border: 1px solid var(--vp-c-border);
+  border-collapse: separate;
+  border-spacing: 0;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--vp-c-bg);
+  box-shadow: 0 4px 18px rgba(19, 78, 61, 0.06);
+}
+
+.vt-doc:has(h1:is(#核心-tls-模块, #core-tls-modules)) th,
+.vt-doc:has(h1:is(#核心-tls-模块, #core-tls-modules)) td {
+  padding: 11px 12px;
+  border: 0;
+  border-right: 1px solid var(--vp-c-divider);
+  border-bottom: 1px solid var(--vp-c-divider);
+  line-height: 1.55;
+  text-align: left;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+}
+
+.vt-doc:has(h1:is(#核心-tls-模块, #core-tls-modules)) th {
+  background: var(--ec-c-teal-mute);
+  color: var(--vp-c-text-1);
+  font-weight: 700;
+}
+
+.vt-doc:has(h1:is(#核心-tls-模块, #core-tls-modules)) tr > :last-child {
+  border-right: 0;
+}
+
+.vt-doc:has(h1:is(#核心-tls-模块, #core-tls-modules)) tbody tr:last-child > * {
+  border-bottom: 0;
+}
+
+.vt-doc:has(h1:is(#核心-tls-模块, #core-tls-modules)) tbody tr:hover {
+  background: var(--ec-c-teal-mute);
+}
+
+/* Keep the short command intact in the five-column TLS module comparison. */
+.vt-doc:has(h1:is(#核心-tls-模块, #core-tls-modules)) table th:first-child {
+  width: 12%;
+}
+
+.vt-doc:has(h1:is(#核心-tls-模块, #core-tls-modules)) table th:nth-child(2) {
+  width: 20%;
+}
+
+.vt-doc:has(h1:is(#核心-tls-模块, #core-tls-modules)) table td:nth-child(2) code {
+  white-space: nowrap;
+}
+
+@media (max-width: 1100px) {
+  .vt-doc:has(h1:is(#核心-tls-模块, #core-tls-modules)) table {
+    display: block;
+    width: 100%;
+    table-layout: auto;
+    overflow-x: auto;
+  }
+}
+
+@media (max-width: 959px) {
+  .vt-doc:has(h1:is(#核心-tls-模块, #core-tls-modules)) table th:first-child,
+  .vt-doc:has(h1:is(#核心-tls-模块, #core-tls-modules)) table td:first-child {
+    min-width: 88px;
+  }
+
+  .vt-doc:has(h1:is(#核心-tls-模块, #core-tls-modules)) table th:nth-child(2),
+  .vt-doc:has(h1:is(#核心-tls-模块, #core-tls-modules)) table td:nth-child(2) {
+    min-width: 170px;
+  }
+
+  .vt-doc:has(h1:is(#核心-tls-模块, #core-tls-modules)) table th:nth-child(n + 3),
+  .vt-doc:has(h1:is(#核心-tls-模块, #core-tls-modules)) table td:nth-child(n + 3) {
+    min-width: 180px;
+  }
+}

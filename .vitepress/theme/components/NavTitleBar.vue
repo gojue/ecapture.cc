@@ -1,6 +1,6 @@
 <template>
   <img class="logo" src="../../public/logo-300x300-v2.svg"  alt="eCapture Logo"/>
-  <span class="text">eCapture(旁观者)</span>
+  <span class="text">eCapture<span class="text-suffix">(旁观者)</span></span>
   <a v-if="stars !== null" href="https://github.com/gojue/ecapture" target="_blank" class="github-stars">
     <svg class="star-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
       <path d="M12 .587l3.668 7.568 8.332 1.151-6.064 5.828 1.48 8.279-7.416-3.967-7.417 3.967 1.481-8.279-6.064-5.828 8.332-1.151z"/>
@@ -145,5 +145,12 @@ const formatStars = (count: number | null) => {
 .star-count {
   font-weight: 600;
   color: var(--vp-c-text-1);
+}
+
+@media (max-width: 359px) {
+  .text-suffix,
+  .github-stars {
+    display: none;
+  }
 }
 </style>

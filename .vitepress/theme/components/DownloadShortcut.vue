@@ -22,7 +22,8 @@ const destination = computed(() => isChinese.value ? '/zh/download/' : '/en/down
   position: fixed;
   right: 20px;
   bottom: calc(96px + env(safe-area-inset-bottom, 0px));
-  z-index: 20;
+  /* Keep the floating link below the mobile navigation overlay. */
+  z-index: 19;
   display: inline-flex;
   align-items: center;
   justify-content: center;
