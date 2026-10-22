@@ -1,5 +1,5 @@
 <template>
-  <img class="logo" src="../../public/logo-300x300-v2.svg"  alt="eCapture Logo"/>
+  <img class="logo" src="/assets/ecapture-logo.png" alt="eCapture Logo"/>
   <span class="text">eCapture<span class="text-suffix">(旁观者)</span></span>
   <a v-if="stars !== null" href="https://github.com/gojue/ecapture" target="_blank" class="github-stars">
     <svg class="star-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">

@@ -51,6 +51,37 @@ html:lang(zh) .VPSidebarGroup .title::before {
 }
 
 /* Make the article the primary column while retaining a compact page outline. */
+.VPContentDoc .content {
+  position: relative;
+}
+
+/* Keep a faint logo centered in the viewport behind article content. */
+.VPContentDoc .content::before {
+  content: '';
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  z-index: 0;
+  width: min(50vw, 680px);
+  aspect-ratio: 1;
+  background: url('/assets/ecapture-logo.png') center / contain no-repeat;
+  mix-blend-mode: multiply;
+  opacity: 0.025;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+}
+
+.VPContentDoc .content > * {
+  position: relative;
+  z-index: 1;
+}
+
+.dark .VPContentDoc .content::before {
+  filter: grayscale(1) invert(1);
+  mix-blend-mode: screen;
+  opacity: 0.025;
+}
+
 @media (min-width: 960px) {
   .VPContentDoc.has-sidebar {
     padding-right: 40px;
