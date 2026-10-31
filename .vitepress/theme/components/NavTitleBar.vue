@@ -1,5 +1,5 @@
 <template>
-  <img class="logo" src="/assets/ecapture-logo.png" alt="eCapture Logo"/>
+  <img class="logo" src="/logo.svg" alt="eCapture Logo" width="32" height="32"/>
   <span class="text">eCapture<span class="text-suffix">(旁观者)</span></span>
   <a v-if="stars !== null" href="https://github.com/gojue/ecapture" target="_blank" class="github-stars">
     <svg class="star-icon" xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
@@ -55,14 +55,16 @@ const formatStars = (count: number | null) => {
 <style scoped>
 .logo {
   width: 32px;
+  height: 32px;
+  flex-shrink: 0;
   margin-right: 8px;
   transition: all 0.3s ease;
-  filter: drop-shadow(0 0 8px rgba(67, 170, 139, 0.3));
+  filter: drop-shadow(0 0 8px rgba(255, 204, 26, 0.3));
 }
 
 .logo:hover {
   transform: rotate(360deg) scale(1.1);
-  filter: drop-shadow(0 0 12px rgba(67, 170, 139, 0.6));
+  filter: drop-shadow(0 0 12px rgba(255, 204, 26, 0.6));
 }
 
 .text {

@@ -64,7 +64,7 @@ html:lang(zh) .VPSidebarGroup .title::before {
   z-index: 0;
   width: min(50vw, 680px);
   aspect-ratio: 1;
-  background: url('/assets/ecapture-logo.png') center / contain no-repeat;
+  background: url('/logo.svg') center / contain no-repeat;
   mix-blend-mode: multiply;
   opacity: 0.025;
   pointer-events: none;
