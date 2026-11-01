@@ -19,6 +19,9 @@ html .vt-doc h4,html .vt-doc strong { color:var(--ec-ink); }
 html .vt-doc a { color:var(--ec-accent); text-underline-offset:4px; }
 html .vt-doc a:hover { text-decoration:underline; }
 html .vt-doc .ec-source-references { color:var(--ec-muted); font-size:13px; line-height:1.8; }
+html .vt-doc details.ec-source-references { padding:10px 14px; }
+html .vt-doc .ec-source-references > summary { color:var(--ec-muted); }
+html .vt-doc .ec-source-references[open] > summary { margin-bottom:8px; }
 html .vt-doc .ec-source-references > a { display:block; width:fit-content; max-width:100%; margin-top:4px; overflow-wrap:anywhere; }
 html .vt-doc :not(pre) > code { white-space:normal; overflow-wrap:anywhere; background:var(--ec-code); color:var(--ec-accent); font-size:.86em; }
 html .vt-doc details { margin:20px 0; border:1px solid var(--ec-border); border-radius:5px; padding:12px 16px; background:var(--ec-surface-raised); font-size:13px; }
