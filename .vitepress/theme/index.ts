@@ -4,6 +4,7 @@ import './styles/index.css'
 import { preferComposition, preferSFC, filterHeadersByPreference } from './components/preferences'
 import NavTitleBar from './components/NavTitleBar.vue'
 import HeaderActions from './components/HeaderActions.vue'
+import PointerFeedback from './components/PointerFeedback.vue'
 import DocContext from './components/DocContext.vue'
 import DocOutline from './components/DocOutline.vue'
 import SidebarChapters from './components/SidebarChapters.vue'
@@ -19,6 +20,7 @@ export default Object.assign({}, VPTheme, {
       'sidebar-bottom': () => h(SidebarChapters),
     }),
     h(HeaderActions),
+    h(PointerFeedback),
   ]),
   enhanceApp({ app }: { app: App }) {
     app.provide('prefer-composition', preferComposition)
