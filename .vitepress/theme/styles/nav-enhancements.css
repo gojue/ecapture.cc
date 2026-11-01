@@ -21,7 +21,7 @@ html .VPFooter { border-top:1px solid var(--ec-border); background:var(--ec-bg);
 html .VPFooter p { font-size:11px; }
 html .VPLocalNav { background:var(--ec-bg); border-bottom:1px solid var(--ec-border); }
 html .VPLocalSearchBox { --vp-local-search-highlight-bg:var(--ec-yellow); --vp-local-search-highlight-text:#202326; }
-@media(max-width:1150px) { .VPNavBar .menu { margin-left:28px; } html .VPNavBarMenuLink,html .VPNavBarMenuGroup { padding-inline:10px; } html .VPLocalSearchButton { width:40px; border:0; background:transparent; } .VPLocalSearchButton::after,.VPLocalSearchButton::before { display:none; } }
-@media(max-width:959px) { .VPNavBar .menu { margin-left:16px; } html .ec-site .VPNavBarMenuLink,html .ec-site .VPNavBarMenuGroup { padding-inline:8px; } html .ec-site .VPNavBarSocialLinks { display:none; } }
+@media(max-width:1199px) { .VPNavBar .menu { margin-left:28px; } html .VPNavBarMenuLink,html .VPNavBarMenuGroup { padding-inline:10px; } html .VPLocalSearchButton { width:40px; border:0; background:transparent; } .VPLocalSearchButton::after,.VPLocalSearchButton::before { display:none; } }
+@media(max-width:1023px) { html .ec-site .VPNavBarMenu,html .ec-site .VPNavBarSocialLinks { display:none; } html .ec-site .VPNavBarHamburger { display:flex; } html .ec-site .VPNavScreen { display:block; } }
 @media(max-width:767px) { html .VPNavBar { padding-inline:20px; } html .ec-site .VPNavBarSocialLinks { display:none; } .VPNavBar .content { min-width:0; } html .VPNavBarSearch { padding-left:4px; } }
 @media(max-width:380px) { html .VPNavBar { padding-inline:14px; } }

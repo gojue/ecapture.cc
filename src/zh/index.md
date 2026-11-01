@@ -1,6 +1,7 @@
 ---
 page: true
-title: eCapture - 基于 eBPF 的内核级 TLS 明文捕获
+title: eCapture 旁观者 - 基于 eBPF 的内核级 TLS 明文捕获
+titleTemplate: false
 description: 无需自定义 CA 证书。支持 Linux x86_64、ARM64、LoongArch64 和 Android x86_64、ARM64。
 ---
 

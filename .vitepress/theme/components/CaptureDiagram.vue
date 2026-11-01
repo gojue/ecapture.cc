@@ -14,11 +14,19 @@ const tracks = [
   { x:271, y:101, duration:3.52, offset:.30 },
   { x:294, y:111, duration:3.22, offset:.64 },
 ]
+const hexCharacters = '0123456789ABCDEF'
+// Keep SSR and hydration identical; randomize once the component is mounted.
+const packetCharacters = ref(tracks.map((_, index) => [hexCharacters[index * 2], hexCharacters[index * 2 + 1]]))
+const randomHexCharacter = () => hexCharacters[Math.floor(Math.random() * hexCharacters.length)]
+function randomizePacket(trackIndex: number, packetIndex: number) {
+  packetCharacters.value[trackIndex][packetIndex] = randomHexCharacter()
+}
 let observer: IntersectionObserver | undefined
 let media: MediaQueryList | undefined
 const updateMotion = () => { paused.value = media?.matches ?? false }
 const updateVisibility = () => { pageVisible.value = !document.hidden }
 onMounted(() => {
+  packetCharacters.value = tracks.map(() => [randomHexCharacter(), randomHexCharacter()])
   media = window.matchMedia('(prefers-reduced-motion: reduce)')
   updateMotion()
   media.addEventListener('change', updateMotion)
@@ -38,7 +46,7 @@ onUnmounted(() => {
   <figure ref="root" class="capture-flow" :class="{ 'is-stopped': stopped }">
 <svg class="ec-diagram" viewBox="0 0 500 540" role="img" :aria-label="zh ? 'APPLICATION、TLS LIBRARY、KERNEL 三层的数据流示意' : 'Data flowing through application, TLS library and kernel layers'">
       <defs>
-        <linearGradient id="ec-flow-tail" gradientUnits="userSpaceOnUse" x1="0" y1="-20" x2="0" y2="-3">
+        <linearGradient id="ec-flow-tail" gradientUnits="userSpaceOnUse" x1="0" y1="-25" x2="0" y2="-11">
           <stop offset="0" stop-color="#FFCC1A" stop-opacity="0" />
           <stop offset="1" stop-color="#FFCC1A" stop-opacity="0.75" />
         </linearGradient>
@@ -86,11 +94,10 @@ onUnmounted(() => {
       </g>
       <g class="ec-particles" clip-path="url(#ec-flow-clip)" aria-hidden="true">
         <g v-for="(track, trackIndex) in tracks" :key="trackIndex">
-          <g v-for="packet in 2" :key="packet" class="ec-packet" :style="{ animationDuration: `${track.duration}s`, animationDelay: `${-(track.offset + (packet - 1) * .5) * track.duration}s` }">
-            <svg :x="track.x - 7" :y="track.y - 24" width="14" height="32" viewBox="-7 -24 14 32" overflow="visible">
-              <path class="ec-tail" d="M0 -20V-3" />
-              <circle class="ec-dot-halo" r="6" />
-              <circle class="ec-dot" r="2.5" />
+          <g v-for="packet in 2" :key="packet" class="ec-packet" :style="{ animationDuration: `${track.duration}s`, animationDelay: `${-(track.offset + (packet - 1) * .5) * track.duration}s` }" @animationiteration.self="randomizePacket(trackIndex, packet - 1)">
+            <svg :x="track.x - 9" :y="track.y - 28" width="18" height="40" viewBox="-9 -28 18 40" overflow="visible">
+              <path class="ec-tail" d="M0 -25V-11" />
+              <text class="ec-hex" x="0" y="0" text-anchor="middle" dominant-baseline="central">{{ packetCharacters[trackIndex][packet - 1] }}</text>
             </svg>
           </g>
         </g>
@@ -133,9 +140,7 @@ Host: example.com
 .ec-diagram .ec-layer-label { font-size:13px; }
 .ec-tracks { fill:none; stroke:var(--ec-muted); opacity:.6; stroke-width:.9; stroke-dasharray:1.5 5; }
 .ec-tail { stroke:url(#ec-flow-tail); stroke-width:2.3; stroke-linecap:round; fill:none; }
-.ec-dot { fill:var(--ec-yellow); stroke:#b99520; stroke-width:.65; }
-:global(.dark) .ec-dot { stroke:#ffe483; }
-.ec-dot-halo { fill:var(--ec-yellow); opacity:.1; }
+.ec-diagram .ec-hex { fill:var(--ec-yellow); font-size:18px; font-weight:700; letter-spacing:0; }
 .ec-branch, .ec-arrow { fill:none; stroke:var(--ec-accent); stroke-width:1.4; }
 .ec-probe-halo { fill:var(--ec-yellow); opacity:.12; }
 .ec-probe-core, .ec-probe-tag { fill:var(--ec-yellow); }

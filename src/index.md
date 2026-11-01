@@ -1,6 +1,7 @@
 ---
 page: true
-title: eCapture - Kernel-level TLS plaintext capture with eBPF
+title: eCapture 旁观者 - Kernel-level TLS plaintext capture with eBPF
+titleTemplate: false
 description: Capture TLS plaintext without a custom CA. Linux x86_64, ARM64 and LoongArch64; Android x86_64 and ARM64.
 ---
 
