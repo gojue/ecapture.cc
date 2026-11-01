@@ -18,9 +18,9 @@
   font-weight: bold;
   padding: 2px 2px;
   margin-left: 6px;
-  background-color: var(--vt-c-red);
-  color: white;
-  border-radius: 8px;
+  background-color: var(--ec-accent-soft);
+  color: var(--ec-accent);
+  border-radius: 3px;
   vertical-align: middle;
   line-height: 18px;
 }

@@ -6,7 +6,8 @@ title: 从国内CDN下载.
 # Download 高速下载
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
+import { loadReleases } from '../../../.vitepress/githubReleases'
 import { marked } from 'marked'
 import { useRoute } from 'vitepress'
 
@@ -16,7 +17,6 @@ const route = useRoute()
 
 const CDN_DOMAIN = 'https://image.cnxct.com'    // assets 镜像域名
 const GITHUB_DOMAIN = 'https://github.com'    // assets download domain
-const GITHUB_API_DOMAIN = 'https://api.github.com'    // github api domain
 
 // 根据当前路径判断是否使用 CDN
 const shouldUseCDN = () => {
@@ -34,27 +34,27 @@ const convertMarkdownToHtml = (markdown) => {
   return marked(markdown)
 }
 
-onMounted(async () => {
-  try {
-    const response = await fetch(convertToCDNUrl('https://api.github.com/repos/gojue/ecapture/releases'))
-    const data = await response.json()
-    // Only keep the first 5 releases
-    const limitedData = Array.isArray(data) ? data.slice(0, 5) : []
-    releases.value = limitedData.map(release => ({
-      ...release,
-      body: convertMarkdownToHtml(release.body),
-      assets: (release.assets || []).map(asset => ({
-        ...asset,
-        browser_download_url: convertToCDNUrl(asset.browser_download_url)
-      }))
+let controller
+const reloadReleases = async () => {
+  controller?.abort()
+  const request = new AbortController()
+  controller = request
+  loading.value = true
+  const data = await loadReleases(true, request.signal)
+  if (request.signal.aborted) return
+  releases.value = data.map(release => ({
+    ...release,
+    body: convertMarkdownToHtml(release.body),
+    assets: (release.assets || []).map(asset => ({
+      ...asset,
+      browser_download_url: convertToCDNUrl(asset.browser_download_url)
     }))
-  } catch (error) {
-    console.error('Error fetching releases:', error)
-    releases.value = []
-  } finally {
-    loading.value = false
-  }
-})
+  }))
+  loading.value = false
+}
+onMounted(reloadReleases)
+onUnmounted(() => controller?.abort())
+
 </script>
 
 <ClientOnly>
@@ -85,8 +85,10 @@ onMounted(async () => {
         </details>
       </div>
     </div>
-    <div v-else>
-      <p>未找到版本信息</p>
+    <div v-else class="release-fallback" role="status">
+      <p>暂时无法加载版本信息。你可以重试，或直接前往 GitHub 发行页下载。</p>
+      <button class="ec-button" type="button" @click="reloadReleases">重试加载</button>
+      <a class="ec-button primary" href="https://github.com/gojue/ecapture/releases" target="_blank" rel="noopener noreferrer">前往 GitHub 发行页 ↗</a>
     </div>
   </div>
 </ClientOnly>

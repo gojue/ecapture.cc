@@ -2,9 +2,7 @@
 @import './local-search.css';
 @import './nav-enhancements.css';
 @import './docs-layout.css';
-@import "./badges.css";
-@import "./options-boxes.css";
-@import "./inline-demo.css";
-@import "./utilities.css";
-@import "./style-guide.css";
-@import "./mermaid.css";
+@import './utilities.css';
+@import './options-boxes.css';
+@import './inline-demo.css';
+@import './mermaid.css';

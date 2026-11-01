@@ -5,7 +5,7 @@ description: Capture TLS plaintext without a custom CA. Linux x86_64, ARM64 and 
 ---
 
 <script setup>
-import { onMounted, ref } from 'vue';
+import { onMounted, onUnmounted, ref } from 'vue';
 import Home from '@theme/components/Home.vue'
 import ImageCarousel from '@theme/components/ImageCarousel.vue'
 import ProjectOverview from '@theme/components/ProjectOverview.vue'
@@ -30,9 +30,12 @@ const imageDurations = [
 const carouselTitle = 'Feature Showcase'
 const carouselSubtitle = 'Examples of TLS plaintext, keylog and pcapng capture across supported libraries and protocols.'
 
+let releaseRequest
 onMounted(() => {
-  fetchReleaseTag()
+  releaseRequest = new AbortController()
+  fetchReleaseTag(releaseRequest.signal)
 })
+onUnmounted(() => releaseRequest?.abort())
 </script>
 
 <Home />

@@ -5,7 +5,7 @@ description: 无需自定义 CA 证书。支持 Linux x86_64、ARM64、LoongArch
 ---
 
 <script setup>
-import { onMounted, ref } from 'vue';
+import { onMounted, onUnmounted, ref } from 'vue';
 import Home from '@theme/components/HomeZh.vue'
 import ImageCarousel from '@theme/components/ImageCarousel.vue'
 import ProjectOverview from '@theme/components/ProjectOverview.vue'
@@ -30,15 +30,19 @@ const imageDurations = [
 const carouselTitle = '功能展示'
 const carouselSubtitle = '展示受支持的 TLS 库和协议的明文、Keylog 与 PCAPNG 捕获效果。'
 
+let releaseRequest
 onMounted(() => {
-  fetchReleaseTag()
+  releaseRequest = new AbortController()
+  fetchReleaseTag(releaseRequest.signal)
 })
+onUnmounted(() => releaseRequest?.abort())
 </script>
 
 <Home />
 <ProjectOverview locale="zh" />
 <ImageCarousel 
   :images="images" 
+  :durations="imageDurations"
   :title="carouselTitle"
   :subtitle="carouselSubtitle"
 />

@@ -5,6 +5,7 @@ import { withMermaid } from 'vitepress-plugin-mermaid'
 import type { Config as ThemeConfig } from '@vue/theme'
 import baseConfig from '@vue/theme/config'
 import { headerPlugin } from './headerMdPlugin'
+import { sourceReferencesPlugin } from './sourceReferencesPlugin'
 import navigation from './navigation.json'
 
 export default withMermaid(defineConfigWithTheme<ThemeConfig>({
@@ -24,31 +25,33 @@ export default withMermaid(defineConfigWithTheme<ThemeConfig>({
 
   ignoreDeadLinks: false,
 
-  // Keep generated Wiki diagrams aligned with the site's quiet teal palette.
+  // Shared paper / graphite palette; CSS supplies the matching night colors.
   mermaid: {
     theme: 'base',
     themeVariables: {
       fontSize: '16px',
-      background: '#f4faf8',
-      primaryColor: '#e5f3ee',
-      primaryTextColor: '#173d34',
-      primaryBorderColor: '#79b7a5',
-      secondaryColor: '#edf5f1',
-      secondaryTextColor: '#173d34',
-      secondaryBorderColor: '#a9cabc',
-      tertiaryColor: '#f3f7f5',
-      tertiaryTextColor: '#2d5146',
-      tertiaryBorderColor: '#cadbd2',
-      lineColor: '#5a9c87',
-      arrowheadColor: '#5a9c87',
-      textColor: '#173d34',
-      clusterBkg: '#f3f7f5',
-      clusterBorder: '#cadbd2',
-      edgeLabelBackground: '#f4faf8',
+      background: '#faf9f6',
+      primaryColor: '#f1f2ef',
+      primaryTextColor: '#202326',
+      primaryBorderColor: '#a1abb1',
+      secondaryColor: '#fff3c5',
+      secondaryTextColor: '#202326',
+      secondaryBorderColor: '#c4b373',
+      tertiaryColor: '#f1f2ef',
+      tertiaryTextColor: '#454d54',
+      tertiaryBorderColor: '#daddd8',
+      lineColor: '#9c7410',
+      arrowheadColor: '#9c7410',
+      textColor: '#202326',
+      clusterBkg: '#f1f2ef',
+      clusterBorder: '#daddd8',
+      edgeLabelBackground: '#faf9f6',
     },
   },
   transformPageData(pageData) {
-    pageData.frontmatter.outline = pageData.frontmatter.outline ?? 'deep';
+    // Our outline handles encoded Chinese anchors and the 76px header offset.
+    pageData.frontmatter.ecOutline = pageData.frontmatter.outline ?? 'deep';
+    pageData.frontmatter.outline = false;
   },
   head: [
     [
@@ -64,7 +67,7 @@ export default withMermaid(defineConfigWithTheme<ThemeConfig>({
     ['link', { rel: 'icon', type: 'image/svg+xml', sizes: 'any', href: '/favicon.svg' }],
     ['link', { rel: 'apple-touch-icon', sizes: '180x180', href: '/apple-touch-icon.png' }],
     ['link', { rel: 'manifest', href: '/site.webmanifest' }],
-    ['meta', { name: "theme-color", content: "#43AA8B"}],
+    ['meta', { name: "theme-color", content: "#ffcc1a"}],
     ['meta', { name: "apple-mobile-web-app-status-bar-style", content: "black-translucent"}],
   ],
 
@@ -73,14 +76,15 @@ export default withMermaid(defineConfigWithTheme<ThemeConfig>({
       label: 'English',
       lang: 'en-US',
       themeConfig: {
-        i18n: { search: 'Search', toc: 'On this page', ariaToC: 'Anchors in this article' },
-        nav: navigation.nav.en,
-        sidebar: navigation.sidebar,
-        socialLinks: [
-          { icon: 'languages', link: '/zh/'},
-          { icon: 'github', link: 'https://github.com/gojue/ecapture' },
-          { icon: 'twitter', link: 'https://twitter.com/cfc4n' },
+        i18n: { search: 'Search docs', toc: 'On this page', ariaToC: 'Anchors in this article' },
+        nav: [
+          { text: 'Docs', items: Object.entries(navigation.sidebar).filter(([path]) => path.startsWith('/en/') && !path.includes('/download/')).map(([link, groups]) => ({ text: groups[0].text, link })) },
+          { text: 'Get started', link: '/en/1-getting-started/' },
+          { text: 'Download', link: '/en/download/' },
+          { text: 'Community', link: 'https://github.com/gojue/ecapture' },
         ],
+        sidebar: navigation.sidebar,
+        socialLinks: [{ icon: 'github', link: 'https://github.com/gojue/ecapture' }],
       },
     },
     zh: {
@@ -88,19 +92,22 @@ export default withMermaid(defineConfigWithTheme<ThemeConfig>({
       lang: 'zh-CN',
       link: '/zh/',
       themeConfig: {
-        i18n: { search: '搜索', toc: '本页锚点', ariaToC: '本文正文的锚点目录' },
-        nav: navigation.nav.zh,
-        sidebar: navigation.sidebar,
-        socialLinks: [
-          { icon: 'languages', link: '/'},
-          { icon: 'github', link: 'https://github.com/gojue/ecapture' },
-          { icon: 'twitter', link: 'https://weibo.com/n/CFC4N' },
+        i18n: { search: '搜索文档', toc: '本页目录', ariaToC: '本文正文的锚点目录', menu: '章节导航', previous: '上一篇', next: '下一篇', returnToTop: '返回顶部' },
+        editLink: { repo: 'gojue/ecapture.cc#master', text: '在 GitHub 上编辑此页' },
+        nav: [
+          { text: '文档', items: Object.entries(navigation.sidebar).filter(([path]) => path.startsWith('/zh/') && !path.includes('/download/')).map(([link, groups]) => ({ text: groups[0].text, link })) },
+          { text: '快速开始', link: '/zh/1-getting-started/' },
+          { text: '下载', link: '/zh/download/' },
+          { text: '社区', link: 'https://github.com/gojue/ecapture' },
         ],
+        sidebar: navigation.sidebar,
+        socialLinks: [{ icon: 'github', link: 'https://github.com/gojue/ecapture' }],
       },
     }
   },
 
   themeConfig: {
+    appearance: false, // HeaderActions uses VitePress's shared isDark state.
     search: {
       provider: 'local',
       options: {
@@ -144,8 +151,10 @@ export default withMermaid(defineConfigWithTheme<ThemeConfig>({
   },
   //
   markdown: {
+    theme: { light: 'github-light', dark: 'github-dark' },
     config(md) {
       md.use(headerPlugin)
+      md.use(sourceReferencesPlugin)
     },
     headers: {
       level: [2, 3, 4]  // 提取 h2, h3, h4 到大纲

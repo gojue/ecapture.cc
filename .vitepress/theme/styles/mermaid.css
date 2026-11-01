@@ -1,71 +1,16 @@
-/* Mermaid diagram styles with zoom functionality - Tech Theme */
-
-/* Make mermaid diagrams clickable and show pointer cursor */
-.mermaid {
-  cursor: zoom-in;
-  transition: all 0.3s ease;
-  width: 100%;
-  max-width: 100%;
-  overflow-x: auto;
-  margin: 1.5rem 0;
-  display: block;
-  border-radius: 12px;
-  text-align: center;
-  background: var(--ec-c-teal-mute);
-  padding: 1.5rem;
-  border: 1px solid rgba(67, 170, 139, 0.15);
-}
-
-.dark .mermaid {
-  background: rgba(92, 208, 174, 0.05);
-  border-color: rgba(92, 208, 174, 0.2);
-}
-
-/* The plugin forces Mermaid's built-in dark theme, while the shared light
-   theme variables still supply cluster and edge-label colors. Keep the SVG
-   legible in both the page and the cloned zoom view. */
-html.dark .mermaid svg .cluster rect,
-html.dark .mermaid-lightbox-content svg .cluster rect {
-  fill: #172b28 !important;
-  stroke: #3b7565 !important;
-}
-
-html.dark .mermaid svg .node .label-container,
-html.dark .mermaid-lightbox-content svg .node .label-container {
-  fill: #203b35 !important;
-  stroke: #569f88 !important;
-}
-
-html.dark .mermaid svg .cluster-label p,
-html.dark .mermaid svg .edgeLabel p,
-html.dark .mermaid svg .node .label p,
-html.dark .mermaid svg .node text,
-html.dark .mermaid-lightbox-content svg .cluster-label p,
-html.dark .mermaid-lightbox-content svg .edgeLabel p,
-html.dark .mermaid-lightbox-content svg .node .label p,
-html.dark .mermaid-lightbox-content svg .node text {
-  color: #e8f5ef !important;
-  fill: #e8f5ef !important;
-}
-
-html.dark .mermaid svg .edgeLabel .labelBkg,
-html.dark .mermaid svg .edgeLabel p,
-html.dark .mermaid-lightbox-content svg .edgeLabel .labelBkg,
-html.dark .mermaid-lightbox-content svg .edgeLabel p {
-  background: #203b35 !important;
-}
-
-.mermaid:hover {
-  box-shadow: 0 8px 24px rgba(67, 170, 139, 0.15);
-  border-color: var(--ec-c-teal);
-  transform: translateY(-2px);
-}
-
-.dark .mermaid:hover {
-  box-shadow: 0 8px 24px rgba(92, 208, 174, 0.2);
-  border-color: #5cd0ae;
-}
-
+.mermaid { cursor:zoom-in; max-width:100%; overflow-x:auto; margin:24px 0; padding:24px; border:1px solid var(--ec-border); border-radius:5px; background:var(--ec-surface); text-align:center; }
+.mermaid:hover { border-color:var(--ec-wire); }
+.mermaid svg { display:block; margin:auto; max-width:100%; height:auto; }
+:is(.mermaid, .mermaid-lightbox-content) svg .node .label-container,
+:is(.mermaid, .mermaid-lightbox-content) svg .node rect,
+:is(.mermaid, .mermaid-lightbox-content) svg .node polygon { fill:var(--ec-surface-raised) !important; stroke:var(--ec-wire) !important; }
+:is(.mermaid, .mermaid-lightbox-content) svg .cluster rect { fill:var(--ec-surface) !important; stroke:var(--ec-border) !important; }
+:is(.mermaid, .mermaid-lightbox-content) svg :is(.nodeLabel, .cluster-label, .edgeLabel) p,
+:is(.mermaid, .mermaid-lightbox-content) svg text { fill:var(--ec-ink) !important; color:var(--ec-ink) !important; }
+:is(.mermaid, .mermaid-lightbox-content) svg .edgeLabel p,
+:is(.mermaid, .mermaid-lightbox-content) svg .labelBkg { background:var(--ec-surface) !important; }
+:is(.mermaid, .mermaid-lightbox-content) svg .flowchart-link { stroke:var(--ec-accent) !important; }
+:is(.mermaid, .mermaid-lightbox-content) svg marker path { fill:var(--ec-accent) !important; stroke:var(--ec-accent) !important; }
 /* Lightbox overlay for zoomed mermaid diagrams */
 .mermaid-lightbox {
   position: fixed;
@@ -208,19 +153,9 @@ html.dark .mermaid-lightbox-close:hover {
   height: auto;
 }
 
-/* Add a subtle hint that diagrams are clickable */
-.mermaid::after {
-  content: "🔍 Click to enlarge";
-  display: block;
-  text-align: center;
-  font-size: 0.85rem;
-  color: var(--vp-c-text-2);
-  margin-top: 0.5rem;
-  opacity: 0;
-  transition: opacity 0.2s ease;
-}
 
-.mermaid:hover::after {
-  opacity: 1;
-}
-
+html .mermaid-lightbox-content { background:var(--ec-bg); color:var(--ec-ink); border:1px solid var(--ec-border); }
+html .mermaid-lightbox-close { background:var(--ec-surface); color:var(--ec-ink); }
+.mermaid::after { content:'↗ Click to enlarge'; display:block; margin-top:16px; font:11px var(--vt-font-family-mono); color:var(--ec-muted); }
+html:lang(zh) .mermaid::after { content:'↗ 点击放大'; }
+@media(prefers-reduced-motion:reduce) { .mermaid-lightbox,.mermaid-lightbox-content { animation:none; } }

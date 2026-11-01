@@ -3,16 +3,15 @@ footer: false
 title: Download eCapture from Github.
 ---
 
-# Download 高速下载
+# Download eCapture
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
+import { loadReleases } from '../../../.vitepress/githubReleases'
 import { marked } from 'marked'
-import { useRoute } from 'vitepress'
 
 const releases = ref([])
 const loading = ref(true)
-const route = useRoute()
 
 // 转换 Markdown 为 HTML
 const convertMarkdownToHtml = (markdown) => {
@@ -20,27 +19,27 @@ const convertMarkdownToHtml = (markdown) => {
   return marked(markdown)
 }
 
-onMounted(async () => {
-  try {
-    const response = await fetch('https://api.github.com/repos/gojue/ecapture/releases')
-    const data = await response.json()
-    // Only keep the first 5 releases
-    const limitedData = Array.isArray(data) ? data.slice(0, 5) : []
-    releases.value = limitedData.map(release => ({
-      ...release,
-      body: convertMarkdownToHtml(release.body),
-      assets: (release.assets || []).map(asset => ({
-        ...asset,
-        browser_download_url: asset.browser_download_url
-      }))
+let controller
+const reloadReleases = async () => {
+  controller?.abort()
+  const request = new AbortController()
+  controller = request
+  loading.value = true
+  const data = await loadReleases(false, request.signal)
+  if (request.signal.aborted) return
+  releases.value = data.map(release => ({
+    ...release,
+    body: convertMarkdownToHtml(release.body),
+    assets: (release.assets || []).map(asset => ({
+      ...asset,
+      browser_download_url: asset.browser_download_url
     }))
-  } catch (error) {
-    console.error('Error fetching releases:', error)
-    releases.value = []
-  } finally {
-    loading.value = false
-  }
-})
+  }))
+  loading.value = false
+}
+onMounted(reloadReleases)
+onUnmounted(() => controller?.abort())
+
 </script>
 
 <ClientOnly>
@@ -71,6 +70,10 @@ onMounted(async () => {
         </details>
       </div>
     </div>
-    <div v-else>No releases available</div>
+    <div v-else class="release-fallback" role="status">
+      <p>Release information is temporarily unavailable. Retry, or download directly from GitHub Releases.</p>
+      <button class="ec-button" type="button" @click="reloadReleases">Retry</button>
+      <a class="ec-button primary" href="https://github.com/gojue/ecapture/releases" target="_blank" rel="noopener noreferrer">GitHub Releases ↗</a>
+    </div>
   </div>
 </ClientOnly>
