@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useData, useRoute } from 'vitepress'
 import { localePath } from './localePath'
+import GitHubStars from './GitHubStars.vue'
 const { isDark } = useData()
 const route = useRoute()
 const ready = ref(false)
@@ -18,6 +19,7 @@ onMounted(() => { ready.value = true })
         <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M2 12h2m16 0h2M5 5l1.5 1.5m11 11L19 19M5 19l1.5-1.5m11-11L19 5"/></svg>
       </button>
       <a class="ec-language-link" :href="alternate" :aria-label="zh ? 'Switch to English' : '切换到中文'" :lang="zh ? 'en' : 'zh-CN'">{{ zh ? 'EN' : '中文' }}</a>
+      <GitHubStars :zh="zh" />
     </div>
   </Teleport>
 </template>
