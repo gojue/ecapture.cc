@@ -25,7 +25,7 @@ const shouldUseCDN = () => {
 // 将 GitHub 下载链接转换为 CDN 链接
 const convertToCDNUrl = (url) => {
   if (!url) return url
-  return shouldUseCDN() ? url.replace(GITHUB_API_DOMAIN, CDN_DOMAIN).replace(GITHUB_DOMAIN, CDN_DOMAIN) : url
+  return shouldUseCDN() ? url.replace(GITHUB_DOMAIN, CDN_DOMAIN) : url
 }
 
 // 转换 Markdown 为 HTML
