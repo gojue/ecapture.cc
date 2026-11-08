@@ -23,7 +23,6 @@ const prefix = computed(() => `/q/${props.locale}`)
       <div class="q-intro-actions">
         <a class="ec-button primary" :href="`${prefix}/`">{{ zh ? '了解 eCaptureQ' : 'Explore eCaptureQ' }} <span aria-hidden="true">→</span></a>
         <a class="ec-button" :href="`${prefix}/download/`">{{ zh ? '下载 eCaptureQ' : 'Download eCaptureQ' }} <ReleaseBadge /></a>
-        <a class="ec-button" :href="`${prefix}/quick-start/`">{{ zh ? '快速开始' : 'Quick start' }}</a>
       </div>
     </div>
     <QRelationship :locale="locale" />
