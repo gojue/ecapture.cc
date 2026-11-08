@@ -10,6 +10,7 @@ import { onMounted, onUnmounted, ref } from 'vue';
 import Home from '@theme/components/HomeZh.vue'
 import ImageCarousel from '@theme/components/ImageCarousel.vue'
 import ProjectOverview from '@theme/components/ProjectOverview.vue'
+import EcaptureQIntro from '@theme/components/EcaptureQIntro.vue'
 import { fetchReleaseTag } from './../../.vitepress/githubReleases'
 
 const images = ref([
@@ -41,6 +42,7 @@ onUnmounted(() => releaseRequest?.abort())
 
 <Home />
 <ProjectOverview locale="zh" />
+<EcaptureQIntro locale="zh" />
 <ImageCarousel 
   :images="images" 
   :durations="imageDurations"

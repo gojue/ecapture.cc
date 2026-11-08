@@ -1,18 +1,18 @@
 <script setup lang="ts">
 import { nextTick, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute } from 'vitepress'
-import { localePath } from './localePath'
+import { localePath, isChinesePath } from './localePath'
 
 const route = useRoute()
 
 function alternatePath(path: string): string {
-  return localePath(path, path === '/zh' || path.startsWith('/zh/') ? 'en' : 'zh')
+  return localePath(path, isChinesePath(path) ? 'en' : 'zh')
 }
 
 function updateLinks() {
   if (typeof document === 'undefined') return
   const target = alternatePath(route.path)
-  const label = route.path.startsWith('/zh/') ? '切换到英文' : 'Switch to Chinese'
+  const label = isChinesePath(route.path) ? '切换到英文' : 'Switch to Chinese'
   document.querySelectorAll<HTMLAnchorElement>('a.vt-social-link[title="languages"]').forEach(link => {
     link.href = target
     link.setAttribute('aria-label', label)

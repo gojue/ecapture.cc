@@ -1,4 +1,4 @@
-import navigation from '../../navigation.json'
+import { sidebar } from '../../productNavigation'
 
 export type Locale = 'en' | 'zh'
 
@@ -6,13 +6,20 @@ const normalizePath = (path: string) =>
   path.replace(/\.html$/, '').replace(/\/index$/, '').replace(/\/$/, '') || '/'
 
 const pagePaths = new Set(
-  Object.values(navigation.sidebar).flatMap(groups =>
+  Object.values(sidebar).flatMap(groups =>
     groups.flatMap(group => group.items.map(item => normalizePath(item.link)))
   )
 )
 
+export const isChinesePath = (path: string) => /^\/(?:q\/)?zh(?:\/|$)/.test(path)
+export const isProductPath = (path: string) => /^\/q(?:\/|$)/.test(path)
+
 export function localePath(path: string, targetLocale: Locale): string {
-  const isChinese = path === '/zh' || path.startsWith('/zh/')
+  if (isProductPath(path)) {
+    const article = path.replace(/^\/q(?:\/(?:en|zh))?(?:\/|$)/, '')
+    return `/q/${targetLocale}/${article}`
+  }
+  const isChinese = isChinesePath(path)
   if (targetLocale === 'zh' && isChinese) return path
   if (targetLocale === 'en' && !isChinese) return path
   if (targetLocale === 'zh' && (path === '/' || path === '/en' || path === '/en/')) return '/zh/'

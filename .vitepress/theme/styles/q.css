@@ -1,0 +1,16 @@
+.q-page-actions { display:flex; flex-wrap:wrap; gap:12px; margin:24px 0; }
+.q-page-actions .ec-button { text-decoration:none; }
+.q-page-actions .ec-button.primary { color:#202326; }
+.q-page-actions .ec-button:not(.primary) { color:var(--ec-ink); }
+.q-annotated { position:relative; margin:24px 0; }
+.q-annotated > a { position:relative; display:block; }
+.q-annotated figcaption { color:var(--ec-muted); font-size:12px; line-height:1.7; margin-top:12px; }
+.q-annotated img { display:block; width:100%; height:auto; border:1px solid var(--ec-border); border-radius:6px; }
+.q-annotated .q-marker { position:absolute; top:18%; display:grid; place-items:center; width:30px; height:30px; border:2px solid #202326; border-radius:50%; background:var(--ec-yellow); color:#202326; font:700 16px var(--vt-font-family-base); box-shadow:0 2px 8px #20232625; }
+.q-annotated .q-marker-left { left:8%; }
+.q-annotated .q-marker-center { left:26%; }
+.q-annotated .q-marker-right { left:68%; }
+@media(max-width:480px) { .q-annotated .q-marker { width:24px; height:24px; font-size:13px; } }
+
+/* Keep the shared notice icon clear of translated titles. */
+html .vt-doc.q .custom-block { padding-left:42px; }
