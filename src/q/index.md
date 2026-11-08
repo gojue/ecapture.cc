@@ -31,13 +31,6 @@ onMounted(async () => {
 
 Turn the network messages captured by eCapture into a **searchable, correlated view you can inspect**. Connect one or more sources, filter by process or protocol, and explore messages in a three-pane workspace.
 
-<div class="q-page-actions">
-  <a class="ec-button primary" href="/q/en/quick-start/">Quick start →</a>
-  <a class="ec-button" href="/q/en/download/">Download <ReleaseBadge /></a>
-</div>
-
-[English](/q/en/) · [简体中文](/q/zh/)
-
 ## Capture with eCapture, explore with Q {#relationship}
 
 **eCapture** runs on the capture machine and handles collection and TLS decryption. **eCaptureQ** connects to its `--ecaptureq` WebSocket interface, correlates application messages and displays them. The two products run independently.

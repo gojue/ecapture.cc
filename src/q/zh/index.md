@@ -17,13 +17,6 @@ import ReleaseBadge from '@theme/components/ReleaseBadge.vue'
 
 将 eCapture 采集到的网络消息，转化为**可搜索、可关联、可查看的分析界面**。连接一个或多个数据源，按进程或协议筛选，在三栏界面中查看消息。
 
-<div class="q-page-actions">
-  <a class="ec-button primary" href="/q/zh/quick-start/">快速开始 →</a>
-  <a class="ec-button" href="/q/zh/download/">下载 <ReleaseBadge /></a>
-</div>
-
-[English](/q/en/) · [简体中文](/q/zh/)
-
 ## 用 eCapture 采集，用 Q 分析 {#relationship}
 
 **eCapture** 在采集主机上运行，负责采集与 TLS 解密。**eCaptureQ** 连接它的 `--ecaptureq` WebSocket 接口，关联并展示应用消息。两个产品独立运行。
