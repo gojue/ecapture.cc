@@ -1,0 +1,68 @@
+Current website asset: src/public/assets/q/terminal-to-interface-fine.webp
+Current prompt: Revision 3, at the end of this file. Earlier prompts below are generation history.
+
+eCaptureQ relationship illustration
+Generated: 2026-11-08
+Tool: built-in image_gen.imagegen (transparent background)
+Asset: src/public/assets/q/relationship.webp
+Use: conceptual illustration, not a product screenshot. Localized labels are HTML.
+No real capture data, user data, credentials, or third-party reference images were used.
+
+Initial prompt:
+Create a refined isometric editorial technical illustration for the eCapture open-source website, wide landscape 3:2 composition with a transparent background. Explain one simple story visually: a capture engine turns encrypted network traffic into application messages, which are then viewed using either a desktop analysis app or a web analysis interface. No text, no letters, no numbers, no labels, no logos. All explanatory words will be placed using HTML outside the image.
+Style: understated architectural wireframe diagram, clean precise graphite-gray outlines, warm ivory surfaces (#faf9f6), pale gray side faces, restrained golden yellow (#ffcc1a) highlights. Flat vector-like appearance with fine lines, no photorealism, no gradients, no dramatic shadows, no blue or purple, no people, no decorative background.
+Composition: on the left third, three floating thin isometric rectangular circuit/grid planes stacked vertically, representing application, TLS, and kernel; two small geometric cuboids on the top plane and a small yellow unlocked-padlock symbol at the outgoing edge convey capture and decryption. From the stack's right edge, a clear golden yellow line with three small orderly message tiles and a right-pointing arrow travels to a fork in the middle. Two clean branches terminate on the right: upper branch into a compact desktop monitor with stand, lower branch into a floating browser window with a simple three-dot chrome bar. The desktop monitor and browser window each display the same abstract three-column analysis layout (narrow filter rail, list with a yellow selected row, wider details panel with short gray lines), suggesting two choices for the same analysis experience, not an actual screenshot. Make these devices clear and prominent; use consistent isometric perspective, ample whitespace, and crisp large shapes readable at 500 pixels wide. Overall illustration fills most of canvas with safe margins, balanced left-to-right reading. Keep the main arrow and branch unambiguous and uncrossed.
+
+Refinement prompt (using the initial generated illustration as the reference):
+Refine this conceptual technical illustration, preserving the exact composition, shapes, message flow, yellow fork arrows, stack, monitor, and browser. Remove ALL soft shadows, halos, bloom, glows and blurred shading, especially the gray haze outside the devices and yellow haze around the arrows. Everything outside the crisp outlined objects and solid yellow arrow path must be fully transparent alpha. Make this a clean flat architectural line illustration: ivory white solid surfaces, light gray flat side faces, thin graphite outlines, flat golden-yellow accents. No gradients anywhere. Preserve the same arrangement and adequate canvas margins. No text. Transparent background.
+
+Delivery processing: WebP encoding at quality 90, original 1536 x 1024 dimensions and alpha retained. No manual retouching.
+
+
+Revision 2 — terminal text to a unified graphical interface (2026-11-08)
+Tool: built-in image_gen.imagegen, edit mode, transparent background.
+Reference: the previous generated relationship illustration; no product screenshot.
+Current asset: src/public/assets/q/terminal-to-interface.webp, 1752 x 897, WebP quality 90, alpha retained.
+The user requested replacing capture layers with terminal text and merging the two output editions into one graphical analysis interface.
+
+Final prompt:
+Use case: precise-object-edit.
+Edit the supplied conceptual relationship illustration for the eCapture website. Keep only its warm ivory (#faf9f6), graphite (#202326) fine outlines and restrained yellow (#ffcc1a) accent palette, clean architectural line style, and LEFT-to-RIGHT message flow. Substantially replace the objects as follows.
+
+LEFT: a large, unmistakable terminal window, a dark graphite screen with crisp warm-white monospaced text and a yellow command prompt. It represents eCapture capturing and displaying decrypted network messages as TEXT. Use only these short synthetic example lines, accurately:
+"$ ecapture tls"
+"GET / HTTP/1.1"
+"Host: example.com"
+"HTTP/1.1 200 OK"
+Add a few tiny aligned text rows to suggest a live terminal log. Do not include a process ID, personal path, credential or extra command options. Remove the entire old stack of circuit planes and the padlock. The terminal should be the main left-side object.
+
+RIGHT: ONE unified large graphical analysis window, with a warm-ivory interior and graphite outlines. Clearly different from the terminal: three panes with a narrow filter sidebar containing small protocol icons, a center list with a yellow selected row, and a wider detail panel. Include a small framed image-preview thumbnail in the details panel (simple mountain/sun image icon in warm neutral tones) and a few structured fields, showing that messages become visually inspectable. This is a conceptual illustration, not an exact screenshot. Do not invent statistical charts, dashboards, graphs or analytics. Do not draw a monitor stand or browser/device badges.
+
+CONNECTOR: one simple yellow right-pointing arrow, no fork, directly from the terminal side to the single graphical window. Remove the old pair of desktop/browser outputs. No Desktop, Web, APP or other edition labels. No labels, product names or explanatory text outside the terminal: localized names and captions will be HTML on the website.
+
+Composition: balanced landscape, the two windows side by side and at the same visual height; each window large and dominant, plenty of readable detail at 600px-wide rendering. Gentle consistent isometric/oblique perspective, closer to front-facing than the original so the terminal and graphical panes are easy to recognize. Tight but safe canvas margins, no large empty header. Crisp thin outlines, flat fills. Transparent background with genuine alpha. No background scenery, texture, gradients, bloom, glow, halos, shadows or watermark. Preserve the elegant technical tone.
+
+
+Revision 3 — fine line style matching capture-flow (2026-11-08)
+Tool: built-in image_gen.imagegen, edit mode, transparent background.
+Edit target: previous generated terminal-to-interface illustration.
+Style reference: screenshot of this website's existing CaptureDiagram.vue / figure.capture-flow, captured locally; no third-party image or capture data.
+Current asset: src/public/assets/q/terminal-to-interface-fine.webp, 1752 x 897, WebP quality 90, alpha retained.
+
+Final prompt:
+Use case: style-transfer / precise-object-edit.
+Image 1 is the illustration to EDIT: terminal text on the LEFT, one graphical analysis window on the RIGHT, linked by one arrow. Image 2 is ONLY a style reference: the website's original capture-flow architectural wireframe. Do not copy the layered kernel blocks, labels or composition from Image 2.
+Keep the two-window left-to-right concept from Image 1, but make it much more delicate, simple and restrained like Image 2.
+
+Line work: reduce every outline and border to a single crisp hairline, about one third of Image 1's visual weight. Use muted gray (#9a9fa3) instead of heavy black outlines. Remove the thick double/triple outer frames, bevels and extruded sides entirely. Each window should have one very thin frame, a fine title-bar divider, and small subtle control dots. Use mostly straight edges with only slight corner rounding, a very gentle oblique perspective, and lots of clean space.
+
+LEFT terminal: replace the large black fill with the same warm ivory/light paper surface used by the style reference's terminal. Keep recognizable monospaced dark-gray text, normal weight, with a small yellow prompt. Only these four example lines:
+"$ ecapture tls"
+"GET / HTTP/1.1"
+"Host: example.com"
+"HTTP/1.1 200 OK"
+No additional log rows, headings or decoration. The terminal must remain clearly a text console.
+
+RIGHT graphical window: preserve three panes, but reduce visual clutter. A slim sidebar with three tiny simple line icons, a message list with three lightweight rows and one pale-yellow selection, and a detail pane with a small finely outlined mountain/sun image thumbnail plus two understated field rows. Thin gray separators. No bold checkbox grids, no thick black placeholders, no large filled blocks, no statistics or charts. Keep just one graphical window, no Desktop/Web split or labels.
+
+Connector: a slender yellow line ending in a small open arrowhead, rather than the previous solid chunky arrow. Keep a modest clear gap between windows. Warm white/ivory surfaces, graphite-gray text, pale gray line art, yellow used sparingly. No shadows, blur, glow, gradients, black backgrounds, textures, watermarks, or extra objects. Keep a genuinely transparent alpha background outside the two windows. Wide landscape, about 2:1 composition, clean and readable at website size. No product names or explanatory text outside the terminal; those are supplied by HTML.

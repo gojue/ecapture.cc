@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { onMounted, watch, ref } from 'vue'
 import { useRoute } from 'vitepress'
+import { isChinesePath } from './localePath'
 const route = useRoute()
 const logo = ref<HTMLImageElement>()
 function updateHome() {
   const link = logo.value?.closest('a')
-  if (link) link.href = route.path.startsWith('/zh') ? '/zh/' : '/'
+  if (link) link.href = isChinesePath(route.path) ? '/zh/' : '/'
 }
 onMounted(updateHome)
 watch(() => route.path, updateHome)

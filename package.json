@@ -8,6 +8,7 @@
     "build": "vitepress build",
     "check:mermaid": "node scripts/check_mermaid.mjs src/en src/zh",
     "serve": "vitepress serve",
+    "check:q": "node scripts/check_product_docs.mjs",
     "clean": "rm -rf dist .vitepress/cache node_modules/.vite",
     "preinstall": "npx only-allow pnpm"
   },

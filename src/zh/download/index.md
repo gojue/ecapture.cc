@@ -1,95 +1,15 @@
 ---
 footer: false
-title: 从国内CDN下载.
+title: eCapture 下载
+description: 下载 eCapture 已发布版本：国内 CDN 与 GitHub 官方地址。
 ---
 
-# Download 高速下载
-
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
-import { loadReleases } from '../../../.vitepress/githubReleases'
-import { marked } from 'marked'
-import { useRoute } from 'vitepress'
-
-const releases = ref([])
-const loading = ref(true)
-const route = useRoute()
-
-const CDN_DOMAIN = 'https://image.cnxct.com'    // assets 镜像域名
-const GITHUB_DOMAIN = 'https://github.com'    // assets download domain
-
-// 根据当前路径判断是否使用 CDN
-const shouldUseCDN = () => {
-  return route.path.includes('/zh/')
-}
-// 将 GitHub 下载链接转换为 CDN 链接
-const convertToCDNUrl = (url) => {
-  if (!url) return url
-  return shouldUseCDN() ? url.replace(GITHUB_DOMAIN, CDN_DOMAIN) : url
-}
-
-// 转换 Markdown 为 HTML
-const convertMarkdownToHtml = (markdown) => {
-  if (!markdown) return ''
-  return marked(markdown)
-}
-
-let controller
-const reloadReleases = async () => {
-  controller?.abort()
-  const request = new AbortController()
-  controller = request
-  loading.value = true
-  const data = await loadReleases(true, request.signal)
-  if (request.signal.aborted) return
-  releases.value = data.map(release => ({
-    ...release,
-    body: convertMarkdownToHtml(release.body),
-    assets: (release.assets || []).map(asset => ({
-      ...asset,
-      browser_download_url: convertToCDNUrl(asset.browser_download_url)
-    }))
-  }))
-  loading.value = false
-}
-onMounted(reloadReleases)
-onUnmounted(() => controller?.abort())
-
+import ReleaseDownloads from '../../../.vitepress/theme/components/ReleaseDownloads.vue'
 </script>
 
-<ClientOnly>
-  <div class="releases-container">
-    <div v-if="loading">加载版本数据中...</div>
-    <div v-else-if="releases.length > 0">
-      <!-- Latest Version -->
-      <h2>最新版本 ({{ releases[0]?.tag_name || 'Unknown' }})</h2>
-      <p v-if="releases[0]?.published_at">发布时间: {{ new Date(releases[0].published_at).toLocaleDateString() }}</p>
-      <div v-if="releases[0]?.body" class="markdown-body" v-html="releases[0].body"></div>
-      <h3>下载</h3>
-      <ul v-if="releases[0]?.assets?.length">
-        <li v-for="asset in releases[0].assets" :key="asset.id">
-          <a :href="asset.browser_download_url">{{ asset.name }}</a>
-        </li>
-      </ul>
-      <!-- Previous Versions -->
-      <h2 class="previous-versions">历史版本</h2>
-      <div v-for="release in releases.slice(1)" :key="release.id">
-        <details>
-          <summary>版本 {{ release.tag_name }} ({{ new Date(release.published_at).toLocaleDateString() }})</summary>
-          <ul v-if="release?.assets?.length">
-            <li v-for="asset in release.assets" :key="asset.id">
-              <a :href="asset.browser_download_url">{{ asset.name }}</a>
-            </li>
-          </ul>
-          <p v-else>该版本没有可用的下载文件</p>
-        </details>
-      </div>
-    </div>
-    <div v-else class="release-fallback" role="status">
-      <p>暂时无法加载版本信息。你可以重试，或直接前往 GitHub 发行页下载。</p>
-      <button class="ec-button" type="button" @click="reloadReleases">重试加载</button>
-      <a class="ec-button primary" href="https://github.com/gojue/ecapture/releases" target="_blank" rel="noopener noreferrer">前往 GitHub 发行页 ↗</a>
-    </div>
-  </div>
-</ClientOnly>
+# eCapture 下载
 
+中文下载优先使用 CDN，每个文件旁保留 GitHub 官方直链。需要分析界面时，请前往 [eCaptureQ 下载与安装](/q/zh/download/)。
+
+<ReleaseDownloads />

@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { isChinesePath } from './localePath'
 import { useRoute } from 'vitepress'
 
 const route = useRoute()
-const isChinese = computed(() => route.path === '/zh' || route.path.startsWith('/zh/'))
+const isChinese = computed(() => isChinesePath(route.path))
 const label = computed(() => isChinese.value ? '下载' : 'Download')
 const destination = computed(() => isChinese.value ? '/zh/download/' : '/en/download/')
 </script>

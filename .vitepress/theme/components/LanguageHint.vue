@@ -1,7 +1,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vitepress'
-import { localePath } from './localePath'
+import { localePath, isChinesePath } from './localePath'
 
 const router = useRouter()
 const show = ref(false)
@@ -13,9 +13,8 @@ onMounted(() => {
     const userLang = navigator.language || navigator.userLanguage
     const currentPath = window.location.pathname
     const isUserZh = userLang.toLowerCase().includes('zh')
-    const isZhPath = currentPath.startsWith('/zh/')
+    const isZhPath = isChinesePath(currentPath)
     
-    console.log('Debug:', { userLang, currentPath, isUserZh, isZhPath })
 
     // 检查用户语言和当前路径是否匹配
     if (isUserZh !== isZhPath) {

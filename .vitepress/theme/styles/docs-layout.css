@@ -18,6 +18,16 @@ html .vt-doc h3 { color:var(--ec-ink); font-size:20px; margin:28px 0 14px; }
 html .vt-doc h4,html .vt-doc strong { color:var(--ec-ink); }
 html .vt-doc a { color:var(--ec-accent); text-underline-offset:4px; }
 html .vt-doc a:hover { text-decoration:underline; }
+/* Native markers stay inside the list's padding and scale with document text.
+   Download rows have their own marker-free layout; navigation lives outside .vt-doc. */
+html .vt-doc :is(ul,ol):not(.download-assets) { padding-inline-start:1.6em; list-style-position:outside; }
+html .vt-doc ul:not(.download-assets) { list-style-type:disc; }
+html .vt-doc ul:not(.download-assets) ul { list-style-type:circle; }
+html .vt-doc ul:not(.download-assets) ul ul { list-style-type:square; }
+html .vt-doc ol { list-style-type:decimal; }
+html .vt-doc :is(ul,ol):not(.download-assets) > li { display:list-item; padding-inline-start:.2em; margin:.3em 0; }
+html .vt-doc :is(ul,ol):not(.download-assets) > li::before { content:none; }
+html .vt-doc :is(ul,ol):not(.download-assets) > li::marker { color:var(--ec-muted); }
 html .vt-doc .ec-source-references { color:var(--ec-muted); font-size:13px; line-height:1.8; }
 html .vt-doc details.ec-source-references { padding:10px 14px; }
 html .vt-doc .ec-source-references > summary { color:var(--ec-muted); }

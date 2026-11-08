@@ -76,7 +76,8 @@ backupItems.forEach(item => {
 });
 
 // 2. Clean src
-// Keep: download (root), index.md, public
+// Keep: download (root), index.md, public, q (hand-maintained product docs)
+// Product navigation is composed in .vitepress/productNavigation.ts; never generated here.
 // Remove: develop, examples, guide, tutorial, en, zh
 const dirsToRemove = ['develop', 'examples', 'guide', 'tutorial', 'en', 'zh'];
 console.log('Cleaning src directory...');
@@ -276,7 +277,9 @@ function generateSidebar(lang) {
         const items = [];
         for (let file of files) {
             const filePath = path.join(dirPath, file);
-            const title = getTitle(filePath);
+            const title = subdir.name === 'download' && file === 'index.md'
+                ? (lang === 'zh' ? 'eCapture 下载' : 'eCapture Download')
+                : getTitle(filePath);
             const link = `/${lang}/${subdir.name}/${file.replace(/\.md$/, '')}`;
             items.push({ text: title, link });
         }
@@ -284,7 +287,9 @@ function generateSidebar(lang) {
         const key = `/${lang}/${subdir.name}/`;
         // Use the directory name or index.md title as the group text
         const indexFile = path.join(dirPath, 'index.md');
-        const groupTitle = getTitle(indexFile) || subdir.name;
+        const groupTitle = subdir.name === 'download'
+            ? (lang === 'zh' ? '下载' : 'Download')
+            : getTitle(indexFile) || subdir.name;
 
         sidebar[key] = [
             {

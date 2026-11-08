@@ -24,3 +24,8 @@ html .VPLocalSearchBox { --vp-local-search-highlight-bg:var(--ec-yellow); --vp-l
 @media(max-width:1023px) { html .ec-site .VPNavBarMenu { display:none; } html .ec-site .VPNavBarHamburger { display:flex; } html .ec-site .VPNavScreen { display:block; } }
 @media(max-width:767px) { html .VPNavBar { padding-inline:20px; } .VPNavBar .content { min-width:0; } html .VPNavBarSearch { padding-left:4px; } }
 @media(max-width:380px) { html .VPNavBar { padding-inline:14px; } }
+
+/* Space for the product entry without squeezing the shared header actions. */
+@media(min-width:1200px) { .VPNavBar .menu { margin-left:28px; } html .VPNavBarMenuLink,html .VPNavBarMenuGroup { padding-inline:10px; } html .VPLocalSearchButton { width:142px; } }
+.ec-site :is(a,button):focus-visible { outline:2px solid var(--ec-accent); outline-offset:4px; }
+html:lang(zh) .vt-doc button.copy.copied::before { content:'已复制'; }
