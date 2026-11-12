@@ -5,6 +5,7 @@ export const productPages = [
   ['', 'Overview', '产品概览'],
   ['quick-start', 'Quick Start', '快速开始'],
   ['data-sources', 'Data Sources', '数据源连接'],
+  ['authentication', 'Web Authentication', 'Web 登录认证'],
   ['interface', 'Interface Guide', '界面使用指南'],
   ['protocols', 'Protocols & Details', '协议与消息详情'],
   ['download', 'Download', '下载'],

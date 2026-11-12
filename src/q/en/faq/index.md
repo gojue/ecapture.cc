@@ -8,6 +8,10 @@ lang: en-US
 
 Start with the source status and the active filter chips. A connected event channel and a non-empty message list are separate checks.
 
+## Login fails or returns to the login page {#login}
+
+Confirm that the build includes authentication and loads valid `auth` settings through `--sources`; released v1.0.0 has no built-in login. Use the plaintext password, not its hash. If login immediately returns to the login page, check cookies, base-path and `secureCookie`: explicitly use `false` for local HTTP testing and keep `true` for HTTPS deployment. `401` can mean invalid credentials or an expired session; `429` means wait before retrying. See [Web Authentication](/q/en/authentication/#troubleshooting) for configuration, password changes and status-code troubleshooting.
+
 ## The source will not connect {#connection}
 
 Confirm that eCapture was started with **`--ecaptureq`**, and that its listener is still running. Use the event endpoint, not the HTTP page address or `--eventaddr`. Read the source's error/retry log and check the host, port, routing and firewall rules. If you chose an SSH tunnel, also check that it is still connected.
@@ -29,6 +33,8 @@ A connected WebSocket means the channel works, not that a target was captured. M
 Process, protocol, host, category, stars and search combine. Remove one chip at a time, clear the process next to its heading, or **Clear all** including the search term. A protocol button can disappear because the remaining scope has no records of that family. Clearing filters preserves captured data.
 
 If the selected record was evicted, refresh the list; removing a filter cannot restore it. Try the deterministic [Mock exercise](/q/en/interface/#practice) to check the workflow.
+
+The new source also excludes live records matching `hiddenDomains` before storage; defaults include GitHub-related domains. **Clear all** cannot reveal those discarded records. See [hidden-domain configuration](/q/en/data-sources/#configuration).
 
 ## What does “Unpaired” mean? {#unpaired}
 
@@ -59,6 +65,8 @@ To stop the collector itself, manage that collector independently. Registering a
 The defaults are **65,536 records** and **192 MiB of counted record JSON**. The oldest records are evicted when either limit is reached. The byte count is not the application's total process memory (RSS). The command-line options `--max-records` and `--max-memory-mib` adjust these bounds.
 
 Live pages contain at most 200 summaries; details load on demand. A record may disappear before its detail or export request. `evicted` counts records removed by retention; `dropped` counts invalid/oversized records rejected by the UI service. Neither is a kernel or collector packet-loss counter. A star does not protect a record.
+
+The new source raises the per-payload truncation cap to **256 MiB**, from 256 KiB in v1.0.0. Incoming WebSocket messages still have a separate cap: **8 MiB** by default, adjustable to 1–64 MiB with `--max-frame-mib`. Records also remain subject to the retention budget above. Body decompression still has a **2 MiB** per-layer limit. Raising the payload cap does not bypass these limits; see [version scope](/q/en/install/#version).
 
 ## What survives a restart? {#restart}
 

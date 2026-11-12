@@ -49,14 +49,18 @@ sudo ./ecapture tls -m text --text-source pcapng -i eth0 \
 
 在 **分析电脑或服务主机（本例为 `192.168.1.20`）** 上 [安装桌面版或 Web 版](/q/zh/install/)。桌面版直接打开应用；Web 包启动命令为：
 
+下面使用新源码的 `--listen`；已发布 v1.0.0 使用 `--addr`，详见[版本与参数迁移](/q/zh/install/#cli)。
+
 ```sh
 # Linux，安装 Web 包后
-ecaptureq-web --addr 127.0.0.1:28257
+ecaptureq-web --listen 127.0.0.1:28257
 # macOS，在 ZIP 解压目录中
-./ecaptureq-web --addr 127.0.0.1:28257
+./ecaptureq-web --listen 127.0.0.1:28257
 ```
 
 Windows 使用 `.\ecaptureq-web.exe` 并保留相同参数。在同机浏览器访问 [http://127.0.0.1:28257/](http://127.0.0.1:28257/)。从另一台电脑打开页面时，参见 [访问远程 Web 服务](/q/zh/data-sources/#web-access)。
+
+如需登录保护，先按 [Web 登录认证](/q/zh/authentication/#configure) 创建带 `auth` 的配置，启动时追加 `--sources ./sources.local.json`，再通过登录页进入界面。新源码复制的示例配置含公开初始账号，需先替换密码；上述未加载配置的启动方式不启用认证。
 
 **28256 是采集端事件端口，28257 是 Web 页面端口。** 浏览器能打开网页，只证明浏览器与服务连通，不代表服务已经能连接采集端。
 

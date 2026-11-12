@@ -8,7 +8,7 @@ import { JSDOM } from 'jsdom';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const read = relative => fs.readFileSync(path.join(root, relative), 'utf8');
 const exists = relative => fs.existsSync(path.join(root, relative));
-const requiredSlugs = ['', 'quick-start', 'data-sources', 'interface', 'protocols', 'download', 'install', 'faq'];
+const requiredSlugs = ['', 'quick-start', 'data-sources', 'authentication', 'interface', 'protocols', 'download', 'install', 'faq'];
 const sourceOnly = process.argv.includes('--source-only');
 assert(process.argv.slice(2).every(arg => arg === '--source-only'), 'Only --source-only is supported');
 const errors = [];
@@ -27,7 +27,7 @@ for (const locale of ['en', 'zh']) {
   check(`${locale} product pages`, () => {
     pages[locale] = markdownFiles(`src/q/${locale}`);
     const slugs = pages[locale].map(file => file.replace(`src/q/${locale}/`, '').replace(/(?:^|\/)index\.md$/, ''));
-    assert.deepEqual(slugs.sort(), [...requiredSlugs].sort(), 'Expected the overview and seven directory-based documents');
+    assert.deepEqual(slugs.sort(), [...requiredSlugs].sort(), 'Expected the overview and eight directory-based documents');
   });
 }
 for (const slug of requiredSlugs) {
@@ -135,5 +135,5 @@ if (errors.length) {
   console.error(`Product documentation checks failed (${errors.length}):\n${errors.join('\n')}`);
   process.exitCode = 1;
 } else {
-  console.log(`Product documentation checks passed: 8 paired pages, stable navigation, images${sourceOnly ? '' : ', 17 production routes and local destinations'}.`);
+  console.log(`Product documentation checks passed: ${requiredSlugs.length} paired pages, stable navigation, images${sourceOnly ? '' : `, ${1 + 2 * requiredSlugs.length} production routes and local destinations`}.`);
 }

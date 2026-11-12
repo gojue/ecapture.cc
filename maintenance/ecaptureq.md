@@ -1,7 +1,8 @@
 # eCaptureQ product area maintenance
 
 Hand-maintained documentation outside the generated `docs/` tree. Product facts
-and validation were checked on 2026-11-08. Collector and eCaptureQ application
+and validation were initially checked on 2026-11-08, with the Q feature update
+below checked on 2026-11-13. Collector and eCaptureQ application
 repositories are references; website changes belong in `gojue/ecapture.cc`.
 
 ## Ownership and paths
@@ -10,8 +11,8 @@ repositories are references; website changes belong in `gojue/ecapture.cc`.
   normalizes the slash before hydration, then enters `/q/en/` with query and
   fragment preserved. Static English content/language links remain available
   without JavaScript. No global base change or external proxy rule is needed.
-- `src/q/en/` and `src/q/zh/` contain eight paired pages: overview, quick start,
-  data sources, interface, protocols, download, installation and FAQ. Keep slugs
+- `src/q/en/` and `src/q/zh/` contain nine paired pages: overview, quick start,
+  data sources, authentication, interface, protocols, download, installation and FAQ. Keep slugs
   and explicit heading IDs paired for article/section language switching.
 - `.vitepress/productNavigation.ts` owns the product menu and sidebars, composed
   with the generated collector navigation by `.vitepress/config.mts`. It also
@@ -27,7 +28,46 @@ and the manual navigation module. It preserves the hand-maintained Chinese
 homepage/download page and English download page. Do not run Wiki synchronization
 merely to update Q. Review this boundary if migration cleanup changes.
 
-## Source and release baseline
+## 2026-11-13 authentication and feature update
+
+The official GitHub API resolved main to
+`1bb574da5e1fb98650a3ae604956d9f3ac2329cc`; latest stable remained `v1.0.0`,
+published at `2026-11-08T12:47:27Z`. The pinned source archive was inspected
+outside this repository. Its auth implementation and reference agree with the
+clean local Q checkout at `58c0368500f53619d77e7608c3ed93ecb3bb1099`.
+No Q source or collector source was edited.
+
+The existing screenshots still depict v1.0.0. New behavior is explicitly scoped
+to the newer source, whose VERSION is also still 1.0.0; do not infer package
+capabilities from that string alone. Sources are pinned in the public articles.
+
+- Added `/q/{en,zh}/authentication/` and its manual navigation entry. Covered
+  opt-in auth, example credentials, generated hashes, local HTTP versus HTTPS,
+  subpaths, fixed sessions, logout, password recovery and response-code diagnosis.
+- Updated installation, quick start, source configuration, overview, interface
+  and FAQ. New CLI names are `--listen` and `--data-source`; collector
+  `--ecaptureq` is unchanged. Old v1.0.0 commands remain in the migration table.
+- New source manifests are objects, with `sources`, `auth`, `headerCenter` and
+  `hiddenDomains`. Hidden-domain matches are discarded before storage; an empty
+  list retains built-in defaults. These are not ordinary display filters.
+- Documented long polling, startup update links, Linux loong64 Web builds, and
+  the larger payload cap while preserving separate frame/retention/decode limits.
+  `internal/app/mapper.go` defines 256 MiB; the pinned upstream reference still
+  says 256 KiB in one paragraph. Prefer implementation for this specific fact.
+- The Q checker now covers nine bilingual page pairs and 19 production routes.
+  No Wiki regeneration or screenshot replacement is needed.
+
+Validation: Node.js v24.14.1 / pnpm 9.13.2; `pnpm run build` passed (11.84s),
+`pnpm run check:q` and `git diff --check` passed. An isolated local Chrome checked
+the development preview at desktop 1440px and mobile 390px widths: the auth
+sidebar entry, Chinese-to-English navigation preserving `#configure`, CLI section,
+page title, and absence of horizontal page overflow or runtime exceptions passed.
+Desktop/mobile screenshots were visually inspected. The integrated browser tool
+timed out, so this check used local Chrome instead. These checks validate the
+documentation site; the actual Web authentication application was inspected in
+source, not deployed. Other browser engines and physical phones were not tested.
+
+## Original source and release baseline (2026-11-08)
 
 The site baseline is `cecf68d79b05667bef68bd2d813fa02d8f3c4b18`. Product behavior
 and screenshots were checked against Q commit

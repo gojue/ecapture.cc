@@ -8,13 +8,15 @@ lang: en-US
 
 A source is an eCapture **WebSocket event endpoint**. Desktop connects from its computer. Web connects from the host running `ecaptureq-web`. The browser only communicates with that Web service.
 
+Commands and object-format configuration on this page target the new source with authentication. See [Installation](/q/en/install/#cli) for released v1.0.0 options and version scope. The collector's `--ecaptureq` option is unchanged.
+
 ## Keep the three addresses separate {#addresses}
 
 | Address | Where it is configured | Meaning |
 | --- | --- | --- |
 | `ws://0.0.0.0:28256/` listener | eCapture `--ecaptureq` | eCapture opens the event listener on the capture host |
-| `ws://…:28256/` endpoint | eCaptureQ source form or `--ecaptureq` | The address the running eCaptureQ process can reach |
-| `http://127.0.0.1:28257/` page | Web `--addr 127.0.0.1:28257` | The HTTP interface your browser opens |
+| `ws://…:28256/` endpoint | eCaptureQ source form or `--data-source` | The address the running eCaptureQ process can reach |
+| `http://127.0.0.1:28257/` page | Web `--listen 127.0.0.1:28257` | The HTTP interface your browser opens |
 
 `127.0.0.1` always means **this process's own machine**. In a Web source form, it means the Web service host, even when you open that form from another computer. `0.0.0.0` is a listener bind address for all IPv4 interfaces; do not enter it as the client's destination. A port selects the service on that host. The example uses different ports to avoid conflicts.
 
@@ -82,12 +84,14 @@ Each source has its own connection state, retry/reconnect counts and operational
 Without a configuration file, sources added in the UI last only for the running instance. To keep them across restarts, create a writable JSON file, for example `sources.local.json`:
 
 ```json
-[
-  {
-    "endpoint": "ws://192.168.1.10:28256/",
-    "label": "LAN capture host"
-  }
-]
+{
+  "sources": [
+    {
+      "endpoint": "ws://192.168.1.10:28256/",
+      "label": "LAN capture host"
+    }
+  ]
+}
 ```
 
 Start the Web program with it (Linux after package installation):
@@ -110,19 +114,37 @@ ecaptureq --sources ./sources.local.json --mode live
 .\eCaptureQ.exe --sources .\sources.local.json --mode live
 ```
 
-You can instead copy and edit the package's `config/sources.example.json` (Linux: `/usr/share/doc/ecaptureq/config/` or `/usr/share/doc/ecaptureq-web/config/`). UI additions are written back atomically. If saving fails or the file changed externally, the UI reports an error and does not add the connection. CLI `--ecaptureq` endpoints remain CLI settings. The JSON file stores source configuration and descriptive metadata, **not captured records**. The manifest is limited to 128 KiB.
+You can instead copy and edit the package's `config/sources.example.json` (Linux: `/usr/share/doc/ecaptureq/config/` or `/usr/share/doc/ecaptureq-web/config/`). UI additions are written back atomically. If saving fails or the file changed externally, the UI reports an error and does not add the connection. CLI `--data-source` endpoints remain CLI settings. The JSON file stores source configuration, descriptive metadata and the optional settings below, **not captured records**. The manifest is limited to 128 KiB.
+
+## Header, hidden domains and authentication {#configuration}
+
+The new source requires a top-level **JSON object**. Back up an older `[...]` source array, then wrap it as `{"sources": [...]}`. The minimal object `{"sources": []}` configures neither sources nor login.
+
+You can add these fields alongside `sources`:
+
+| Field | Behavior |
+| --- | --- |
+| `auth` | [Web Authentication](/q/en/authentication/) settings; omitted or `null` means no login requirement |
+| `headerCenter` | Rich HTML in the center of the header; empty uses the default text. Include only content trusted by the operator |
+| `hiddenDomains` | Domain suffixes to exclude; a nonempty list replaces the built-in list. Omitted or empty uses the defaults |
+
+For example, add `"headerCenter": "Test environment"` and `"hiddenDomains": ["example.com"]` to the source object above. Use bare domain suffixes without schemes, ports or paths. Matching is case-insensitive and includes the domain itself and its subdomains. Defaults include GitHub domains such as `github.com`, `githubusercontent.com` and `ghcr.io`; see the [complete source list](https://github.com/gojue/ecaptureQ/blob/1bb574da5e1fb98650a3ae604956d9f3ac2329cc/internal/app/hidden_domains.go).
+
+**Matching live records are discarded before entering the cache**, rather than merely hidden on the current page. Clearing search filters cannot restore them. An empty array `[]` does not disable exclusions. Restart the application after editing the file; the new settings apply to subsequent receiving, and the restart clears in-memory records.
+
+Saving new sources from the UI preserves these fields. Desktop also preserves `auth` without enabling Web login. Copying the newer example configuration brings its public initial credentials, header and hidden domains with it. Adapt these to your environment and follow [login setup](/q/en/authentication/#configure).
 
 ## Access a remote Web service {#web-access}
 
 Treat browser-to-Web and Web-to-collector as two separate connections. For a trusted LAN, suppose `ecaptureq-web` runs on **`192.168.1.20`** and the browser is on another computer. Start the Web service on `192.168.1.20`:
 
 ```sh
-ecaptureq-web --addr 192.168.1.20:28257
+ecaptureq-web --listen 192.168.1.20:28257
 ```
 
 Allow the browser computer to access TCP 28257 in that host's firewall, then open [http://192.168.1.20:28257/](http://192.168.1.20:28257/). In the source form, the LAN collector is still **`ws://192.168.1.10:28256/`**. Opening the page does not prove that this separate event connection works.
 
-For public browser access, use an existing protected HTTPS reverse proxy for the complete Web UI/API prefix. The application's `--addr` option only controls its HTTP listener; it does not provide HTTPS or user authentication. Subpath deployments can use `--base-path`; see the [official deployment reference](https://github.com/gojue/ecaptureQ/blob/v1.0.0/docs/reference.md#子路径部署). The source form does not install or reconfigure a proxy.
+The command above tests LAN connectivity without authentication. For a shared remote or public deployment, load an `auth` configuration with `--sources` and use an HTTPS reverse proxy for the complete Web UI/API prefix. `--listen` controls the HTTP listener; configuration enables login, and the proxy provides HTTPS. See [HTTPS login deployment](/q/en/authentication/#https) for subpaths and Secure cookies. The source form does not install or reconfigure a proxy.
 
 <details>
 <summary>Optional: open a loopback-only Web service through SSH</summary>

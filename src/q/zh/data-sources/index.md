@@ -8,13 +8,15 @@ lang: zh-CN
 
 一个数据源是一个 eCapture **WebSocket 事件端点**。桌面版从桌面电脑发起连接；Web 版从 `ecaptureq-web` 服务所在主机发起连接。浏览器只与这个 Web 服务通信。
 
+本页命令和对象格式配置适用于含登录认证的新源码。已发布 v1.0.0 的旧参数及版本范围见[安装说明](/q/zh/install/#cli)；采集端的 `--ecaptureq` 保持不变。
+
 ## 分清三类地址 {#addresses}
 
 | 地址 | 在哪里配置 | 含义 |
 | --- | --- | --- |
 | 监听 `ws://0.0.0.0:28256/` | eCapture 的 `--ecaptureq` | 采集端在采集主机上开启事件监听 |
-| 连接 `ws://…:28256/` | eCaptureQ 来源表单或 `--ecaptureq` | 正在运行的 eCaptureQ 进程能够连接的端点 |
-| 页面 `http://127.0.0.1:28257/` | Web 的 `--addr 127.0.0.1:28257` | 浏览器打开的 HTTP 界面 |
+| 连接 `ws://…:28256/` | eCaptureQ 来源表单或 `--data-source` | 正在运行的 eCaptureQ 进程能够连接的端点 |
+| 页面 `http://127.0.0.1:28257/` | Web 的 `--listen 127.0.0.1:28257` | 浏览器打开的 HTTP 界面 |
 
 `127.0.0.1` 始终表示 **发起连接的进程所在机器**。即使从另一台电脑打开来源表单，Web 表单里的它仍指 Web 服务主机。`0.0.0.0` 用于监听所有 IPv4 接口，不应填写为客户端连接目标。端口用于区分同机不同服务；示例使用两个端口避免冲突。
 
@@ -82,12 +84,14 @@ ssh -N -L 127.0.0.1:28256:127.0.0.1:28256 user@linux-host
 未指定配置文件时，界面新增来源只保留到当前实例退出。要在重启后保留来源，创建可写的 JSON 文件，例如 `sources.local.json`：
 
 ```json
-[
-  {
-    "endpoint": "ws://192.168.1.10:28256/",
-    "label": "LAN capture host"
-  }
-]
+{
+  "sources": [
+    {
+      "endpoint": "ws://192.168.1.10:28256/",
+      "label": "LAN capture host"
+    }
+  ]
+}
 ```
 
 使用 Web 程序启动（Linux 安装包安装后）：
@@ -110,19 +114,37 @@ ecaptureq --sources ./sources.local.json --mode live
 .\eCaptureQ.exe --sources .\sources.local.json --mode live
 ```
 
-也可以复制包内 `config/sources.example.json` 后修改（Linux 位于 `/usr/share/doc/ecaptureq/config/` 或 `/usr/share/doc/ecaptureq-web/config/`）。界面新增来源会原子写回文件；保存失败或检测到外部修改冲突时会显示错误，并且不新增连接。通过 CLI `--ecaptureq` 提供的来源仍由 CLI 管理。JSON 仅保存连接配置与登记元数据，**不保存捕获记录**；清单上限为 128 KiB。
+也可以复制包内 `config/sources.example.json` 后修改（Linux 位于 `/usr/share/doc/ecaptureq/config/` 或 `/usr/share/doc/ecaptureq-web/config/`）。界面新增来源会原子写回文件；保存失败或检测到外部修改冲突时会显示错误，并且不新增连接。通过 CLI `--data-source` 提供的来源仍由 CLI 管理。JSON 保存连接配置、登记元数据和下述可选设置，**不保存捕获记录**；清单上限为 128 KiB。
+
+## 页头、隐藏域名与认证配置 {#configuration}
+
+新源码要求配置顶层为 **JSON 对象**。迁移旧版的 `[...]` 来源数组时，先备份，再将其放入 `{"sources": [...]}` 中。最小对象 `{"sources": []}` 不设置来源或登录认证。
+
+除 `sources` 外，还可在同一对象中添加以下字段：
+
+| 字段 | 行为 |
+| --- | --- |
+| `auth` | Web 登录设置；见 [Web 登录认证](/q/zh/authentication/)。省略或 `null` 不启用认证 |
+| `headerCenter` | 页头中央的富文本 HTML 字符串；空值使用默认文案，仅写入维护者信任的内容 |
+| `hiddenDomains` | 要排除的域名后缀数组；非空列表替换内置列表，省略或空数组使用内置默认值 |
+
+例如，在上面的来源对象中加入 `"headerCenter": "测试环境"`、`"hiddenDomains": ["example.com"]`。域名填写裸后缀，不带协议、端口或路径；匹配不区分大小写，包括该域名本身及子域名。默认列表包含 `github.com`、`githubusercontent.com`、`ghcr.io` 等 GitHub 域名，完整列表见[源码](https://github.com/gojue/ecaptureQ/blob/1bb574da5e1fb98650a3ae604956d9f3ac2329cc/internal/app/hidden_domains.go)。
+
+**匹配隐藏域名的实时记录会在进入缓存前被丢弃**，不是仅在当前页面隐藏，清除搜索条件不能恢复。空数组 `[]` 不表示关闭排除。修改配置后重启应用，变化对后续接收生效；重启会清空内存记录。
+
+界面保存新增来源时会保留这些字段，Desktop 也保留 `auth` 但不启用 Web 登录。复制新版示例配置会同时带入公开初始账号、页头与隐藏域名设置；应按自己的环境修改，认证步骤见[启用登录](/q/zh/authentication/#configure)。
 
 ## 访问远程 Web 服务 {#web-access}
 
 浏览器到 Web 服务、Web 服务到采集端是两段独立连接。以内网为例，`ecaptureq-web` 运行在 **`192.168.1.20`**，浏览器在另一台电脑。在 `192.168.1.20` 上启动：
 
 ```sh
-ecaptureq-web --addr 192.168.1.20:28257
+ecaptureq-web --listen 192.168.1.20:28257
 ```
 
 该主机防火墙允许浏览器电脑访问 TCP 28257 后，打开 [http://192.168.1.20:28257/](http://192.168.1.20:28257/)。来源表单中，内网采集端仍填写 **`ws://192.168.1.10:28256/`**。能打开页面，不代表这段独立的事件连接也已经连通。
 
-通过公网浏览器访问时，使用已有的受保护 HTTPS 反向代理，覆盖完整的 Web 界面/API 前缀。程序的 `--addr` 只控制 HTTP 监听，不提供 HTTPS 或用户认证。子路径部署可使用 `--base-path`，详见 [官方部署参考](https://github.com/gojue/ecaptureQ/blob/v1.0.0/docs/reference.md#子路径部署)。来源表单不会安装或重配置代理。
+上面是未启用认证的内网连通性示例。远程共享或公网部署时，通过 `--sources` 加载带 `auth` 的配置，并使用 HTTPS 反向代理覆盖完整的 Web 界面/API 前缀。`--listen` 只控制 HTTP 监听；登录由配置启用，HTTPS 由代理提供。子路径及 Secure Cookie 设置见 [HTTPS 登录部署](/q/zh/authentication/#https)。来源表单不会安装或重配置代理。
 
 <details>
 <summary>可选：通过 SSH 打开仅监听回环地址的 Web 服务</summary>

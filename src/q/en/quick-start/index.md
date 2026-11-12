@@ -49,14 +49,18 @@ Desktop makes this connection from its own computer; Web makes it from the **Web
 
 [Install Desktop or Web](/q/en/install/) on the **analysis computer/service host (`192.168.1.20` in this example)**. Open Desktop directly. With the Web package, start:
 
+The commands below use the new `--listen` option; released v1.0.0 uses `--addr`. See [version and CLI migration](/q/en/install/#cli).
+
 ```sh
 # Linux, after installing the Web package
-ecaptureq-web --addr 127.0.0.1:28257
+ecaptureq-web --listen 127.0.0.1:28257
 # macOS, in the extracted ZIP directory
-./ecaptureq-web --addr 127.0.0.1:28257
+./ecaptureq-web --listen 127.0.0.1:28257
 ```
 
 On Windows use `.\ecaptureq-web.exe` with the same arguments. Open [http://127.0.0.1:28257/](http://127.0.0.1:28257/) on that host. To open the page from another computer, see [remote Web access](/q/en/data-sources/#web-access).
+
+For login protection, create an `auth` configuration using [Web Authentication](/q/en/authentication/#configure), add `--sources ./sources.local.json` at startup, and sign in before opening the workspace. Replace the public credentials if you copy the newer example configuration. The commands above do not load a configuration and do not enable authentication.
 
 **28256 is the collector event port; 28257 is the Web page port.** Opening the Web page proves browser-to-service connectivity, not service-to-collector connectivity.
 

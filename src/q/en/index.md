@@ -37,6 +37,10 @@ Both editions share the same analysis interface, support multiple sources, and r
 
 **First time?** Try [Mock mode](/q/en/quick-start/#demo) without a collector, or follow [Quick Start](/q/en/quick-start/) to connect your first live source. That guide walks through the commands, addresses and success checks.
 
+## Additions and version scope {#updates}
+
+The new source adds **Web username/password login**, logout and session expiry, along with CLI changes, extended configuration, long polling, startup update notifications and Linux loong64 Web builds. On 13 November 2026, the latest stable package is still v1.0.0; these features require a build containing the changes. See [additions and migration](/q/en/install/#updates) and configure access protection with [Web Authentication](/q/en/authentication/).
+
 ## Keep going {#next}
 
 - [Data Sources](/q/en/data-sources/) — connect collectors on the same machine, a LAN or a public endpoint.

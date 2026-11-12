@@ -108,4 +108,8 @@ The sample's error text and timings are illustrative, not a diagnosis of a runni
 
 **Pause refresh** freezes UI record updates; background sources keep receiving and retention still applies. Resume to fetch current results. Switching Mock/Live also affects display, not reception.
 
-Use the theme button for light/dark mode. The language menu offers English and 简体中文 while keeping captured text unchanged. On a narrow window, filters and detail use toggles/back navigation instead of three full columns. The documentation website works on phones; that does not imply a supported Android or iOS eCaptureQ client.
+The new source with authentication uses **long polling for changes**. An idle request waits up to 10 seconds and returns `204` if unchanged. Record changes reload the current page; heartbeat, log or source-status changes alone do not reload records. Status continues while paused, and resuming retrieves current results. Proxy timeouts must cover the wait; `204` is not a source failure. An expired login session stops refreshing and redirects to [login](/q/en/authentication/#sessions).
+
+Use the theme button for light/dark mode. The current source initially follows the system/browser language. The top-right 文/A button switches directly between English and 简体中文 and remembers a manual choice, without reloading, clearing filters/stars or changing captured text. On a narrow window, filters and detail use toggles/back navigation instead of three full columns. The documentation website works on phones; that does not imply a supported Android or iOS eCaptureQ client.
+
+The newer analysis interface also checks official GitHub Releases on startup and shows a link when it finds a higher version. Failure does not interrupt normal use, and nothing is downloaded or installed automatically. The browser makes this request in Web mode, and the WebView makes it in Desktop mode; collector connectivity does not guarantee GitHub access.

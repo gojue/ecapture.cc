@@ -37,6 +37,10 @@ import ReleaseBadge from '@theme/components/ReleaseBadge.vue'
 
 **第一次使用？** 可以先用[模拟模式](/q/zh/quick-start/#demo)熟悉界面，无需采集器；也可以跟随[快速开始](/q/zh/quick-start/)连接第一个实时数据源。具体命令、地址填写与成功判断都在该教程中。
 
+## 新增能力与版本范围 {#updates}
+
+新源码加入 **Web 用户名与密码登录**，支持登录、退出及会话过期处理；同时更新了命令行参数、配置文件、长轮询刷新、启动更新提示和 Linux loong64 Web 构建。2026 年 11 月 13 日核对时，最新正式包仍为 v1.0.0，新功能需使用包含相应改动的构建。参见[新增能力与升级](/q/zh/install/#updates)，部署登录保护请从 [Web 登录认证](/q/zh/authentication/) 开始。
+
 ## 继续了解 {#next}
 
 - [数据源连接](/q/zh/data-sources/)：了解同机、内网和公网地址的填写方式。
