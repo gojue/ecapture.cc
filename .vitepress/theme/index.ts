@@ -8,6 +8,7 @@ import HeaderActions from './components/HeaderActions.vue'
 import PointerFeedback from './components/PointerFeedback.vue'
 import DocContext from './components/DocContext.vue'
 import DocOutline from './components/DocOutline.vue'
+import DocFooter from './components/DocFooter.vue'
 import SidebarChapters from './components/SidebarChapters.vue'
 import { setupMermaidZoom } from './composables/mermaidZoom'
 
@@ -22,6 +23,7 @@ export default Object.assign({}, VPTheme, {
         'sidebar-top': () => h('p', { class: 'ec-eyebrow ec-sidebar-label' }, lang.value.startsWith('zh') ? '使用文档' : 'DOCUMENTATION'),
         'sidebar-bottom': () => h(SidebarChapters),
       }),
+      h(DocFooter),
       h(HeaderActions),
       h(PointerFeedback),
     ])
