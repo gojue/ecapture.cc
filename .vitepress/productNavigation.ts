@@ -12,11 +12,14 @@ export const productPages = [
   ['faq', 'FAQ', '常见问题'],
 ] as const
 
-export function productItems(locale: 'en' | 'zh') {K
-  return productPages.map(([slug, en, zh]) => ({
-    text: locale === 'zh' ? zh : en,
-    link: `/q/${locale}/${slug ? slug + '/' : ''}`,
-  }))
+export function productItems(locale: 'en' | 'zh') {
+  return [
+    ...productPages.map(([slug, en, zh]) => ({
+      text: locale === 'zh' ? zh : en,
+      link: `/q/${locale}/${slug ? slug + '/' : ''}`,
+    })),
+    { text: locale === 'zh' ? '在线演示' : 'Online DEMO', link: 'https://ecapture.loongfans.cn/' },
+  ]
 }
 
 export function productNav(locale: 'en' | 'zh') {
