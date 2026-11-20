@@ -39,7 +39,7 @@ export function collectorItems(locale: 'en' | 'zh') {
 
 export function downloadItems(locale: 'en' | 'zh') {
   return [
-    { text: 'eCapture', link: `/${locale}/download/` },
+    { text: locale === 'zh' ? 'eCapture · 命令行程序' : 'eCapture · CLI App', link: `/${locale}/download/` },
     { text: locale === 'zh' ? 'eCaptureQ · 界面程序' : 'eCaptureQ · GUI App', link: `/q/${locale}/download/` },
   ]
 }
