@@ -9,28 +9,33 @@ const route = useRoute()
 const closeScreen = inject<() => void>('close-screen')
 const open = ref(false)
 const toggle = ref<HTMLButtonElement>()
+const isProduct = computed(() => ['eCapture', 'eCaptureQ'].includes(props.text))
+const isDownloads = computed(() => props.text === 'Download' || props.text === '下载')
+const menuId = computed(() => props.text === 'eCaptureQ' ? 'q-mobile-docs' : isProduct.value ? 'collector-mobile-docs' : 'mobile-downloads')
+const label = computed(() => lang.value.startsWith('zh') ? `展开 ${props.text}` : `Open ${props.text}`)
 const links = computed(() => props.items.filter(item => 'link' in item))
 function close() { open.value = false; toggle.value?.focus() }
 watch(() => route.path, () => { open.value = false; closeScreen?.() })
 </script>
 <template>
-  <div v-if="text === 'eCaptureQ'" class="q-mobile-group" @keydown.esc.stop="close">
-    <div class="q-mobile-heading">
-      <a :href="links[0]?.link" @click="closeScreen?.()">eCaptureQ</a>
-      <button ref="toggle" type="button" :aria-label="lang.startsWith('zh') ? '展开 eCaptureQ 使用文档' : 'Open eCaptureQ documentation'" :aria-expanded="open" aria-controls="q-mobile-docs" @click="open = !open"><span aria-hidden="true">{{ open ? '−' : '+' }}</span></button>
+  <div v-if="isProduct || isDownloads" class="nav-mobile-group" @keydown.esc.stop="close">
+    <div class="nav-mobile-heading">
+      <a v-if="isProduct" :href="links[0]?.link" @click="closeScreen?.()">{{ text }}</a>
+      <button ref="toggle" type="button" :class="{ 'with-label': !isProduct }" :aria-label="label" :aria-expanded="open" :aria-controls="menuId" @click="open = !open"><span v-if="!isProduct">{{ text }}</span><span aria-hidden="true">{{ open ? '−' : '+' }}</span></button>
     </div>
-    <div v-show="open" id="q-mobile-docs" class="q-mobile-links">
+    <div v-show="open" :id="menuId" class="nav-mobile-links">
       <a v-for="link in links" :key="link.link" :href="link.link" @click="closeScreen?.()">{{ link.text }}</a>
     </div>
   </div>
   <OriginalGroup v-else :text="text" :items="items" />
 </template>
 <style scoped>
-.q-mobile-group { border-bottom:1px solid var(--ec-border); }
-.q-mobile-heading { display:flex; align-items:center; justify-content:space-between; font-size:14px; font-weight:500; }
-.q-mobile-heading > a { flex:1; padding-block:14px; }
-.q-mobile-heading button { width:44px; height:48px; font-size:20px; cursor:pointer; }
-.q-mobile-links { padding:0 0 14px 12px; }
-.q-mobile-links a { display:block; padding:11px 0; font-size:14px; color:var(--ec-text); }
-.q-mobile-links a:hover { color:var(--ec-accent); }
+.nav-mobile-group { border-bottom:1px solid var(--ec-border); }
+.nav-mobile-heading { display:flex; align-items:center; justify-content:space-between; font-size:14px; font-weight:500; }
+.nav-mobile-heading > a { flex:1; padding-block:14px; }
+.nav-mobile-heading button { width:44px; height:48px; font-size:20px; cursor:pointer; }
+.nav-mobile-heading button.with-label { display:flex; align-items:center; justify-content:space-between; width:100%; font-size:14px; font-weight:500; }
+.nav-mobile-links { padding:0 0 14px 12px; }
+.nav-mobile-links a { display:block; padding:11px 0; font-size:14px; color:var(--ec-text); }
+.nav-mobile-links a:hover { color:var(--ec-accent); }
 </style>

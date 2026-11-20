@@ -34,6 +34,12 @@ console.log('Starting migration...');
 
 // 1. Backup files that need to be preserved
 const backupItems = [
+    ...['en', 'zh'].map(lang => ({
+        name: `src/${lang}/overview`,
+        src: path.join(srcDir, lang, 'overview'),
+        backup: path.join(rootDir, `temp_${lang}_overview`),
+        isDirectory: true
+    })),
     {
         name: 'src/zh/download',
         src: path.join(srcDir, 'zh/download'),
@@ -182,9 +188,8 @@ function generateNav(lang) {
 
     for (let entry of entries) {
         if (entry.isDirectory()) {
-            // The global floating shortcut links to the download page, so it
-            // should not also consume space in the navigation menu.
-            if (entry.name === 'download') continue;
+            // Manual overview and download entries are composed by productNavigation.ts.
+            if (['download', 'overview'].includes(entry.name)) continue;
             const indexPath = path.join(langDir, entry.name, 'index.md');
             if (fs.existsSync(indexPath)) {
                 const navTitle = getNavTitle(indexPath, lang);
@@ -266,7 +271,7 @@ function generateSidebar(lang) {
 
     const sidebar = {};
     const subdirs = fs.readdirSync(langDir, { withFileTypes: true })
-        .filter(entry => entry.isDirectory());
+        .filter(entry => entry.isDirectory() && entry.name !== 'overview');
 
     for (let subdir of subdirs) {
         const dirPath = path.join(langDir, subdir.name);

@@ -52,8 +52,7 @@ check('manual navigation', () => {
   assert(navigation.includes("'/q/en/'") && navigation.includes("'/q/zh/'"), 'Missing dedicated product sidebars');
   const config = read('.vitepress/config.mts');
   assert(config.includes("from './productNavigation'"), 'Config must compose the manual manifest');
-  const menuOrder = /\{\s*text:\s*'(?:Download|下载)',\s*link:\s*'\/(?:en|zh)\/download\/'\s*\},\s*productNav\('(en|zh)'\),\s*\{\s*text:\s*'Docker Hub'/g;
-  assert.equal([...config.matchAll(menuOrder)].length, 4, 'Product entry must immediately follow Download in all four locales');
+  assert.equal([...config.matchAll(/nav: siteNav\('(en|zh)'\)/g)].length, 4, 'All four locales must share the primary navigation');
   assert(/ignoreDeadLinks:\s*false/.test(config), 'Do not disable dead-link checking');
   const migration = read('scripts/migrate_docs.js');
   const removed = migration.match(/const dirsToRemove\s*=\s*\[([^\]]+)\]/)?.[1];
@@ -95,19 +94,45 @@ if (!sourceOnly) {
     if (!documentCache.has(file)) documentCache.set(file, new JSDOM(read(file)).window.document);
     return documentCache.get(file);
   }
-  const routes = ['/q/', ...['en', 'zh'].flatMap(locale => requiredSlugs.map(slug => `/q/${locale}/${slug ? `${slug}/` : ''}`))];
+  const routes = ['/', '/zh/', '/en/overview/', '/zh/overview/', '/en/download/', '/zh/download/', '/q/', ...['en', 'zh'].flatMap(locale => requiredSlugs.map(slug => `/q/${locale}/${slug ? `${slug}/` : ''}`))];
   for (const route of routes) check(`production ${route}`, () => {
     const document = documentAt(route);
-    assert.equal(document.documentElement.lang, route.startsWith('/q/zh/') ? 'zh-CN' : 'en-US');
-    assert(document.title.includes('eCaptureQ'), 'Product title missing');
+    assert.equal(document.documentElement.lang, /^\/(?:q\/)?zh\//.test(route) ? 'zh-CN' : 'en-US');
+    if (route.startsWith('/q/')) assert(document.title.includes('eCaptureQ'), 'Product title missing');
     assert(document.querySelector('h1')?.textContent?.trim(), 'Missing product/article heading');
     const nav = document.querySelector('.VPNavBarMenu');
     assert(nav, 'Missing primary navigation');
     const children = [...nav.children].filter(element => !element.classList.contains('visually-hidden'));
-    const downloadIndex = children.findIndex(element => /^(?:Download|下载)$/.test(element.textContent.trim()));
-    assert(downloadIndex >= 0, 'Download link missing');
-    assert(children[downloadIndex + 1]?.textContent.includes('eCaptureQ'), 'Product must follow Download');
-    assert(children[downloadIndex + 2]?.textContent.includes('Docker Hub'), 'Docker Hub must follow product');
+    const zh = /^\/(?:q\/)?zh\//.test(route);
+    const locale = zh ? 'zh' : 'en';
+    const labels = children.map(element => element.querySelector('.nav-dropdown-trigger')?.textContent.replace('⌄', '').trim() || element.textContent.trim());
+    assert.deepEqual(labels, ['eCapture', 'eCaptureQ', zh ? '下载' : 'Download', zh ? '作者博客' : 'Blog']);
+    const links = element => [...element.querySelectorAll('.nav-dropdown-links a')].map(link => link.getAttribute('href'));
+    assert.equal(children[0].querySelector('.nav-dropdown-link')?.getAttribute('href'), `/${locale}/overview/`);
+    assert.equal(children[1].querySelector('.nav-dropdown-link')?.getAttribute('href'), `/q/${locale}/`);
+    const generated = JSON.parse(read('.vitepress/navigation.json'));
+    const collectorChapters = Object.keys(generated.sidebar).filter(path => path.startsWith(`/${locale}/`) && !/\/(?:download|overview)\//.test(path));
+    assert.deepEqual(links(children[0]), [`/${locale}/overview/`, ...collectorChapters], 'Collector menu must retain every chapter once');
+    const qLinks = requiredSlugs.filter(slug => slug !== 'download').map(slug => `/q/${locale}/${slug ? `${slug}/` : ''}`);
+    assert.deepEqual(links(children[1]), [...qLinks, 'https://ecapture.loongfans.cn/'], 'Q documentation links must remain intact');
+    assert.deepEqual(links(children[2]), [`/${locale}/download/`, `/q/${locale}/download/`]);
+    assert(!nav.querySelector('a[href*="hub.docker.com"]'), 'Docker Hub belongs on the collector download page');
+    if (/^\/(en|zh)\/download\/$/.test(route)) {
+      assert(document.querySelector('main a[href="https://hub.docker.com/r/gojue/ecapture"]'), 'Missing Docker Hub download entry');
+    }
+    if (/\/download\/$/.test(route)) {
+      const productName = route.startsWith('/q/') ? 'eCaptureQ' : 'eCapture';
+      const downloadTitle = `${productName} ${zh ? '下载' : 'Download'}`;
+      assert.equal(document.querySelector('.ec-doc-context nav a:last-child')?.textContent, downloadTitle);
+      assert.equal(document.querySelector('.ec-doc-context .ec-eyebrow')?.textContent, downloadTitle);
+      const extraLinks = [...document.querySelectorAll('.ec-other-chapters a')];
+      assert.equal(extraLinks.length, 1, 'Download sidebars must not list other documentation chapters');
+      assert.equal(extraLinks[0].getAttribute('href'), `https://github.com/gojue/${route.startsWith('/q/') ? 'ecaptureQ' : 'ecapture'}`);
+      assert(extraLinks[0].textContent.includes(`${productName} GitHub`), 'Repository link must name the product');
+      const image = document.querySelector('.download-intro img');
+      const asset = route.startsWith('/q/') ? 'ecaptureq-interface.png' : 'ecapture-terminal.png';
+      assert.equal(image?.getAttribute('src'), `/assets/products/${asset}`, 'Download page must show its own product illustration');
+    }
     for (const image of document.querySelectorAll('main img')) assert(image.getAttribute('alt')?.trim(), 'Content image is missing alt text');
     for (const element of document.querySelectorAll('a[href], img[src], script[src], link[href], source[src]')) {
       const raw = element.getAttribute('href') || element.getAttribute('src');
@@ -120,7 +145,10 @@ if (!sourceOnly) {
       assert(target, `Missing local destination ${raw}`);
       if (url.hash && target.endsWith('.html')) {
         const id = decodeURIComponent(url.hash.slice(1));
-        assert(documentAt(url.pathname).getElementById(id), `Missing anchor ${raw}`);
+        // These release groups are created only after the browser fetches assets.
+        const dynamicReleaseGroup = /^\/q\/(en|zh)\/download\/$/.test(url.pathname)
+          && ['desktop-packages', 'web-packages'].includes(id);
+        assert(dynamicReleaseGroup || documentAt(url.pathname).getElementById(id), `Missing anchor ${raw}`);
       }
     }
   });
@@ -135,5 +163,5 @@ if (errors.length) {
   console.error(`Product documentation checks failed (${errors.length}):\n${errors.join('\n')}`);
   process.exitCode = 1;
 } else {
-  console.log(`Product documentation checks passed: ${requiredSlugs.length} paired pages, stable navigation, images${sourceOnly ? '' : `, ${1 + 2 * requiredSlugs.length} production routes and local destinations`}.`);
+  console.log(`Product documentation checks passed: ${requiredSlugs.length} paired pages, stable navigation, images${sourceOnly ? '' : `, ${7 + 2 * requiredSlugs.length} production routes and local destinations`}.`);
 }

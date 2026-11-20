@@ -8,6 +8,7 @@ lang: en-US
 import { nextTick, onMounted } from 'vue'
 import { useRouter } from 'vitepress'
 import ReleaseDownloads from '../../../../.vitepress/theme/components/ReleaseDownloads.vue'
+import DownloadIntro from '@theme/components/DownloadIntro.vue'
 const router = useRouter()
 onMounted(async () => {
   await nextTick()
@@ -20,7 +21,13 @@ onMounted(async () => {
 
 # eCaptureQ Download
 
-Choose **Desktop** to open an app, or **Web** to run the service on a host and access it from a browser. See [Installation](/q/en/install/) for dependencies and startup instructions. For capture probes, use [eCapture Download](/en/download/).
+<DownloadIntro product="ecaptureQ" locale="en">
+
+**eCaptureQ is a graphical analysis application.** Connect eCapture data sources to filter, search and correlate messages, then inspect requests, responses and details in a three-pane interface.
+
+Choose **Desktop** to open an app, or **Web** to access the interface in a browser. See [Installation](/q/en/install/) for setup. To capture TLS plaintext, view logs in a terminal or save output to files, get the command-line tool from [eCapture Download](/en/download/).
+
+</DownloadIntro>
 
 This page reads **up to the 5 most recent stable releases** from the release API; it shows fewer when fewer are available. Find older and prerelease builds on [GitHub Releases](https://github.com/gojue/ecaptureQ/releases). The documentation and screenshot baseline is explained in [version scope](/q/en/install/#version).
 

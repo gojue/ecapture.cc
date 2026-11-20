@@ -13,6 +13,7 @@ const pagePaths = new Set(
 
 export const isChinesePath = (path: string) => /^\/(?:q\/)?zh(?:\/|$)/.test(path)
 export const isProductPath = (path: string) => /^\/q(?:\/|$)/.test(path)
+export const isDownloadPath = (path: string) => /^\/(?:q\/)?(?:en|zh)\/download(?:\/|\.html$|$)/.test(path)
 
 export function localePath(path: string, targetLocale: Locale): string {
   if (isProductPath(path)) {

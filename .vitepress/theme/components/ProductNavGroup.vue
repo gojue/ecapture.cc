@@ -8,21 +8,23 @@ import NavDropdown from './NavDropdown.vue'
 const props = defineProps<{ item: NavItemWithChildren }>()
 const { lang } = useData()
 const route = useRoute()
-const isProduct = computed(() => props.item.text === 'eCaptureQ')
-const isDocs = computed(() => props.item.text === 'Docs' || props.item.text === '文档')
+const isProduct = computed(() => ['eCapture', 'eCaptureQ'].includes(props.item.text))
+const isDownloads = computed(() => props.item.text === 'Download' || props.item.text === '下载')
+const menuId = computed(() => props.item.text === 'eCaptureQ' ? 'q-desktop-docs' : isProduct.value ? 'collector-desktop-docs' : 'desktop-downloads')
+const active = computed(() => !!props.item.activeMatch && new RegExp(props.item.activeMatch).test(route.path.slice(1)))
 const links = computed(() => props.item.items.filter(item => 'link' in item))
-const productLabel = computed(() => lang.value.startsWith('zh') ? '展开 eCaptureQ 使用文档' : 'Open eCaptureQ documentation')
+const productLabel = computed(() => lang.value.startsWith('zh') ? `展开 ${props.item.text} 使用文档` : `Open ${props.item.text} documentation`)
 </script>
 
 <template>
   <NavDropdown
-    v-if="isProduct || isDocs"
-    :id="isProduct ? 'q-desktop-docs' : 'collector-desktop-docs'"
+    v-if="isProduct || isDownloads"
+    :id="menuId"
     :text="item.text"
     :links="links"
     :href="isProduct ? links[0]?.link : undefined"
     :toggle-label="isProduct ? productLabel : undefined"
-    :active="isProduct && route.path.startsWith('/q/')"
+    :active="active"
   />
   <OriginalGroup v-else :item="item" />
 </template>

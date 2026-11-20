@@ -8,6 +8,7 @@ lang: zh-CN
 import { nextTick, onMounted } from 'vue'
 import { useRouter } from 'vitepress'
 import ReleaseDownloads from '../../../../.vitepress/theme/components/ReleaseDownloads.vue'
+import DownloadIntro from '@theme/components/DownloadIntro.vue'
 const router = useRouter()
 onMounted(async () => {
   await nextTick()
@@ -20,7 +21,13 @@ onMounted(async () => {
 
 # eCaptureQ 下载
 
-选择 **桌面版** 直接打开应用，或选择 **Web 版** 在服务主机运行、通过浏览器访问。安装依赖及启动步骤请参阅 [安装指南](/q/zh/install/)。需要采集探针，请前往 [eCapture 下载](/zh/download/)。
+<DownloadIntro product="ecaptureQ" locale="zh">
+
+**eCaptureQ 是图形化分析程序。** 连接 eCapture 数据源，在三栏界面中筛选、搜索和关联消息，查看请求、响应与消息详情。
+
+选择 **桌面版** 打开应用，或选择 **Web 版** 通过浏览器访问界面，部署步骤见 [安装指南](/q/zh/install/)。如需捕获 TLS 明文、直接在终端查看日志或将输出写入文件，请从 [eCapture 下载](/zh/download/) 获取命令行工具。
+
+</DownloadIntro>
 
 本页从发布 API 读取**最近最多 5 个正式版本**；不足 5 个时显示实际数量。更多历史版本和预发布版本见 [官方 Releases](https://github.com/gojue/ecaptureQ/releases)。安装教程与截图的版本基线见 [适用范围](/q/zh/install/#version)。
 

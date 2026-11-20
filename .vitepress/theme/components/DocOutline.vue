@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useData, type Header } from 'vitepress'
+withDefaults(defineProps<{ showTitle?: boolean }>(), { showTitle: true })
 const { page, frontmatter, lang } = useData()
 type OutlineItem = { title: string; link: string; depth: number }
 const active = ref('')
@@ -125,7 +126,7 @@ onUnmounted(() => {
 </script>
 <template>
   <nav v-if="frontmatter.ecOutline !== false && headings.length" class="ec-doc-outline" :aria-label="lang.startsWith('zh') ? '本页目录' : 'On this page'">
-    <p class="outline-title"><span aria-hidden="true">#</span> {{ lang.startsWith('zh') ? '本页目录' : 'On this page' }}</p>
+    <p v-if="showTitle" class="outline-title"><span aria-hidden="true">#</span> {{ lang.startsWith('zh') ? '本页目录' : 'On this page' }}</p>
     <a v-for="item in headings" class="vp-raw" :key="item.link" :href="item.link" :class="{ active: active === item.link }" :aria-current="active === item.link ? 'location' : undefined" :style="{ paddingLeft: `${item.depth * 12}px` }" @click="jump($event, item.link)">{{ item.title }}</a>
   </nav>
 </template>

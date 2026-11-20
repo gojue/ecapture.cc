@@ -6,8 +6,7 @@ import type { Config as ThemeConfig } from '@vue/theme'
 import baseConfig from '@vue/theme/config'
 import { headerPlugin } from './headerMdPlugin'
 import { sourceReferencesPlugin } from './sourceReferencesPlugin'
-import navigation from './navigation.json'
-import { productNav, sidebar } from './productNavigation'
+import { siteNav, sidebar } from './productNavigation'
 
 const chineseSearch = {
   button: { buttonText: '搜索', buttonAriaLabel: '搜索文档' },
@@ -86,14 +85,7 @@ export default withMermaid(defineConfigWithTheme<ThemeConfig>({
       lang: 'en-US',
       themeConfig: {
         i18n: { search: 'Search docs', toc: 'On this page', ariaToC: 'Anchors in this article' },
-        nav: [
-          { text: 'Docs', items: Object.entries(navigation.sidebar).filter(([path]) => path.startsWith('/en/') && !path.includes('/download/')).map(([link, groups]) => ({ text: groups[0].text, link })) },
-          { text: 'Get started', link: '/en/1-getting-started/' },
-          { text: 'Download', link: '/en/download/' },
-          productNav('en'),
-          { text: 'Docker Hub', link: 'https://hub.docker.com/r/gojue/ecapture' },
-          { text: 'Blog', link: 'https://www.cnxct.com' },
-        ],
+        nav: siteNav('en'),
         sidebar,
         socialLinks: [{ icon: 'github', link: 'https://github.com/gojue/ecapture' }],
       },
@@ -102,14 +94,7 @@ export default withMermaid(defineConfigWithTheme<ThemeConfig>({
       label: 'English', lang: 'en-US', link: '/q/en/',
       themeConfig: {
         i18n: { search: 'Search docs', toc: 'On this page', ariaToC: 'Anchors in this article' },
-        nav: [
-          { text: 'Docs', items: Object.entries(navigation.sidebar).filter(([path]) => path.startsWith('/en/') && !path.includes('/download/')).map(([link, groups]) => ({ text: groups[0].text, link })) },
-          { text: 'Get started', link: '/en/1-getting-started/' },
-          { text: 'Download', link: '/en/download/' },
-          productNav('en'),
-          { text: 'Docker Hub', link: 'https://hub.docker.com/r/gojue/ecapture' },
-          { text: 'Blog', link: 'https://www.cnxct.com' },
-        ],
+        nav: siteNav('en'),
         sidebar,
         socialLinks: [{ icon: 'github', link: 'https://github.com/gojue/ecapture' }],
       },
@@ -119,14 +104,7 @@ export default withMermaid(defineConfigWithTheme<ThemeConfig>({
       themeConfig: {
         i18n: { search: '搜索文档', toc: '本页目录', ariaToC: '本文正文的锚点目录', menu: '章节导航', previous: '上一篇', next: '下一篇', returnToTop: '返回顶部', ariaSkipToContent: '跳转到正文', ariaSidebarNav: '侧栏导航', ariaMobileNav: '主导航', ariaMainNav: '主导航' },
         editLink: { repo: 'gojue/ecapture.cc#master', text: '在 GitHub 上编辑此页' },
-        nav: [
-          { text: '文档', items: Object.entries(navigation.sidebar).filter(([path]) => path.startsWith('/zh/') && !path.includes('/download/')).map(([link, groups]) => ({ text: groups[0].text, link })) },
-          { text: '快速开始', link: '/zh/1-getting-started/' },
-          { text: '下载', link: '/zh/download/' },
-          productNav('zh'),
-          { text: 'Docker Hub', link: 'https://hub.docker.com/r/gojue/ecapture' },
-          { text: '作者博客', link: 'https://www.cnxct.com' },
-        ],
+        nav: siteNav('zh'),
         sidebar,
         socialLinks: [{ icon: 'github', link: 'https://github.com/gojue/ecapture' }],
       },
@@ -138,14 +116,7 @@ export default withMermaid(defineConfigWithTheme<ThemeConfig>({
       themeConfig: {
         i18n: { search: '搜索文档', toc: '本页目录', ariaToC: '本文正文的锚点目录', menu: '章节导航', previous: '上一篇', next: '下一篇', returnToTop: '返回顶部', ariaSkipToContent: '跳转到正文', ariaSidebarNav: '侧栏导航', ariaMobileNav: '主导航', ariaMainNav: '主导航' },
         editLink: { repo: 'gojue/ecapture.cc#master', text: '在 GitHub 上编辑此页' },
-        nav: [
-          { text: '文档', items: Object.entries(navigation.sidebar).filter(([path]) => path.startsWith('/zh/') && !path.includes('/download/')).map(([link, groups]) => ({ text: groups[0].text, link })) },
-          { text: '快速开始', link: '/zh/1-getting-started/' },
-          { text: '下载', link: '/zh/download/' },
-          productNav('zh'),
-          { text: 'Docker Hub', link: 'https://hub.docker.com/r/gojue/ecapture' },
-          { text: '作者博客', link: 'https://www.cnxct.com' },
-        ],
+        nav: siteNav('zh'),
         sidebar,
         socialLinks: [{ icon: 'github', link: 'https://github.com/gojue/ecapture' }],
       },
@@ -195,6 +166,7 @@ export default withMermaid(defineConfigWithTheme<ThemeConfig>({
         // Keep the pinned theme and its normal menus; add a split product link.
         { find: './VPNavBarMenuGroup.vue', replacement: path.resolve(__dirname, 'theme/components/ProductNavGroup.vue') },
         { find: './VPNavScreenMenuGroup.vue', replacement: path.resolve(__dirname, 'theme/components/ProductMobileGroup.vue') },
+        { find: './VPSidebarGroup.vue', replacement: path.resolve(__dirname, 'theme/components/CollectorSidebarGroup.vue') },
       ],
     },
     define: {
