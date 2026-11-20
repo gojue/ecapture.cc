@@ -6,13 +6,28 @@ html .VPNavBar { background:var(--ec-header); backdrop-filter:blur(12px); border
 html .ec-site .VPNavBarExtra { display:none; }
 html .ec-site .VPNavBarSocialLinks { display:none; }
 html .VPNavBarMenuLink, html .VPNavBarMenuGroup { padding:0 14px; }
+/* All desktop navigation entries use the same compact hover surface. */
+html .VPNavBarMenu :is(.VPNavBarMenuLink, .nav-dropdown-trigger) {
+  display:flex;
+  align-items:center;
+  align-self:center;
+  height:36px;
+  line-height:36px;
+  border-radius:4px;
+  color:var(--ec-text);
+  transition:none;
+}
+html .VPNavBarMenu :is(.VPNavBarMenuLink, .nav-dropdown-trigger):is(:hover, :focus-visible, :has(:focus-visible)) {
+  color:var(--ec-accent);
+  background:var(--ec-accent-soft);
+}
 html .VPNavBarMenuLink.active { color:var(--ec-accent); }
 html .VPNavScreen { background:var(--ec-bg); }
 html .VPNavBarTitle:hover { opacity:1; }
 html .VPNavScreen .container { padding-top:24px; }
 html .vt-flyout .vt-menu { background:var(--ec-surface-raised); border:1px solid var(--ec-border); box-shadow:var(--ec-shadow); border-radius:6px; }
 html .VPLocalSearchButton { display:flex; justify-content:flex-start; gap:10px; width:186px; height:34px; padding:0 11px; border:1px solid var(--ec-border); border-radius:5px; background:var(--ec-surface-raised); }
-.VPLocalSearchButton::after { content:'Search docs'; font-size:12px; }
+.VPLocalSearchButton::after { content:'Search'; font-size:12px; }
 html:lang(zh) .VPLocalSearchButton::after { content:'搜索文档'; }
 .VPLocalSearchButton::before { content:'⌘ K'; order:3; margin-left:auto; font:10px var(--vt-font-family-mono); padding:1px 3px; border:1px solid var(--ec-border); border-radius:3px; color:var(--ec-muted); }
 html .VPLocalSearchButton svg { width:15px; height:15px; }
