@@ -12,8 +12,8 @@ const prefix = computed(() => zh.value ? '/zh' : '/en')
         <p class="ec-eyebrow hero-eyebrow">eBPF · Kernel-Level · Real-Time</p>
         <h1 id="ec-home-title" v-if="zh">让 TLS 明文<br><span>清晰可见。</span></h1>
         <h1 id="ec-home-title" v-else>See TLS<br><span>in plaintext.</span></h1>
-        <p class="hero-description" v-if="zh">无需安装 CA 证书，无需修改目标程序。<br>在 TLS 库边界，实时捕获通信明文。</p>
-        <p class="hero-description" v-else>Capture TLS plaintext at library boundaries.<br>No custom CA. No application changes.</p>
+        <p class="hero-description" v-if="zh">无需安装 CA 证书，无需修改目标程序。<br>实时查看 TLS 加密连接中的请求与响应。</p>
+        <p class="hero-description" v-else>Read requests and responses over TLS in real time.<br>No custom CA. No application changes.</p>
         <div class="hero-actions">
           <a class="ec-button primary" :href="`${prefix}/1-getting-started/`">{{ zh ? '开始使用' : 'Get started' }} <span aria-hidden="true">↗</span></a>
           <a class="ec-button" id="github_download" :href="`${prefix}/download/`"><span class="button-content">{{ zh ? '下载 eCapture' : 'Download' }}</span></a>
@@ -33,7 +33,7 @@ const prefix = computed(() => zh.value ? '/zh' : '/en')
       </div>
       <div class="ec-value">
         <svg viewBox="0 0 40 40" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="M3 20Q20 0 37 20Q20 40 3 20Z"/><circle cx="20" cy="20" r="5" fill="currentColor" stroke="none"/></svg>
-        <div><h2>{{ zh ? '实时观察' : 'Real-time visibility' }}</h2><p>{{ zh ? '在 TLS 库边界获取明文' : 'Plaintext at TLS library boundaries' }}</p></div>
+        <div><h2>{{ zh ? '实时观察' : 'Real-time visibility' }}</h2><p>{{ zh ? '实时解码 HTTP 消息' : 'Decode live HTTP messages' }}</p></div>
       </div>
     </div>
   </div>

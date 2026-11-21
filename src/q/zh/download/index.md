@@ -25,7 +25,7 @@ onMounted(async () => {
 
 **eCaptureQ 是图形化分析程序。** 连接 eCapture 数据源，在三栏界面中筛选、搜索和关联消息，查看请求、响应与消息详情。
 
-选择 **桌面版** 打开应用，或选择 **Web 版** 通过浏览器访问界面，部署步骤见 [安装指南](/q/zh/install/)。如需捕获 TLS 明文、直接在终端查看日志或将输出写入文件，请从 [eCapture 下载](/zh/download/) 获取命令行工具。
+直接打开应用请选择**桌面版**，通过浏览器使用请选择 **Web 版**。两者都能导出采集器发送的原生 KEYLOG 和 PCAPNG 文件。采集主机需要单独安装 eCapture。[安装 eCaptureQ](/q/zh/install/) · [下载 eCapture](/zh/download/)
 
 </DownloadIntro>
 

@@ -10,13 +10,13 @@ lang: zh-CN
 
 ## 1. 准备采集端 {#prepare}
 
-在 **Linux 采集主机** 下载 [eCapture](https://github.com/gojue/ecapture/releases)。已发布 **v2.10.0** 提供 `--ecaptureq` 和 `--text-source pcapng`，启动前先检查自己的下载构建：
+在 Linux 采集主机上安装 **eCapture v2.12.0**，在分析主机上安装 **eCaptureQ v1.2.0**。查看采集器帮助，确认列有 `--stream-listen` 和 `--text-source`。[采集器发布页](https://github.com/gojue/ecapture/releases/tag/v2.12.0)
 
 ```sh
 ./ecapture tls --help
 ```
 
-下方完整消息路径需要这些接口和兼容的 Decryptor。即使 eCaptureQ 连接成功，也不能补充采集端未提供的字段或协议能力。参见 [协议采集条件](/q/zh/protocols/#capture) 与 [上游兼容性记录](https://github.com/gojue/ecaptureQ/blob/v1.0.0/docs/upstream-status.md)。eCapture 需要受支持的 Linux/Android 内核及采集权限；这里的 macOS、Windows 支持指 eCaptureQ。
+下方完整消息路径需要这些接口和兼容的 Decryptor。即使 eCaptureQ 连接成功，也不能补充采集端未提供的字段或协议能力。参见 [协议采集条件](/q/zh/protocols/#capture) 与 [上游兼容性记录](https://github.com/gojue/ecaptureQ/blob/v1.2.0/docs/upstream-status.md)。eCapture 需要受支持的 Linux/Android 内核及采集权限；这里的 macOS、Windows 支持指 eCaptureQ。
 
 ## 2. 启动 eCapture 事件监听 {#collector}
 
@@ -24,12 +24,12 @@ lang: zh-CN
 
 ```sh
 sudo ./ecapture tls -m text --text-source pcapng -i eth0 \
-  --ecaptureq ws://0.0.0.0:28256/
+  --stream-listen ws://0.0.0.0:28256/
 ```
 
-把 `eth0` 换成目标流量经过的网卡，本机 loopback 流量使用 `lo`。保持进程运行，检查启动日志中的探针附加与事件监听是否成功。Go TLS 程序改用 `gotls --elfpath /path/to/go-app`，GnuTLS 程序使用 `gnutls --gnutls /path/to/libgnutls.so`；BoringSSL/LibreSSL 目标可能需要显式选择库和版本，详见 [协议与消息详情](/q/zh/protocols/#capture)。
+把 `eth0` 换成目标流量经过的网卡，本机 loopback 流量使用 `lo`。保持进程运行，检查启动日志中的探针附加与事件监听是否成功。Go TLS 程序改用 `gotls --elfpath /path/to/go-app`，GnuTLS 程序使用 `gnutls --gnutls /path/to/libgnutls.so`；BoringSSL 目标可能需要显式选择库和版本，详见 [协议与消息详情](/q/zh/protocols/#capture)。
 
-这里 `--ecaptureq` 指 **由 eCapture 打开的监听地址**。`0.0.0.0:28256` 表示监听采集主机的 IPv4 接口；采集主机防火墙需允许 eCaptureQ 主机（`192.168.1.20`）访问 TCP 28256 端口。如果仅同机使用，将监听地址改为 `ws://127.0.0.1:28256/`。不要用另一种输出接口 `--eventaddr` 替代它。
+这里的 `--stream-listen` 用于开启采集器订阅端点。采集主机的防火墙只需允许分析主机（`192.168.1.20`）访问 TCP 28256。同机使用时可绑定 `ws://127.0.0.1:28256/`。如果设置了自定义路径，eCaptureQ 中也要填写该路径。
 
 ## 3. 选择连接地址 {#tunnel}
 
@@ -49,8 +49,6 @@ sudo ./ecapture tls -m text --text-source pcapng -i eth0 \
 
 在 **分析电脑或服务主机（本例为 `192.168.1.20`）** 上 [安装桌面版或 Web 版](/q/zh/install/)。桌面版直接打开应用；Web 包启动命令为：
 
-下面使用新源码的 `--listen`；已发布 v1.0.0 使用 `--addr`，详见[版本与参数迁移](/q/zh/install/#cli)。
-
 ```sh
 # Linux，安装 Web 包后
 ecaptureq-web --listen 127.0.0.1:28257
@@ -60,7 +58,7 @@ ecaptureq-web --listen 127.0.0.1:28257
 
 Windows 使用 `.\ecaptureq-web.exe` 并保留相同参数。在同机浏览器访问 [http://127.0.0.1:28257/](http://127.0.0.1:28257/)。从另一台电脑打开页面时，参见 [访问远程 Web 服务](/q/zh/data-sources/#web-access)。
 
-如需登录保护，先按 [Web 登录认证](/q/zh/authentication/#configure) 创建带 `auth` 的配置，启动时追加 `--sources ./sources.local.json`，再通过登录页进入界面。新源码复制的示例配置含公开初始账号，需先替换密码；上述未加载配置的启动方式不启用认证。
+如需登录保护，先按 [Web 登录认证](/q/zh/authentication/#configure) 创建带 `auth` 的配置，启动时追加 `--sources ./sources.local.json`，再通过登录页进入界面。仓库中的示例配置含公开初始账号，需先替换密码；上述未加载配置的启动方式不启用认证。
 
 **28256 是采集端事件端口，28257 是 Web 页面端口。** 浏览器能打开网页，只证明浏览器与服务连通，不代表服务已经能连接采集端。
 
@@ -71,11 +69,7 @@ Windows 使用 `.\ecaptureq-web.exe` 并保留相同参数。在同机浏览器�
 3. 点击 **添加并连接**，确认来源显示已连接，顶部的已连接数 / 总来源数增加。
 4. 将顶部模式切换到 **实时**。添加来源不会自动改变当前显示模式。
 
-[![eCaptureQ v1.0.0 数据源表单，使用合成 WebSocket 地址与仅作描述的启动命令](/assets/q/sources.png)](/assets/q/sources.png)
-
-*点击放大。真实 eCaptureQ v1.0.0 Web 界面，使用合成设置。*
-
-启动命令字段只是描述，不会启动 eCapture、登录主机或修改远端探针。
+连接后展开来源卡片，核对采集主机、模块、模式和版本。eCaptureQ v1.2.0 直接显示采集器上报的信息。
 
 ## 6. 产生流量并查看记录 {#traffic}
 

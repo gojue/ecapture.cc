@@ -33,7 +33,7 @@ Turn the network messages captured by eCapture into a **searchable, correlated v
 
 ## Capture with eCapture, explore with Q {#relationship}
 
-**eCapture** runs on the capture machine and handles collection and TLS decryption. **eCaptureQ** connects to its `--ecaptureq` WebSocket interface, correlates application messages and displays them. The two products run independently.
+**eCapture** runs on the capture machine and handles collection and TLS decryption. **eCaptureQ** connects to its `--stream-listen` WebSocket interface, correlates application messages and displays them. The two products run independently.
 
 <QRelationship locale="en" />
 
@@ -50,6 +50,10 @@ Both editions share the same analysis interface, support multiple sources, and r
 | Get it | [Install Desktop](/q/en/install/#desktop) | [Run Web](/q/en/install/#web) |
 
 **First time?** Try [Mock mode](/q/en/quick-start/#demo) without a collector, or follow [Quick Start](/q/en/quick-start/) to connect your first live source. That guide walks through the commands, addresses and success checks.
+
+## Additions and version scope {#updates}
+
+**eCaptureQ v1.2.0** connects to **eCapture v2.12.0** over Protobuf v2. Text streams populate the message list. For collectors in keylog or pcapng mode, open **Native files** to save the received bytes. From v1.1.0, Web also supports optional sign-in. [Upgrade instructions](/q/en/install/#cli) · [Native files](/q/en/interface/#native) · [Web Authentication](/q/en/authentication/)
 
 ## Keep going {#next}
 

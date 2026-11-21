@@ -16,21 +16,21 @@ Choose the probe that matches your application:
 
 | Probe | Target |
 | --- | --- |
-| **TLS** (`tls`) | OpenSSL, LibreSSL and BoringSSL |
+| **TLS** (`tls`) | Applications using supported OpenSSL or BoringSSL builds |
 | **GoTLS** (`gotls`) | Applications using Go's TLS implementation |
-| **GnuTLS** (`gnutls`) | Applications linked to GnuTLS |
+| **GnuTLS** (`gnutls`) | Linux applications linked to GnuTLS |
 
 The [core TLS modules](/en/2-core-tls-modules/) guide explains library paths and probe options.
 
 ## Read, save or analyze {#outputs}
 
-Use **text mode** to view captured plaintext in the terminal and write output to files. Operational logs describe the collector's activity; captured messages contain the observed application traffic.
+In **eCapture v2.12.0**, the three core probes default to text mode with the `pcapng` source. The collector combines packets from one interface with TLS secrets to reconstruct HTTP/1.x and HTTP/2 messages. It prints messages and runtime logs on stdout. Use `-i lo` for a local loopback test. To keep the terminal view and also save structured records, add `--output stdout --output capture.jsonl`.
 
-For other workflows, **Keylog** saves TLS session keys, while **PCAPNG** stores packets and TLS secrets for analysis in tools such as Wireshark. See [capture modes](/en/3-capture-modes/) to choose an output format.
+For offline analysis, `-m pcapng --pcapfile capture.pcapng` saves packets and TLS secrets together for Wireshark. If you already collect packets separately, `-m keylog --keylogfile capture.keys` saves the matching secrets. [Compare capture modes](/en/3-capture-modes/).
 
 ## Command line or graphical interface? {#relationship}
 
-**eCapture collects and decrypts on the capture machine. eCaptureQ provides the graphical analysis interface.** You can use eCapture independently from a terminal, or connect eCaptureQ to a compatible collector to search and correlate messages.
+**eCapture collects and decrypts on the capture machine. eCaptureQ provides the graphical analysis interface.** To connect eCaptureQ v1.2.0, enable `--stream-listen` on the v2.12.0 collector. Q subscribes using the `ecapture.v2` WebSocket subprotocol. In text mode you can search and correlate decoded messages. In keylog or pcapng mode you can export the native artifact.
 
 | | eCapture | eCaptureQ |
 | --- | --- | --- |
@@ -39,7 +39,7 @@ For other workflows, **Keylog** saves TLS session keys, while **PCAPNG** stores 
 | Where it runs | Supported Linux / Android capture machine | Windows, macOS or Linux workstation / Web host |
 | Get it | [Download eCapture](/en/download/) | [Download eCaptureQ](/q/en/download/) |
 
-Learn about the graphical workflow in the existing [eCaptureQ Overview](/q/en/).
+For the listener command and connection settings, see the [eCaptureQ quick start](/q/en/quick-start/).
 
 ## Start on a supported capture machine {#start}
 

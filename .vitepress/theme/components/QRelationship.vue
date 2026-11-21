@@ -11,9 +11,9 @@ const zh = computed(() => props.locale === 'zh')
       <div><strong>eCaptureQ</strong><span>{{ zh ? '关联 · 图形化查看' : 'Correlate · visual inspection' }}</span></div>
     </figcaption>
     <div class="q-flow-art">
-      <img src="/assets/q/terminal-to-interface-fine.webp" width="1752" height="897" loading="lazy" :alt="zh ? '概念示意图：左侧终端展示 eCapture 的文本采集结果；应用消息通过 --ecaptureq WebSocket 接口送到右侧 eCaptureQ，在图形界面中关联并查看消息及捕获的图片内容。' : 'Concept illustration: a terminal represents eCapture’s text capture output; application messages travel through the --ecaptureq WebSocket interface to eCaptureQ for correlation and visual inspection, including captured image content.'" />
+      <img src="/assets/q/terminal-to-interface-fine.webp" width="1752" height="897" loading="lazy" :alt="zh ? '左侧终端显示 eCapture 解码的消息，右侧 eCaptureQ 通过 WebSocket 订阅同一批消息，关联请求与响应并预览图片。' : 'The terminal shows messages decoded by eCapture. On the right, eCaptureQ subscribes over WebSocket to correlate requests and responses and preview captured images.'" />
     </div>
-    <p class="q-flow-channel">{{ zh ? '应用消息' : 'Application messages' }} · <code>--ecaptureq</code> WebSocket</p>
+    <p class="q-flow-channel"><code>--stream-listen</code> · WebSocket (<code>ecapture.v2</code>)</p>
   </figure>
 </template>
 

@@ -10,11 +10,11 @@ eCaptureQ Web 可通过配置文件启用用户名与密码登录，保护分析
 
 ## 版本与保护范围 {#scope}
 
-本文核对于 **2026 年 11 月 13 日**，依据主分支提交 [`1bb574d`](https://github.com/gojue/ecaptureQ/commit/1bb574da5e1fb98650a3ae604956d9f3ac2329cc)。当日最新正式版仍为 **v1.0.0**，不包含本页登录功能；请使用包含认证实现的源码构建或后续发布包。先运行 `ecaptureq-web --help`，确认有 `--hash-password`、`--listen`；构建方法见[对应源码编译指南](https://github.com/gojue/ecaptureQ/blob/1bb574da5e1fb98650a3ae604956d9f3ac2329cc/docs/compilation.md)。参数变化见[安装与升级](/q/zh/install/#cli)。
+**eCaptureQ v1.1.0** 起，正式版 Web 服务支持登录。v1.2.0 启用登录后，原生文件下载也需要有效会话。升级旧服务时，请更新启动参数并载入对象格式的配置。[参数迁移](/q/zh/install/#cli) · [版本配置参考](https://github.com/gojue/ecaptureQ/blob/v1.2.0/docs/reference.md)
 
 - 只有通过 `--sources` 加载配置，且其中 `auth` 是认证对象时，才启用登录。省略 `auth` 或设为 `null` 会关闭认证；`auth: {}` 是无效配置，Web 会拒绝启动。
 - 这是一个配置账号的共享访问入口，没有多用户、角色或按来源授权。登录者都能查看保留记录并管理来源。
-- 认证保护**浏览器到 Web 服务**这段访问，不为 eCapture 的 `--ecaptureq` 采集端 WebSocket 增加认证或加密。后者仍按[数据源连接](/q/zh/data-sources/#public)配置受保护链路。
+- 认证保护**浏览器到 Web 服务**这段访问，不为 eCapture 的 `--stream-listen` 采集端 WebSocket 增加认证或加密。后者仍按[数据源连接](/q/zh/data-sources/#public)配置受保护链路。
 - 无人登录、退出登录或会话过期都不会停止后台接收；记录仍按缓存上限保留和淘汰。
 
 ## 生成自己的密码哈希 {#password}
@@ -29,7 +29,7 @@ macOS ZIP 使用 `./ecaptureq-web --hash-password`，Windows PowerShell 使用 `
 
 哈希为带随机盐的 PBKDF2-HMAC-SHA256（600,000 次迭代），配置不接受明文密码。工具也支持标准输入，适合从已有的安全输入渠道生成哈希。
 
-新版包内 `config/sources.example.json` 的公开初始账号为 **`ecapture` / `ecaptureQ`**。这是示例文件的设置，只有加载该文件才生效，程序并非默认开启这个账号。部署前请替换为自己的用户名和密码哈希。
+仓库配置示例中的公开账号为 **`ecapture` / `ecaptureQ`**，加载示例后才会生效。部署前请替换用户名和密码哈希。[v1.2.0 配置示例](https://github.com/gojue/ecaptureQ/blob/v1.2.0/config/sources.example.json)
 
 ## 本机启用并登录 {#configure}
 
@@ -78,7 +78,7 @@ ecaptureq-web --listen 127.0.0.1:28257 \
   --exclude-http-path-prefix /ecaptureq-web/
 ```
 
-浏览器访问 `https://your-host/ecaptureq-web/`，登录页位于同一前缀内。代理需保留该前缀和外部 `Host`，将页面、资源与 API 一并转发；Nginx 的 `proxy_pass http://127.0.0.1:28257` 不要添加会剥离前缀的尾斜杠。可参照[官方 Nginx 示例](https://github.com/gojue/ecaptureQ/blob/1bb574da5e1fb98650a3ae604956d9f3ac2329cc/deploy/nginx.conf.example)配置自己的 TLS 入口。长轮询可能等待 10 秒，代理读取超时需大于此等待时间，示例为 35 秒。
+浏览器访问 `https://your-host/ecaptureq-web/`，登录页位于同一前缀内。代理需保留该前缀和外部 `Host`，将页面、资源与 API 一并转发；Nginx 的 `proxy_pass http://127.0.0.1:28257` 不要添加会剥离前缀的尾斜杠。可参照[官方 Nginx 示例](https://github.com/gojue/ecaptureQ/blob/v1.2.0/deploy/nginx.conf.example)配置自己的 TLS 入口。长轮询可能等待 10 秒，代理读取超时需大于此等待时间，示例为 35 秒。
 
 Cookie 使用 `HttpOnly`、`SameSite=Strict`，Path 对应 `--base-path`。应用不会根据请求中的 `X-Forwarded-Proto` 自动修改 Cookie 的 Secure 属性；应显式核对配置和浏览器访问协议。
 
@@ -103,4 +103,4 @@ Cookie 使用 `HttpOnly`、`SameSite=Strict`，Path 对应 `--base-path`。应�
 | 登录返回 `403` | 检查反向代理的外部 Host 和同源访问；登录/退出请求需要同源及 `X-Ecapture-UI: 1`，内置页面会自动发送 |
 | 登录返回 `503` / `session_limit` | 已达会话上限；退出不再使用的会话或等待过期。重启可清空会话，但也会丢失内存记录 |
 
-实现依据：[配置与认证参考](https://github.com/gojue/ecaptureQ/blob/1bb574da5e1fb98650a3ae604956d9f3ac2329cc/docs/reference.md)、[认证中间件](https://github.com/gojue/ecaptureQ/blob/1bb574da5e1fb98650a3ae604956d9f3ac2329cc/internal/auth/handler.go)、[密码与配置校验](https://github.com/gojue/ecaptureQ/blob/1bb574da5e1fb98650a3ae604956d9f3ac2329cc/internal/auth/password.go)。
+实现依据：[配置与认证参考](https://github.com/gojue/ecaptureQ/blob/v1.2.0/docs/reference.md)、[认证中间件](https://github.com/gojue/ecaptureQ/blob/v1.2.0/internal/auth/handler.go)、[密码与配置校验](https://github.com/gojue/ecaptureQ/blob/v1.2.0/internal/auth/password.go)。

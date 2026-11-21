@@ -6,9 +6,9 @@ This repository builds [ecapture.cc](https://ecapture.cc), the official website 
 
 ## eCapture today
 
-eCapture observes TLS plaintext at library boundaries without a MITM proxy or custom CA. The website highlights the `tls` probe for OpenSSL, LibreSSL and BoringSSL, `gotls` for Go programs, and `gnutls` for GnuTLS libraries.
+The website covers the `tls` probe for OpenSSL and BoringSSL, `gotls` for Go programs using `crypto/tls`, and `gnutls` for GnuTLS applications. All three can reconstruct messages from packets and TLS secrets without a custom CA.
 
-The upstream v2.8 codebase adds Linux LoongArch64 builds, text/keylog/pcapng capture modes for GnuTLS, and a unified `--eventaddr` destination for captured TLS, GoTLS and GnuTLS events. `--logaddr` carries operational logs separately; [eCaptureQ](https://github.com/gojue/ecaptureq) receives additional typed events. See the [upstream changelog](https://github.com/gojue/ecapture/blob/master/CHANGELOG.md) and [output pipeline guide](https://github.com/gojue/ecapture/blob/master/docs/agent/output-pipeline.md) for the current contracts.
+The Wiki covers **eCapture v2.12.0**. Text mode defaults to the pcapng source. Repeat `--output` to select destinations for structured records, or use `--pcapfile` and `--keylogfile` for native artifacts. **eCaptureQ v1.2.0** connects to `--stream-listen` with the `ecapture.v2` WebSocket subprotocol. [Collector migration notes](https://github.com/gojue/ecapture/releases/tag/v2.12.0) · [eCaptureQ release notes](https://github.com/gojue/ecaptureQ/releases/tag/v1.2.0)
 
 | Runtime | Architecture | Minimum kernel |
 | --- | --- | --- |
@@ -18,7 +18,7 @@ The upstream v2.8 codebase adds Linux LoongArch64 builds, text/keylog/pcapng cap
 | Android | x86_64 / amd64 | 4.18+ |
 | Android | AArch64 / arm64 | 5.5+ |
 
-Android/loong64, Windows and macOS are unsupported. Probe loading requires root or the [documented Linux capabilities](https://github.com/gojue/ecapture/blob/master/docs/minimum-privileges.md). Check the [published release assets](https://github.com/gojue/ecapture/releases) for a LoongArch64 package, or use the [LoongArch64 build guide](https://github.com/gojue/ecapture/blob/master/docs/loong64-support.md). The build path has cross-build and user-mode smoke checks; verify eBPF capture on the target hardware before relying on it in production.
+Probe loading requires root or the [documented Linux capabilities](https://github.com/gojue/ecapture/blob/v2.12.0/docs/minimum-privileges.md). Linux LoongArch64 has release archives and Debian packages, with native OpenSSL and GoTLS end-to-end tests. [Release assets](https://github.com/gojue/ecapture/releases) · [LoongArch64 build and test coverage](https://github.com/gojue/ecapture/blob/v2.12.0/docs/loong64-support.md)
 
 ## Where to edit
 
@@ -30,7 +30,7 @@ Android/loong64, Windows and macOS are unsupported. Probe loading requires root 
 | Wiki import | `scripts/wiki.json`, `scripts/generate_docs.js`, `scripts/migrate_docs.js` |
 | Shared images | `src/public/assets/` |
 
-Most guide chapters are generated from the periodically updated `scripts/wiki.json`. The import pipeline replaces `src/en/` and `src/zh/`, then restores the hand-maintained Chinese homepage, download pages and `src/zh/usage/`. Do not manually revise generated chapters for website-only changes: a later import will overwrite them. `src/index.md` and `src/zh/index.md` are maintained by this site.
+The six bilingual Wiki chapters are generated from `scripts/wiki.json`. Edit the snapshot and the published Markdown together so the changes survive the next import. The migration restores both product overviews and download pages, the Chinese homepage and `src/zh/usage/`. The English homepage and the eCaptureQ articles in `src/q/` are maintained separately.
 
 To import a **verified, current** Wiki snapshot, run `bash scripts/update_docs.sh --no-dev`, review the source and navigation diff, then build the site. The checked-in snapshot may lag the current published chapters; inspect its page plan before running the destructive migration.
 
@@ -45,7 +45,7 @@ pnpm run build
 pnpm run serve
 ```
 
-`pnpm run build` writes `dist/` and checks internal links. There is no `docs:dev`, `docs:build` or automated test script in this repository. Vercel uses the `dist/` output declared in `vercel.json`; `netlify.toml` contains an alternative build configuration. Deployment triggers are configured by the hosting service, not this repository.
+`pnpm run build` writes `dist/` and checks internal links. Use `pnpm run check:mermaid` to validate diagrams and `pnpm run check:q` after the build to validate product pages. Vercel uses the `dist/` output declared in `vercel.json`. Netlify reads `netlify.toml`.
 
 ## Documentation search
 

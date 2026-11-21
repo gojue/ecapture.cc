@@ -81,15 +81,25 @@ Images are decoded **from captured bytes**, never fetched again from the origina
 
 **Connection** shows source, process name/PID, the captured process-command snapshot, connection identity, direction, transport and capture time. Both captured local processes can be shown for a paired exchange. Process ownership does not by itself establish client/server role. Command arguments may be truncated (up to 256 bytes captured); the UI marks that and preserves the captured raw representation in exported JSON.
 
-Where supplied by a compatible collector, **TLS handshake** shows version, cipher suite, SNI, offered/negotiated ALPN, key-exchange group, signature algorithm, **JA3** and **JA4**. These are handshake metadata and fingerprints, not a session-key viewer. Fields are not inferred from HTTP Host or another connection. The published eCapture v2.10.0 does not supply the newer official process-arguments/TLS fields; see [compatibility requirements](/q/en/protocols/#tls).
+When the collector observes a handshake, **TLS handshake** shows the available version, cipher suite, SNI, offered and negotiated ALPN, key-exchange group, signature algorithm, JA3 and JA4. SNI stays unknown if the collector only saw the HTTP Host. [Metadata compatibility](/q/en/protocols/#tls)
 
 ### Copy, star and export {#export}
 
 Copy the URL or cURL only when the request and required Host/authority were captured. Copying does not execute a request. Use the star in the detail heading to mark a record, then **Starred** in the left pane to find it again.
 
-In Live mode, **Export page JSON** exports the filtered records on the **current page**, including fetched details; it does not export every page. In Mock mode, **Export JSON** exports the current filtered demo list. A record evicted during export causes an error; refresh and retry. Desktop uses a native save dialog, Web uses browser download. Desktop limits a single export to 64 MiB and clipboard content to 4 MiB.
+In Live mode, **Export page JSON** exports the filtered records on the **current page**, including fetched details; it does not export every page. In Mock mode, **Export JSON** exports the current filtered demo list. A record evicted during export causes an error; refresh and retry. Desktop uses a native save dialog, Web uses browser download. Desktop limits a single JSON export to 64 MiB and clipboard content to 4 MiB.
 
 Stars disappear on page reload or data-mode change and never protect records from eviction. Review exported data before sharing: real captures may contain credentials or personal information.
+
+## Export native KEYLOG or PCAPNG files {#native}
+
+When your collector runs in `-m keylog` or `-m pcapng`, open **Native files** to find downloads for each source. The collector still requires its own local `--keylogfile PATH` or `--pcapfile PATH`. With `-m text --text-source pcapng`, Q receives decoded message records for the list.
+
+1. Connect Q before generating the traffic you want to inspect. A late PCAPNG subscription starts with new section and interface headers and receives only subsequent packets and secrets.
+2. Select the source and check the format, byte count, connection generation and status. A reconnection or collector configuration reload starts a new file. Older files for that source are listed in its history while retained.
+3. Choose **Export native file** to download in Web or save in Desktop. A file is complete after a normal WebSocket close and successful format validation. **Export partial file** saves the bytes available so far, including after an interruption. Treat that copy as partial.
+
+Native files use a separate temporary disk budget of **1 GiB and 32 sessions** per instance by default. Use `--native-directory`, `--max-native-mib` and `--max-native-sessions` to configure it. The service evicts the oldest eligible finished files when space is needed. On normal exit it removes its temporary copies. Save files you need before stopping the service. [v1.2.0 reference](https://github.com/gojue/ecaptureQ/blob/v1.2.0/docs/reference.md)
 
 ## Practice: inspect a payment response {#practice}
 
@@ -108,8 +118,8 @@ The sample's error text and timings are illustrative, not a diagnosis of a runni
 
 **Pause refresh** freezes UI record updates; background sources keep receiving and retention still applies. Resume to fetch current results. Switching Mock/Live also affects display, not reception.
 
-The new source with authentication uses **long polling for changes**. An idle request waits up to 10 seconds and returns `204` if unchanged. Record changes reload the current page; heartbeat, log or source-status changes alone do not reload records. Status continues while paused, and resuming retrieves current results. Proxy timeouts must cover the wait; `204` is not a source failure. An expired login session stops refreshing and redirects to [login](/q/en/authentication/#sessions).
+Since v1.1.0, the interface uses **long polling for changes**. An idle request waits up to 10 seconds and returns `204` if unchanged. Record changes reload the current page; heartbeat, log or source-status changes alone do not reload records. Status continues while paused, and resuming retrieves current results. Proxy timeouts must cover the wait; `204` is not a source failure. An expired login session stops refreshing and redirects to [login](/q/en/authentication/#sessions).
 
-Use the theme button for light/dark mode. The current source initially follows the system/browser language. The top-right 文/A button switches directly between English and 简体中文 and remembers a manual choice, without reloading, clearing filters/stars or changing captured text. On a narrow window, filters and detail use toggles/back navigation instead of three full columns. The documentation website works on phones; that does not imply a supported Android or iOS eCaptureQ client.
+Use the theme button for light/dark mode. At first launch, Q follows the system/browser language. The top-right 文/A button switches directly between English and 简体中文 and remembers a manual choice, without reloading, clearing filters/stars or changing captured text. On a narrow window, filters and detail use toggles/back navigation instead of three full columns. The documentation website works on phones; that does not imply a supported Android or iOS eCaptureQ client.
 
-The newer analysis interface also checks official GitHub Releases on startup and shows a link when it finds a higher version. Failure does not interrupt normal use, and nothing is downloaded or installed automatically. The browser makes this request in Web mode, and the WebView makes it in Desktop mode; collector connectivity does not guarantee GitHub access.
+The interface also checks official GitHub Releases on startup and shows a link when it finds a higher version. Failure does not interrupt normal use, and nothing is downloaded or installed automatically. The browser makes this request in Web mode, and the WebView makes it in Desktop mode; collector connectivity does not guarantee GitHub access.

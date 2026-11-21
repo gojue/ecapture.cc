@@ -8,19 +8,19 @@ lang: zh-CN
 
 一个数据源是一个 eCapture **WebSocket 事件端点**。桌面版从桌面电脑发起连接；Web 版从 `ecaptureq-web` 服务所在主机发起连接。浏览器只与这个 Web 服务通信。
 
-本页命令和对象格式配置适用于含登录认证的新源码。已发布 v1.0.0 的旧参数及版本范围见[安装说明](/q/zh/install/#cli)；采集端的 `--ecaptureq` 保持不变。
+eCaptureQ v1.2.0 通过 WebSocket 子协议 `ecapture.v2` 订阅 eCapture v2.12.0。填写分析主机可达的采集器地址，并使用监听端配置的端口和路径。[版本兼容性](/q/zh/install/#cli)
 
 ## 分清三类地址 {#addresses}
 
 | 地址 | 在哪里配置 | 含义 |
 | --- | --- | --- |
-| 监听 `ws://0.0.0.0:28256/` | eCapture 的 `--ecaptureq` | 采集端在采集主机上开启事件监听 |
+| 监听 `ws://0.0.0.0:28256/` | eCapture 的 `--stream-listen` | 采集端在采集主机上开启事件监听 |
 | 连接 `ws://…:28256/` | eCaptureQ 来源表单或 `--data-source` | 正在运行的 eCaptureQ 进程能够连接的端点 |
 | 页面 `http://127.0.0.1:28257/` | Web 的 `--listen 127.0.0.1:28257` | 浏览器打开的 HTTP 界面 |
 
 `127.0.0.1` 始终表示 **发起连接的进程所在机器**。即使从另一台电脑打开来源表单，Web 表单里的它仍指 Web 服务主机。`0.0.0.0` 用于监听所有 IPv4 接口，不应填写为客户端连接目标。端口用于区分同机不同服务；示例使用两个端口避免冲突。
 
-`--eventaddr` 是 eCapture 的普通事件输出地址，不是 eCaptureQ 专用的结构化事件接口，不能替代 `--ecaptureq`。
+在采集端，`--stream-listen` 接受订阅连接，`--output` 向目标输出记录，`--config-listen` 提供 HTTP 配置更新接口。
 
 ## 内网、公网与同机连接 {#scenarios}
 
@@ -28,7 +28,7 @@ lang: zh-CN
 
 Linux 采集主机是 **`192.168.1.10`**，运行桌面版或 Web 服务的主机是 **`192.168.1.20`**。请替换为自己可信内网中的地址。
 
-1. 在 `192.168.1.10` 上，启动 eCapture 时选择对应采集参数，并加上 **`--ecaptureq ws://0.0.0.0:28256/`**。完整 TLS 命令见 [快速开始](/q/zh/quick-start/#collector)。
+1. 在 `192.168.1.10` 上，启动 eCapture 时选择对应采集参数，并加上 **`--stream-listen ws://0.0.0.0:28256/`**。完整 TLS 命令见 [快速开始](/q/zh/quick-start/#collector)。
 2. 在采集主机防火墙中，允许 `192.168.1.20` 访问 TCP 28256。
 3. 在 eCaptureQ 中添加 **`ws://192.168.1.10:28256/`**。来源显示已连接、顶部已连接数增加，说明事件通道已经连通。
 
@@ -40,7 +40,7 @@ Linux 采集主机是 **`192.168.1.10`**，运行桌面版或 Web 服务的主�
 
 | 配置项 | 示例 |
 | --- | --- |
-| 采集主机上的 eCapture 监听 | `--ecaptureq ws://0.0.0.0:28256/` |
+| 采集主机上的 eCapture 监听 | `--stream-listen ws://0.0.0.0:28256/` |
 | 能到达该监听的公网 IP 与端口 | `203.0.113.10:28256` |
 | 对应的 eCaptureQ 来源地址 | `ws://203.0.113.10:28256/` |
 
@@ -71,11 +71,9 @@ ssh -N -L 127.0.0.1:28256:127.0.0.1:28256 user@linux-host
 
 点击右上角数据源状态按钮，再点击 **添加数据源**。输入端点和可选的易辨认名称；每个采集器单独添加，一个实例最多 **16 个来源**。
 
-[![eCaptureQ v1.0.0 来源表单，从合成地址与命令推导可编辑的采集登记信息](/assets/q/sources.png)](/assets/q/sources.png)
+连接后，采集器自动上报主机、模块、模式、启动参数及版本。展开来源详情即可核对这些信息；通过卡片中的 ⋯ 菜单可编辑、重连或移除来源。移除来源会停止接收，已经保留的记录和文件仍按容量限制管理。
 
-*点击放大。真实 eCaptureQ v1.0.0 Web 界面，使用合成设置。*
-
-来源表单会从端点主机名初始化 **采集主机**，从普通的 `ecapture tls`、`gotls`、`gnutls` 命令识别 **采集模块**。这些值都能手动修改，SSH 隧道场景尤其应登记真实采集主机。启动命令和模块只是设置描述，**不会执行命令**，登记值也不能证明已捕获什么。
+[查看 v1.0.0 旧表单截图，当时采集信息需手动填写。](/assets/q/sources.png)
 
 每个来源独立显示连接状态、重试/重连次数和运行日志，顶部显示已连接数 / 总来源数。单个来源断开不影响其他来源；断线后自动退避重连，不会跨重连代次配对消息，也不会回放断线期间遗漏的事件。运行日志与消息列表分开展示。
 
@@ -114,11 +112,11 @@ ecaptureq --sources ./sources.local.json --mode live
 .\eCaptureQ.exe --sources .\sources.local.json --mode live
 ```
 
-也可以复制包内 `config/sources.example.json` 后修改（Linux 位于 `/usr/share/doc/ecaptureq/config/` 或 `/usr/share/doc/ecaptureq-web/config/`）。界面新增来源会原子写回文件；保存失败或检测到外部修改冲突时会显示错误，并且不新增连接。通过 CLI `--data-source` 提供的来源仍由 CLI 管理。JSON 保存连接配置、登记元数据和下述可选设置，**不保存捕获记录**；清单上限为 128 KiB。
+也可从仓库下载 [v1.2.0 配置示例](https://github.com/gojue/ecaptureQ/blob/v1.2.0/config/sources.example.json)。对文件来源的新增、编辑、移除会原子写回，保存失败或检测到外部修改冲突时会保留现有连接。对 CLI 来源的修改仅在当前进程生效。配置文件大小上限为 128 KiB，捕获记录和采集器上报的信息另行管理。
 
 ## 页头、隐藏域名与认证配置 {#configuration}
 
-新源码要求配置顶层为 **JSON 对象**。迁移旧版的 `[...]` 来源数组时，先备份，再将其放入 `{"sources": [...]}` 中。最小对象 `{"sources": []}` 不设置来源或登录认证。
+从 v1.1.0 起，配置文件的顶层必须是 **JSON 对象**。迁移旧版的 `[...]` 来源数组时，先备份，再将其放入 `{"sources": [...]}` 中。最小对象 `{"sources": []}` 不设置来源或登录认证。
 
 除 `sources` 外，还可在同一对象中添加以下字段：
 
@@ -126,9 +124,10 @@ ecaptureq --sources ./sources.local.json --mode live
 | --- | --- |
 | `auth` | Web 登录设置；见 [Web 登录认证](/q/zh/authentication/)。省略或 `null` 不启用认证 |
 | `headerCenter` | 页头中央的富文本 HTML 字符串；空值使用默认文案，仅写入维护者信任的内容 |
-| `hiddenDomains` | 要排除的域名后缀数组；非空列表替换内置列表，省略或空数组使用内置默认值 |
+| `hiddenDomains` | 将匹配域名后缀的实时 HTTP 记录排除在缓存外；省略或空列表时使用内置默认值 |
+| `native` | 原生临时文件存储，可设置父目录 `directory`、字节限额 `maxBytes` 和会话数 `maxSessions`。参见[原生文件导出](/q/zh/interface/#native) |
 
-例如，在上面的来源对象中加入 `"headerCenter": "测试环境"`、`"hiddenDomains": ["example.com"]`。域名填写裸后缀，不带协议、端口或路径；匹配不区分大小写，包括该域名本身及子域名。默认列表包含 `github.com`、`githubusercontent.com`、`ghcr.io` 等 GitHub 域名，完整列表见[源码](https://github.com/gojue/ecaptureQ/blob/1bb574da5e1fb98650a3ae604956d9f3ac2329cc/internal/app/hidden_domains.go)。
+例如，在配置文件顶层与 `sources` 并列添加 `"headerCenter": "测试环境"`、`"hiddenDomains": ["example.com"]`。域名填写裸后缀，不带协议、端口或路径；匹配不区分大小写，包括该域名本身及子域名。默认列表包含 `github.com`、`githubusercontent.com`、`ghcr.io` 等 GitHub 域名，完整列表见[源码](https://github.com/gojue/ecaptureQ/blob/v1.2.0/internal/app/hidden_domains.go)。
 
 **匹配隐藏域名的实时记录会在进入缓存前被丢弃**，不是仅在当前页面隐藏，清除搜索条件不能恢复。空数组 `[]` 不表示关闭排除。修改配置后重启应用，变化对后续接收生效；重启会清空内存记录。
 

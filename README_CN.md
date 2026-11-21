@@ -6,9 +6,9 @@
 
 ## 当前的 eCapture
 
-eCapture 在 TLS 库函数边界观察明文，无需中间人代理或自定义 CA 证书。官网重点介绍面向 OpenSSL、LibreSSL、BoringSSL 的 `tls` 探针、面向 Go 程序的 `gotls` 探针，以及面向 GnuTLS 库的 `gnutls` 探针。
+官网重点介绍 OpenSSL 与 BoringSSL 应用使用的 `tls` 探针、Go `crypto/tls` 应用使用的 `gotls` 探针，以及 GnuTLS 应用使用的 `gnutls` 探针。三者都可结合数据包和 TLS 密钥重建消息，无需自定义 CA。
 
-上游 v2.8 代码新增 Linux LoongArch64 构建能力、GnuTLS 的 text/keylog/pcapng 捕获模式，并通过统一的 `--eventaddr` 指定 TLS、GoTLS 与 GnuTLS 捕获事件的目的端。`--logaddr` 单独承载程序运行日志；[eCaptureQ](https://github.com/gojue/ecaptureq) 另行接收结构化事件。具体约定请参阅[上游更新记录](https://github.com/gojue/ecapture/blob/master/CHANGELOG.md)和[输出流水线说明](https://github.com/gojue/ecapture/blob/master/docs/agent/output-pipeline.md)。
+本 Wiki 对应 **eCapture v2.12.0**。文本模式默认使用 pcapng 数据源，可重复传入 `--output` 指定结构化记录的输出位置，使用 `--pcapfile` 和 `--keylogfile` 保存原生格式文件。**eCaptureQ v1.2.0** 通过 `ecapture.v2` WebSocket 子协议连接采集器的 `--stream-listen` 监听地址。[采集器迁移说明](https://github.com/gojue/ecapture/releases/tag/v2.12.0) · [eCaptureQ 发布说明](https://github.com/gojue/ecaptureQ/releases/tag/v1.2.0)
 
 | 运行环境 | 架构 | 最低内核 |
 | --- | --- | --- |
@@ -18,7 +18,7 @@ eCapture 在 TLS 库函数边界观察明文，无需中间人代理或自定义
 | Android | x86_64 / amd64 | 4.18+ |
 | Android | AArch64 / arm64 | 5.5+ |
 
-暂不支持 Android/loong64、Windows 和 macOS。加载探针需要 root 或[指定的 Linux capabilities](https://github.com/gojue/ecapture/blob/master/docs/minimum-privileges.md)。请先核对[已发布的发行产物](https://github.com/gojue/ecapture/releases)中是否有 LoongArch64 包；也可参考 [LoongArch64 构建指南](https://github.com/gojue/ecapture/blob/master/docs/loong64-support.md)。构建流程包含交叉编译和用户态冒烟检查；用于生产环境前，应在目标硬件上验证 eBPF 捕获。
+加载探针需要 root 或[指定的 Linux capabilities](https://github.com/gojue/ecapture/blob/v2.12.0/docs/minimum-privileges.md)。Linux LoongArch64 提供压缩包与 Debian 软件包，并在原生硬件上运行 OpenSSL 和 GoTLS 端到端测试。[发行产物](https://github.com/gojue/ecapture/releases) · [LoongArch64 构建与测试范围](https://github.com/gojue/ecapture/blob/v2.12.0/docs/loong64-support.md)
 
 ## 本站内容在哪里
 
@@ -30,7 +30,7 @@ eCapture 在 TLS 库函数边界观察明文，无需中间人代理或自定义
 | Wiki 导入 | `scripts/wiki.json`、`scripts/generate_docs.js`、`scripts/migrate_docs.js` |
 | 共用图片 | `src/public/assets/` |
 
-大部分指南章节来自定期更新的 `scripts/wiki.json`。导入流程会替换 `src/en/` 与 `src/zh/`，然后恢复手工维护的中文首页、下载页及 `src/zh/usage/`。仅修改官网时，不要直接维护自动生成的章节；下次导入会覆盖它们。`src/index.md` 和 `src/zh/index.md` 由本站直接维护。
+六个双语 Wiki 章节由 `scripts/wiki.json` 生成。修订时同步更新快照与发布的 Markdown，以便下次导入时保留修改。迁移脚本会恢复中英文产品概览、下载页、中文首页和 `src/zh/usage/`。英文首页与 `src/q/` 中的 eCaptureQ 文档单独维护。
 
 需要导入**已核实且最新**的 Wiki 快照时，运行 `bash scripts/update_docs.sh --no-dev`，审查正文与导航差异，再构建站点。仓库内现存快照可能落后于当前章节，运行会重建目录的迁移脚本前应先检查页面计划。
 
@@ -45,7 +45,7 @@ pnpm run build
 pnpm run serve
 ```
 
-`pnpm run build` 输出到 `dist/`，并检查站内链接。本仓库没有 `docs:dev`、`docs:build` 或自动测试脚本。Vercel 使用 `vercel.json` 指定的 `dist/` 输出；`netlify.toml` 提供另一套构建配置。自动部署触发条件由托管服务配置，不在本仓库声明。
+`pnpm run build` 输出到 `dist/`，同时检查站内链接。`pnpm run check:mermaid` 检查图表语法，构建后的 `pnpm run check:q` 检查产品页面。Vercel 使用 `vercel.json` 指定的 `dist/` 输出，Netlify 的构建配置在 `netlify.toml` 中。
 
 ## 文档搜索
 

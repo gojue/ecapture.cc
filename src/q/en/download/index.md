@@ -25,7 +25,7 @@ onMounted(async () => {
 
 **eCaptureQ is a graphical analysis application.** Connect eCapture data sources to filter, search and correlate messages, then inspect requests, responses and details in a three-pane interface.
 
-Choose **Desktop** to open an app, or **Web** to access the interface in a browser. See [Installation](/q/en/install/) for setup. To capture TLS plaintext, view logs in a terminal or save output to files, get the command-line tool from [eCapture Download](/en/download/).
+Choose **Desktop** to open an app, or **Web** to use a browser. Both can export native KEYLOG and PCAPNG streams received from the collector. Install eCapture separately on the capture host. [Install eCaptureQ](/q/en/install/) · [Download eCapture](/en/download/)
 
 </DownloadIntro>
 

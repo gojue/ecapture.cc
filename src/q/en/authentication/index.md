@@ -10,11 +10,11 @@ eCaptureQ Web can require a username and password to access the analysis interfa
 
 ## Version and scope {#scope}
 
-Verified on **13 November 2026** against main commit [`1bb574d`](https://github.com/gojue/ecaptureQ/commit/1bb574da5e1fb98650a3ae604956d9f3ac2329cc). The latest stable release on that date is still **v1.0.0**, which does not include this login feature. Use a source build containing authentication or a subsequent release that includes it. Run `ecaptureq-web --help` and check for `--hash-password` and `--listen`; see the [matching compilation guide](https://github.com/gojue/ecaptureQ/blob/1bb574da5e1fb98650a3ae604956d9f3ac2329cc/docs/compilation.md) and [CLI migration](/q/en/install/#cli).
+Web authentication has shipped since **eCaptureQ v1.1.0**. In v1.2.0 it also protects downloads of native capture files. To migrate an older service, update the CLI options and load an object-format configuration. [CLI migration](/q/en/install/#cli) · [Release configuration reference](https://github.com/gojue/ecaptureQ/blob/v1.2.0/docs/reference.md)
 
 - Login is enabled only when a file loaded with `--sources` contains an `auth` configuration object. Omitting `auth` or setting it to `null` disables authentication. An empty `auth: {}` is invalid and prevents Web startup.
 - This is one configured account for shared access, without multiple users, roles or per-source permissions. Signed-in users can inspect retained records and manage sources.
-- Authentication protects **browser-to-Web access**. It does not authenticate or encrypt the collector's `--ecaptureq` WebSocket endpoint. Protect that separate connection as described in [Data Sources](/q/en/data-sources/#public).
+- Authentication protects **browser-to-Web access**. It does not authenticate or encrypt the collector's `--stream-listen` WebSocket endpoint. Protect that separate connection as described in [Data Sources](/q/en/data-sources/#public).
 - Background receiving continues without signed-in users, after logout and after session expiry. Retention and eviction still apply.
 
 ## Generate your password hash {#password}
@@ -29,7 +29,7 @@ For a macOS ZIP, use `./ecaptureq-web --hash-password`; in Windows PowerShell, u
 
 The generated hash uses PBKDF2-HMAC-SHA256 with a random salt and 600,000 iterations. The configuration does not accept plaintext passwords. The tool also supports standard input for use with an existing secure input channel.
 
-The newer `config/sources.example.json` contains the public initial credentials **`ecapture` / `ecaptureQ`**. These apply only when that example configuration is loaded; the program does not enable this account by default. Replace the username and password hash before deployment.
+The repository’s example uses the public credentials **`ecapture` / `ecaptureQ`**. The account takes effect when you load that configuration. Replace the username and password hash before deployment. [v1.2.0 configuration example](https://github.com/gojue/ecaptureQ/blob/v1.2.0/config/sources.example.json)
 
 ## Enable login locally {#configure}
 
@@ -78,7 +78,7 @@ ecaptureq-web --listen 127.0.0.1:28257 \
   --exclude-http-path-prefix /ecaptureq-web/
 ```
 
-Open `https://your-host/ecaptureq-web/`; the login page uses the same prefix. Preserve the prefix and external `Host` when forwarding pages, assets and APIs. In Nginx, use `proxy_pass http://127.0.0.1:28257` without a trailing slash that would strip the prefix. Adapt the [official Nginx example](https://github.com/gojue/ecaptureQ/blob/1bb574da5e1fb98650a3ae604956d9f3ac2329cc/deploy/nginx.conf.example) to your TLS setup. Long polls can wait 10 seconds, so the proxy read timeout must exceed that wait; the example uses 35 seconds.
+Open `https://your-host/ecaptureq-web/`; the login page uses the same prefix. Preserve the prefix and external `Host` when forwarding pages, assets and APIs. In Nginx, use `proxy_pass http://127.0.0.1:28257` without a trailing slash that would strip the prefix. Adapt the [official Nginx example](https://github.com/gojue/ecaptureQ/blob/v1.2.0/deploy/nginx.conf.example) to your TLS setup. Long polls can wait 10 seconds, so the proxy read timeout must exceed that wait; the example uses 35 seconds.
 
 Cookies use `HttpOnly`, `SameSite=Strict` and a Path matching `--base-path`. The application does not change the Secure attribute based on `X-Forwarded-Proto`; check the configuration against the browser's actual access protocol.
 
@@ -103,4 +103,4 @@ To change or recover a forgotten password, run `--hash-password` on the service 
 | Login returns `403` | Check the proxy's external Host and same-origin access; login/logout require same-origin requests and `X-Ecapture-UI: 1`, sent automatically by the built-in UI |
 | Login returns `503` / `session_limit` | Log out unused sessions or wait for expiry; restarting clears sessions but also discards in-memory records |
 
-Sources: [configuration reference](https://github.com/gojue/ecaptureQ/blob/1bb574da5e1fb98650a3ae604956d9f3ac2329cc/docs/reference.md), [authentication middleware](https://github.com/gojue/ecaptureQ/blob/1bb574da5e1fb98650a3ae604956d9f3ac2329cc/internal/auth/handler.go), and [password/configuration validation](https://github.com/gojue/ecaptureQ/blob/1bb574da5e1fb98650a3ae604956d9f3ac2329cc/internal/auth/password.go).
+Sources: [configuration reference](https://github.com/gojue/ecaptureQ/blob/v1.2.0/docs/reference.md), [authentication middleware](https://github.com/gojue/ecaptureQ/blob/v1.2.0/internal/auth/handler.go), and [password/configuration validation](https://github.com/gojue/ecaptureQ/blob/v1.2.0/internal/auth/password.go).

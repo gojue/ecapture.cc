@@ -1,58 +1,34 @@
-# 对 Docker 容器内的程序抓包
+# 在 Linux 主机上观察 Docker 容器的 TLS 请求
 
-:::info 案例详情介绍
+假设你要调试一个运行在容器中的 HTTPS 服务，服务使用动态链接的 OpenSSL。可在 Docker 宿主机上运行 eCapture v2.12.0，并向探针提供**服务进程实际加载的库**。下面的示例使用宿主机进程号和网络接口。
 
-## 使用流程介绍
-查看docker容器列表，找到你关注的容器
-```shell
-docker ps | grep -w netshoot
-b37ffd7a8341   nicolaka/netshoot           "/bin/sleep 3600"        50 minutes ago      Up 50 minutes  
+## 找到测试服务与 libssl
+
+在宿主机上列出自己运行的容器和进程。将 `tls-demo` 换为目标容器名，选取实际处理请求的服务进程的宿主机 PID。
+
+```sh
+docker ps
+docker top tls-demo -eo pid,comm
 ```
 
-确认docker ID
-```shell
-docker inspect b37ffd7a8341  | grep '"MergedDir"'
-                "MergedDir": "/var/lib/docker/overlay2/02c5fe50b9c6a817c47117ebddd8be82cf4095a6ff278f197519b1cedb7c3d75/merged",
+假设服务 PID 为 `12345`。在其内存映射中找到 `libssl.so` 的实际路径：
+
+```sh
+sudo awk '/\/libssl\.so/ {print $NF; exit}' /proc/12345/maps
 ```
 
-查找`libssl`
+下例假设得到 `/usr/lib/x86_64-linux-gnu/libssl.so.3`。使用 `/proc/12345/root` 访问容器文件系统，可以定位同一份库，无需推断 Docker 的存储驱动或 overlay 目录。如果服务使用 Go 的 `crypto/tls`，改用 [GoTLS 探针](/zh/2-core-tls-modules/2.2-gotls-capture) 并指定服务的可执行文件。
 
-```shell
-find /var/lib/docker/overlay2/02c5fe50b9c6a817c47117ebddd8be82cf4095a6ff278f197519b1cedb7c3d75/merged -name "libssl*"
+## 捕获一个请求并核对结果
 
-/var/lib/docker/overlay2/02c5fe50b9c6a817c47117ebddd8be82cf4095a6ff278f197519b1cedb7c3d75/merged/lib/libssl.so.1.1
-/var/lib/docker/overlay2/02c5fe50b9c6a817c47117ebddd8be82cf4095a6ff278f197519b1cedb7c3d75/merged/usr/lib/libssl.so.1.1
+先确认服务流量经过的宿主机接口和端口。下面假设容器连接到 `docker0` 网桥，容器内服务监听 8443。自定义网桥、host 网络和端口映射可能使用不同的接口或端口。
+
+```sh
+sudo ecapture tls --pid 12345 \
+  --libssl /proc/12345/root/usr/lib/x86_64-linux-gnu/libssl.so.3 \
+  -i docker0 'tcp port 8443'
 ```
 
-使用eCapture捕获
-```shell
-ecapture tls --libssl="/var/lib/docker/overlay2/02c5fe50b9c6a817c47117ebddd8be82cf4095a6ff278f197519b1cedb7c3d75/merged/lib/libssl.so.1.1" --hex
-2022/05/30 14:02:27 pid info :2825032
-2022/05/30 14:02:27 start to run EBPFProbeOPENSSL module
-2022/05/30 14:02:27 start to run EBPFProbeGNUTLS module
-2022/05/30 14:02:27 HOOK type:2, binrayPath:/var/lib/docker/overlay2/02c5fe50b9c6a817c47117ebddd8be82cf4095a6ff278f197519b1cedb7c3d75/merged/lib/libssl.so.1.1
-2022/05/30 14:02:27 libPthread so Path:/lib64/libpthread.so.0
-2022/05/30 14:02:27 target all process. 
-2022/05/30 14:02:27 start to run EBPFProbeNSPR module
-2022/05/30 14:02:27 stat /usr/lib/libnspr4.so: no such file or directory
-2022/05/30 14:02:27 HOOK type:2, binrayPath:/lib64/libgnutls.so.30
-2022/05/30 14:02:27 target all process. 
-```
+PID 筛选需要内核 5.2 或更高版本。等待探针就绪，再用测试客户端新建 HTTPS 连接。默认文本模式用网卡数据包和 TLS 密钥重建请求与响应。核对测试路径与响应状态。如果只看到了启动日志，请同时检查服务进程、库路径、接口和该接口上实际可见的端口。
 
-结果输出
-```shell
-2022/05/30 14:03:34 PID:2825502, Comm:curl, TID:2825502, Version:TLS1_2_VERSION, Send 74 bytes to [ADDR_NOT_FOUND], Payload:
-GET / HTTP/1.1
-Host: 10.1.34.88
-User-Agent: curl/7.83.1
-Accept: */*
-
-
-2022/05/30 14:03:34 PID:2825502, Comm:curl, TID:2825502, Version:TLS1_2_VERSION, Recived 88 bytes from [ADDR_NOT_FOUND], Payload:
-HTTP/1.0 200 OK
-Server: BigIP
-Connection: Keep-Alive
-Content-Length: 10
-
- IT WORKS 
-```
+要保留本次捕获用于 Wireshark 分析，可在过滤表达式前加上 `--pcapfile container.pcapng`。如果只需诊断旧版按 TLS 函数读写分段的输出，可显式选用 `--text-source hook`，保留同一 PID 和库路径，省略网卡与包过滤表达式。[文本模式](/zh/3-capture-modes/3.2-text-mode) · [在容器内运行采集器的权限要求](https://github.com/gojue/ecapture/blob/v2.12.0/docs/minimum-privileges.md#method-3-docker-with-specific-capabilities)

@@ -10,30 +10,30 @@ eCapture captures and decrypts traffic; eCaptureQ connects to its event service,
 
 ## Capture conditions and modules {#capture}
 
-For complete application messages, use eCapture's **text output with the pcapng source**:
+On eCapture v2.12.0, the default for `tls`, `gotls` and `gnutls` is **text mode with the pcapng source**. This example explicitly selects it to send decoded messages to Q.
 
 ```sh
 sudo ./ecapture tls -m text --text-source pcapng -i eth0 \
-  --ecaptureq ws://127.0.0.1:28256/
+  --stream-listen ws://127.0.0.1:28256/
 ```
 
-The published eCapture **v2.10.0** includes these options. Use the correct interface and a supported target library/application. This path performs capture, TLS decryption and message reassembly **upstream**, then supplies events to eCaptureQ. eCaptureQ does not directly open PCAPNG files, decrypt TLS or reassemble TCP.
+Choose the interface carrying your test traffic and a supported TLS library or executable. eCapture decrypts and reassembles messages on the capture host, then sends TEXT events to eCaptureQ. Collectors in keylog or pcapng mode send native file bytes instead. [Save a native file](/q/en/interface/#native)
 
 | TLS application | Module and target selection |
 | --- | --- |
-| Supported OpenSSL / BoringSSL / LibreSSL variants | `tls`; library versions and attachment conditions still matter |
+| Supported OpenSSL / BoringSSL variants | `tls`; library versions and attachment conditions still matter |
 | Go TLS executable | `gotls --elfpath /path/to/go-app` |
-| GnuTLS application | `gnutls --gnutls /path/to/libgnutls.so` |
+| Linux application using GnuTLS | `gnutls --gnutls /path/to/libgnutls.so` |
 
 Replace the executable/library path and interface with the actual capture target. For example:
 
 ```sh
 sudo ./ecapture gotls --elfpath /path/to/go-app \
   -m text --text-source pcapng -i lo \
-  --ecaptureq ws://127.0.0.1:28256/
+  --stream-listen ws://127.0.0.1:28256/
 ```
 
-Use `lo` only when the traffic crosses loopback. Linux and Android capture support remains subject to CPU, kernel, privileges, library version and module limitations. See the [official collector README](https://github.com/gojue/ecapture/blob/v2.10.0/README.md) for the release-specific conditions. Hook text can produce fragments or raw records instead of complete protocol messages.
+Use `lo` only when the traffic crosses loopback. Linux and Android capture support remains subject to CPU, kernel, privileges, library version and module limitations. See the [official collector README](https://github.com/gojue/ecapture/blob/v2.12.0/README.md) for the release-specific conditions. Hook text can produce fragments or raw records instead of complete protocol messages.
 
 TLS decryption recovers plaintext upstream. Protocol parsing interprets those application bytes. HTTP body decompression interprets a `Content-Encoding` such as gzip in the selected message. These are distinct operations.
 
@@ -57,7 +57,7 @@ HTTP/3 support does not promise that every QUIC library or arbitrary UDP flow ca
 
 ## Redis {#redis}
 
-For the supported upstream Redis path, explicitly select `--text-protocol redis` with `-m text --text-source pcapng` on the applicable TLS module. v2.10.0's documented parser supports fixed-length RESP2/RESP3 messages; viewer support does not automatically enable capture on any plaintext Redis port.
+For the supported upstream Redis path, explicitly select `--text-protocol redis` with `-m text --text-source pcapng` on the applicable TLS module. The parser supports fixed-length RESP2/RESP3 messages; viewer support does not automatically enable capture on any plaintext Redis port.
 
 Use **Command**, **Response** and **Raw RESP** to inspect arguments, request identifiers and typed values, including strings, integers, arrays, maps, errors and Null. Raw request and response bytes are retained separately; binary values remain hex rather than being damaged by text conversion.
 
@@ -67,7 +67,7 @@ Server **Push** and **Attribute** events have their own presentation and do not 
 
 The `mysqld` probe supplies **query events**. Select **SQL Query** for the captured SQL, **Capture information** for original/captured length, truncation and the observed `dispatch_command` return value, or **Raw** for the payload.
 
-This path is not a complete MySQL query-and-result capture. Even a `SUCCESS` dispatch return does not prove SQL execution succeeded, a transaction committed or a full result set was obtained. Truncated SQL is shown as a partial query. Capture requires a supported mysqld target and probe configuration; see the [collector's module documentation](https://github.com/gojue/ecapture/blob/v2.10.0/README.md).
+This path is not a complete MySQL query-and-result capture. Even a `SUCCESS` dispatch return does not prove SQL execution succeeded, a transaction committed or a full result set was obtained. Truncated SQL is shown as a partial query. Capture requires a supported mysqld target and probe configuration; see the [collector's module documentation](https://github.com/gojue/ecapture/blob/v2.12.0/README.md).
 
 ## MQTT {#mqtt}
 
@@ -87,13 +87,11 @@ DATAGRAM is a separate message boundary and can legitimately contain zero bytes.
 
 ## Raw or incomplete events {#raw}
 
-Unmapped, malformed, incremental or raw events keep their available payload and metadata for inspection. Absence of a specialized view is not permission to invent a request/response pair. Payload display is limited to 256 KiB and explicitly marks partial content; other parser and correlation limits also apply.
+Malformed or unmapped TEXT events keep their available payload and metadata. If Q cannot parse the SDK-formatted message header, inspect the RAW view and its parse error. With v2, `length` counts the formatted payload bytes and `original_length` describes the SDK value before formatting. Their difference alone does not establish truncation. [Capture and retention limits](/q/en/faq/#retention)
 
 ## Process and TLS metadata compatibility {#tls}
 
-The UI reads official upstream event fields. **Published eCapture v2.10.0 has fields 1–17 and Decryptor v1.4.0**; it does not publish the newer official `process_args` (18), `process_args_truncated` (19) and `tls` (20) fields. Core messages may arrive while these details remain unknown.
-
-For these details, the collector must include the upstream metadata changes (commit `f6c0df58575c` or a subsequent compatible version). The source reference records Decryptor v1.4.2+ for argument capture and v1.4.3+ for TLS metadata. Check the [official compatibility provenance](https://github.com/gojue/ecaptureQ/blob/v1.0.0/docs/upstream-status.md); do not treat an unreleased collector change as an available release feature.
+eCaptureQ v1.2.0 reads the official Protobuf v2 fields from eCapture v2.12.0 TEXT events. `process_args` and `process_args_truncated` describe the observed process command. The optional `tls` object carries handshake metadata when available. [v2 protocol definition](https://github.com/gojue/ecapture/blob/v2.12.0/protobuf/proto/v2/ecaptureq.proto)
 
 When available, the Connection tab shows captured process/PID/argv and TLS version, cipher suite, SNI, ALPN, group and signature algorithm. **JA3** and **JA4** are fingerprints from the first on-wire ClientHello; ECH Outer is labeled when applicable. Negotiated parameters are handshake information, not actual session keys. SNI is not inferred from HTTP Host, and no fields are invented when absent.
 

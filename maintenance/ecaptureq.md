@@ -1,9 +1,8 @@
 # eCaptureQ product area maintenance
 
-Hand-maintained documentation outside the generated `docs/` tree. Product facts
-and validation were initially checked on 2026-11-08, with the Q feature update
-below checked on 2026-11-13. Collector and eCaptureQ application
-repositories are references; website changes belong in `gojue/ecapture.cc`.
+The product pages are hand-maintained outside the generated `docs/` tree.
+Their current baseline is eCaptureQ v1.2.0 with eCapture v2.12.0, checked on
+2026-11-21. Earlier release and screenshot checks are dated below.
 
 ## Ownership and paths
 
@@ -27,6 +26,18 @@ The Wiki migration's explicit deletion list excludes `src/q/`, `src/public/`
 and the manual navigation module. It preserves the hand-maintained Chinese
 homepage/download page and English download page. Do not run Wiki synchronization
 merely to update Q. Review this boundary if migration cleanup changes.
+
+## 2026-11-21 release compatibility
+
+Use `--stream-listen` on eCapture v2.12.0 and `--data-source` or the source
+form on eCaptureQ v1.2.0. The client negotiates `ecapture.v2`. The collector
+reports its identity, module and capture mode on connection. Q displays
+decoded messages in text mode and offers native file exports for keylog and
+pcapng streams. [Collector output contract](https://github.com/gojue/ecapture/blob/v2.12.0/docs/event-forward-api.md) · [Q reference](https://github.com/gojue/ecaptureQ/blob/v1.2.0/docs/reference.md)
+
+The local screenshots depict v1.0.0. The v1.2.0 package list comes from the
+release API, and installation examples use filenames from the tagged release.
+[eCaptureQ v1.2.0](https://github.com/gojue/ecaptureQ/releases/tag/v1.2.0)
 
 ## 2026-11-13 authentication and feature update
 
@@ -89,7 +100,7 @@ remote master `f6c0df58575ca3027ef5baf74c4488c94a263169` adds metadata that cann
 be promised from the older release. A library dependency used by Q does not
 upgrade an independently deployed collector.
 
-## Product facts and evidence
+## v1.0.0 product and screenshot evidence
 
 Use the source matching the described version; screenshots and mock protocol
 examples do not prove probe coverage. The product pages reference the shared Web

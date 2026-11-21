@@ -187,7 +187,7 @@
             "link": "/en/3-capture-modes/3.4-pcapng-mode"
           },
           {
-            "text": "Event Destinations and Rotation",
+            "text": "Output Destinations and Subscriptions",
             "link": "/en/3-capture-modes/3.5-event-destinations-and-rotation"
           },
           {
@@ -272,10 +272,10 @@
     ],
     "/en/download/": [
       {
-        "text": "Download 高速下载",
+        "text": "Download",
         "items": [
           {
-            "text": "Download 高速下载",
+            "text": "eCapture Download",
             "link": "/en/download/index"
           }
         ]
@@ -360,7 +360,7 @@
             "link": "/zh/3-capture-modes/3.4-pcapng-mode"
           },
           {
-            "text": "事件输出与滚动策略",
+            "text": "输出目的地与订阅",
             "link": "/zh/3-capture-modes/3.5-event-destinations-and-rotation"
           },
           {
@@ -445,10 +445,10 @@
     ],
     "/zh/download/": [
       {
-        "text": "Download 高速下载",
+        "text": "下载",
         "items": [
           {
-            "text": "Download 高速下载",
+            "text": "eCapture 下载",
             "link": "/zh/download/index"
           }
         ]
@@ -463,15 +463,15 @@
             "link": "/zh/usage/index"
           },
           {
-            "text": "在Android 12上对APP抓包",
+            "text": "在 Android 测试设备上查看 HTTPS 请求",
             "link": "/zh/usage/android"
           },
           {
-            "text": "对 Docker 容器内的程序抓包",
+            "text": "在 Linux 主机上观察 Docker 容器的 TLS 请求",
             "link": "/zh/usage/docker"
           },
           {
-            "text": "抓包加密grpc",
+            "text": "分析 TLS 加密的 gRPC 调用",
             "link": "/zh/usage/grpc"
           }
         ]

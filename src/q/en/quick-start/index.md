@@ -10,13 +10,13 @@ This walkthrough uses a **Linux capture host at `192.168.1.10`** and an **eCaptu
 
 ## 1. Prepare the collector {#prepare}
 
-On the **Linux capture host**, download [eCapture](https://github.com/gojue/ecapture/releases). The published **v2.10.0** exposes `--ecaptureq` and `--text-source pcapng`; check your downloaded build before starting:
+Install **eCapture v2.12.0** on the Linux capture host and **eCaptureQ v1.2.0** on the analysis host. Check that the collector lists `--stream-listen` and `--text-source` in its help. [Collector release](https://github.com/gojue/ecapture/releases/tag/v2.12.0)
 
 ```sh
 ./ecapture tls --help
 ```
 
-The interface and a compatible Decryptor are required for the full-message path below. A successful eCaptureQ connection cannot add fields or protocol support that the collector does not supply. See [protocol requirements](/q/en/protocols/#capture) and the [upstream compatibility record](https://github.com/gojue/ecaptureQ/blob/v1.0.0/docs/upstream-status.md). eCapture requires a supported Linux/Android kernel and capture privileges; macOS and Windows support here applies to eCaptureQ.
+The interface and a compatible Decryptor are required for the full-message path below. A successful eCaptureQ connection cannot add fields or protocol support that the collector does not supply. See [protocol requirements](/q/en/protocols/#capture) and the [upstream compatibility record](https://github.com/gojue/ecaptureQ/blob/v1.2.0/docs/upstream-status.md). eCapture requires a supported Linux/Android kernel and capture privileges; macOS and Windows support here applies to eCaptureQ.
 
 ## 2. Start eCapture's event listener {#collector}
 
@@ -24,12 +24,12 @@ On the **Linux capture host (`192.168.1.10`)**, in the extracted eCapture direct
 
 ```sh
 sudo ./ecapture tls -m text --text-source pcapng -i eth0 \
-  --ecaptureq ws://0.0.0.0:28256/
+  --stream-listen ws://0.0.0.0:28256/
 ```
 
-Replace `eth0` with the interface carrying the target traffic (`lo` for local loopback). Keep this process running and check its startup log for successful probe attachment and event listening. Select `gotls --elfpath /path/to/go-app` for a Go TLS executable, or `gnutls --gnutls /path/to/libgnutls.so` for a GnuTLS application. BoringSSL/LibreSSL targets may need explicit library/version selection; see [Protocols & Details](/q/en/protocols/#capture).
+Replace `eth0` with the interface carrying the target traffic (`lo` for local loopback). Keep this process running and check its startup log for successful probe attachment and event listening. Select `gotls --elfpath /path/to/go-app` for a Go TLS executable, or `gnutls --gnutls /path/to/libgnutls.so` for a GnuTLS application. BoringSSL targets may need explicit library/version selection; see [Protocols & Details](/q/en/protocols/#capture).
 
-Here `--ecaptureq` is the **listen address opened by eCapture**. `0.0.0.0:28256` listens on the capture host's IPv4 interfaces; allow TCP port 28256 from the eCaptureQ host (`192.168.1.20`) in the capture host's firewall. For same-host use only, bind to `ws://127.0.0.1:28256/` instead. Do not substitute `--eventaddr`, which is a different output interface.
+Here `--stream-listen` opens the collector subscription endpoint. Restrict port 28256 to the analysis host (`192.168.1.20`). For same-host use, bind to `ws://127.0.0.1:28256/`. If you set a custom URL path, enter that path in eCaptureQ as well.
 
 ## 3. Choose the connection address {#tunnel}
 
@@ -49,8 +49,6 @@ Desktop makes this connection from its own computer; Web makes it from the **Web
 
 [Install Desktop or Web](/q/en/install/) on the **analysis computer/service host (`192.168.1.20` in this example)**. Open Desktop directly. With the Web package, start:
 
-The commands below use the new `--listen` option; released v1.0.0 uses `--addr`. See [version and CLI migration](/q/en/install/#cli).
-
 ```sh
 # Linux, after installing the Web package
 ecaptureq-web --listen 127.0.0.1:28257
@@ -60,7 +58,7 @@ ecaptureq-web --listen 127.0.0.1:28257
 
 On Windows use `.\ecaptureq-web.exe` with the same arguments. Open [http://127.0.0.1:28257/](http://127.0.0.1:28257/) on that host. To open the page from another computer, see [remote Web access](/q/en/data-sources/#web-access).
 
-For login protection, create an `auth` configuration using [Web Authentication](/q/en/authentication/#configure), add `--sources ./sources.local.json` at startup, and sign in before opening the workspace. Replace the public credentials if you copy the newer example configuration. The commands above do not load a configuration and do not enable authentication.
+For login protection, create an `auth` configuration using [Web Authentication](/q/en/authentication/#configure), add `--sources ./sources.local.json` at startup, and sign in before opening the workspace. Replace the public credentials if you copy the repository’s example configuration. The commands above do not load a configuration and do not enable authentication.
 
 **28256 is the collector event port; 28257 is the Web page port.** Opening the Web page proves browser-to-service connectivity, not service-to-collector connectivity.
 
@@ -71,11 +69,7 @@ For login protection, create an `auth` configuration using [Web Authentication](
 3. Choose **Add and connect** (**添加并连接**). Confirm the source shows connected and the connected/total count increases.
 4. Switch the top mode control to **Live** (**实时**). Adding a source does not switch the displayed mode automatically.
 
-[![eCaptureQ v1.0.0 source form with a synthetic WebSocket address and a descriptive launch command](/assets/q/sources.png)](/assets/q/sources.png)
-
-*Click to enlarge. Real eCaptureQ v1.0.0 Web UI using synthetic setup data.*
-
-The launch command field is only a description. It does not start eCapture, log in to the host or change a remote probe.
+After connecting, open the source card to verify the collector-reported host, module, mode and version. eCaptureQ v1.2.0 receives this information from the collector.
 
 ## 6. Generate traffic and inspect a record {#traffic}
 

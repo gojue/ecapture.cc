@@ -19,7 +19,7 @@ import ReleaseBadge from '@theme/components/ReleaseBadge.vue'
 
 ## 用 eCapture 采集，用 Q 分析 {#relationship}
 
-**eCapture** 在采集主机上运行，负责采集与 TLS 解密。**eCaptureQ** 连接它的 `--ecaptureq` WebSocket 接口，关联并展示应用消息。两个产品独立运行。
+**eCapture** 在采集主机上运行，负责采集与 TLS 解密。**eCaptureQ** 连接它的 `--stream-listen` WebSocket 接口，关联并展示应用消息。两个产品独立运行。
 
 <QRelationship locale="zh" />
 
@@ -39,7 +39,7 @@ import ReleaseBadge from '@theme/components/ReleaseBadge.vue'
 
 ## 新增能力与版本范围 {#updates}
 
-新源码加入 **Web 用户名与密码登录**，支持登录、退出及会话过期处理；同时更新了命令行参数、配置文件、长轮询刷新、启动更新提示和 Linux loong64 Web 构建。2026 年 11 月 13 日核对时，最新正式包仍为 v1.0.0，新功能需使用包含相应改动的构建。参见[新增能力与升级](/q/zh/install/#updates)，部署登录保护请从 [Web 登录认证](/q/zh/authentication/) 开始。
+**eCaptureQ v1.2.0** 使用 Protobuf v2 连接 **eCapture v2.12.0**。文本模式下，收到的消息会进入实时列表。采集器采用 keylog 或 pcapng 模式时，可打开**原生文件**保存收到的内容。自 v1.1.0 起，Web 版也支持按需启用登录。[升级说明](/q/zh/install/#cli) · [原生文件](/q/zh/interface/#native) · [Web 登录认证](/q/zh/authentication/)
 
 ## 继续了解 {#next}
 

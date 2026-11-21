@@ -8,19 +8,19 @@ lang: en-US
 
 A source is an eCapture **WebSocket event endpoint**. Desktop connects from its computer. Web connects from the host running `ecaptureq-web`. The browser only communicates with that Web service.
 
-Commands and object-format configuration on this page target the new source with authentication. See [Installation](/q/en/install/#cli) for released v1.0.0 options and version scope. The collector's `--ecaptureq` option is unchanged.
+eCaptureQ v1.2.0 subscribes to eCapture v2.12.0 using the `ecapture.v2` WebSocket subprotocol. Enter the reachable host, port and path configured for the collector listener. [Version compatibility](/q/en/install/#cli)
 
 ## Keep the three addresses separate {#addresses}
 
 | Address | Where it is configured | Meaning |
 | --- | --- | --- |
-| `ws://0.0.0.0:28256/` listener | eCapture `--ecaptureq` | eCapture opens the event listener on the capture host |
+| `ws://0.0.0.0:28256/` listener | eCapture `--stream-listen` | eCapture opens the event listener on the capture host |
 | `ws://…:28256/` endpoint | eCaptureQ source form or `--data-source` | The address the running eCaptureQ process can reach |
 | `http://127.0.0.1:28257/` page | Web `--listen 127.0.0.1:28257` | The HTTP interface your browser opens |
 
 `127.0.0.1` always means **this process's own machine**. In a Web source form, it means the Web service host, even when you open that form from another computer. `0.0.0.0` is a listener bind address for all IPv4 interfaces; do not enter it as the client's destination. A port selects the service on that host. The example uses different ports to avoid conflicts.
 
-`--eventaddr` is eCapture's regular event-output destination, not the eCaptureQ typed event interface. It cannot replace `--ecaptureq`.
+On the collector, `--stream-listen` accepts subscribers. The separate `--output` option sends records to output destinations, and `--config-listen` serves HTTP configuration updates.
 
 ## LAN, public and same-host connections {#scenarios}
 
@@ -28,7 +28,7 @@ Commands and object-format configuration on this page target the new source with
 
 The Linux capture host is **`192.168.1.10`**. Desktop or the Web service runs on **`192.168.1.20`**. Replace these addresses with the hosts on your trusted LAN.
 
-1. On `192.168.1.10`, start eCapture with the appropriate capture options and **`--ecaptureq ws://0.0.0.0:28256/`**. The full TLS command is in [Quick Start](/q/en/quick-start/#collector).
+1. On `192.168.1.10`, start eCapture with the appropriate capture options and **`--stream-listen ws://0.0.0.0:28256/`**. The full TLS command is in [Quick Start](/q/en/quick-start/#collector).
 2. Allow TCP 28256 from `192.168.1.20` in the capture host's firewall.
 3. In eCaptureQ, add **`ws://192.168.1.10:28256/`**. A connected source and an increased connected/total count confirm that the event channel is reachable.
 
@@ -40,7 +40,7 @@ Suppose the capture host has the public address **`203.0.113.10`**, or a gateway
 
 | Setting | Example |
 | --- | --- |
-| eCapture listener on the capture host | `--ecaptureq ws://0.0.0.0:28256/` |
+| eCapture listener on the capture host | `--stream-listen ws://0.0.0.0:28256/` |
 | Public IP/port that reaches that listener | `203.0.113.10:28256` |
 | Corresponding eCaptureQ source address | `ws://203.0.113.10:28256/` |
 
@@ -71,11 +71,9 @@ Endpoints support `ws` and `wss`. They reject embedded username/password, query 
 
 Open the top-right source status button, then **Add source**. Enter an endpoint and an optional descriptive name. Add each collector separately, up to **16 sources** per instance.
 
-[![eCaptureQ v1.0.0 form showing editable capture metadata inferred from a synthetic address and command](/assets/q/sources.png)](/assets/q/sources.png)
+Once connected, the collector reports its host, module, capture mode, arguments and version. Expand the source details to inspect these values. Use the card’s ⋯ menu to edit, reconnect or remove the source. Removing a source stops reception and leaves its retained records and files available within their retention limits.
 
-*Click to enlarge. Real eCaptureQ v1.0.0 Web UI with synthetic setup data.*
-
-The source form initially fills **Capture host** from the endpoint hostname and recognizes **Capture module** from a plain `ecapture tls`, `gotls` or `gnutls` command. You can edit these values, especially when the endpoint is an SSH tunnel. The recorded command and module describe your setup; **no command is executed**, and registration does not prove what was captured.
+[View the older v1.0.0 form, which used manually entered collector details.](/assets/q/sources.png)
 
 Each source has its own connection state, retry/reconnect counts and operational logs. The top button reports connected sources / total sources. One disconnection does not stop the others. Reconnection uses automatic backoff; records from different connection generations are not paired with one another. There is no replay of missed events while disconnected. Logs are separate from the message list.
 
@@ -114,11 +112,11 @@ ecaptureq --sources ./sources.local.json --mode live
 .\eCaptureQ.exe --sources .\sources.local.json --mode live
 ```
 
-You can instead copy and edit the package's `config/sources.example.json` (Linux: `/usr/share/doc/ecaptureq/config/` or `/usr/share/doc/ecaptureq-web/config/`). UI additions are written back atomically. If saving fails or the file changed externally, the UI reports an error and does not add the connection. CLI `--data-source` endpoints remain CLI settings. The JSON file stores source configuration, descriptive metadata and the optional settings below, **not captured records**. The manifest is limited to 128 KiB.
+Alternatively, download the [v1.2.0 configuration example](https://github.com/gojue/ecaptureQ/blob/v1.2.0/config/sources.example.json). Additions, edits and removals of file-backed sources are saved atomically. A write failure or conflicting external edit leaves the current connection intact. Changes to CLI sources apply only to the running instance. The configuration file can be up to 128 KiB. Captured records and collector-reported metadata are kept separately.
 
 ## Header, hidden domains and authentication {#configuration}
 
-The new source requires a top-level **JSON object**. Back up an older `[...]` source array, then wrap it as `{"sources": [...]}`. The minimal object `{"sources": []}` configures neither sources nor login.
+Since v1.1.0, configuration files require a top-level **JSON object**. Back up an older `[...]` source array, then wrap it as `{"sources": [...]}`. The minimal object `{"sources": []}` configures neither sources nor login.
 
 You can add these fields alongside `sources`:
 
@@ -126,9 +124,10 @@ You can add these fields alongside `sources`:
 | --- | --- |
 | `auth` | [Web Authentication](/q/en/authentication/) settings; omitted or `null` means no login requirement |
 | `headerCenter` | Rich HTML in the center of the header; empty uses the default text. Include only content trusted by the operator |
-| `hiddenDomains` | Domain suffixes to exclude; a nonempty list replaces the built-in list. Omitted or empty uses the defaults |
+| `hiddenDomains` | Domain suffixes to exclude from the live HTTP record cache. Omitted or empty uses the defaults |
+| `native` | Native file storage. Set `directory` (parent directory), `maxBytes` and `maxSessions`. See [native file export](/q/en/interface/#native) |
 
-For example, add `"headerCenter": "Test environment"` and `"hiddenDomains": ["example.com"]` to the source object above. Use bare domain suffixes without schemes, ports or paths. Matching is case-insensitive and includes the domain itself and its subdomains. Defaults include GitHub domains such as `github.com`, `githubusercontent.com` and `ghcr.io`; see the [complete source list](https://github.com/gojue/ecaptureQ/blob/1bb574da5e1fb98650a3ae604956d9f3ac2329cc/internal/app/hidden_domains.go).
+For example, add `"headerCenter": "Test environment"` and `"hiddenDomains": ["example.com"]` to the top-level object alongside `sources`. Use bare domain suffixes without schemes, ports or paths. Matching is case-insensitive and includes the domain itself and its subdomains. Defaults include GitHub domains such as `github.com`, `githubusercontent.com` and `ghcr.io`; see the [complete source list](https://github.com/gojue/ecaptureQ/blob/v1.2.0/internal/app/hidden_domains.go).
 
 **Matching live records are discarded before entering the cache**, rather than merely hidden on the current page. Clearing search filters cannot restore them. An empty array `[]` does not disable exclusions. Restart the application after editing the file; the new settings apply to subsequent receiving, and the restart clears in-memory records.
 

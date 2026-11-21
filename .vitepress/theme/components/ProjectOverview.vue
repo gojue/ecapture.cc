@@ -6,9 +6,8 @@ const props = defineProps<{ locale: 'en' | 'zh' }>()
 
 const translations = {
   en: {
-    updateLabel: 'UPSTREAM v2.8 · OCTOBER 2026',
-    updateTitle: 'LoongArch64 joins the Linux builds',
-    updateBody: 'The v2.8 codebase also adds text, keylog and pcapng modes for GnuTLS and separates captured events from operational logs.',
+    updateLabel: 'v2.12.0 · NOVEMBER 2026',
+    updateTitle: 'Stream capture records to eCaptureQ v1.2.0',
     updateLink: 'Read the upstream changelog',
     capabilitiesLabel: 'CAPABILITIES',
     capabilitiesTitle: 'Three probes. One clear view.',
@@ -16,8 +15,8 @@ const translations = {
       {
         number: '01',
         title: 'TLS',
-        body: 'Capture plaintext from OpenSSL, LibreSSL and BoringSSL at library boundaries. Point the probe at a shared library or a statically linked binary.',
-        detail: 'OpenSSL · LibreSSL · BoringSSL'
+        body: 'Read HTTPS requests and responses from applications using OpenSSL or BoringSSL. Use --libssl when your application uses a different library from the system default.',
+        detail: 'OpenSSL · BoringSSL'
       },
       {
         number: '02',
@@ -28,15 +27,14 @@ const translations = {
       {
         number: '03',
         title: 'GnuTLS',
-        body: 'Capture GnuTLS plaintext and session keys with version-aware probes. The current module supports text, keylog and pcapng capture modes.',
+        body: 'Inspect Linux applications linked to GnuTLS. The probe selects a layout for the installed library version to capture the TLS secrets needed for decryption.',
         detail: 'GnuTLS · text · keylog · pcapng'
       }
     ],
-    capabilitiesNote: 'All three modules support text, keylog and pcapng modes. --eventaddr routes captured events to stdout, files, TCP or WebSocket; operational logs use --logaddr.',
+    capabilitiesNote: 'All three probes reconstruct HTTP messages from packets and TLS secrets by default. Use --output capture.jsonl to save structured records or --pcapfile capture.pcapng to save packets and secrets for Wireshark.',
     startLabel: 'GET STARTED',
     startTitle: 'Start with a TLS capture',
-    startBody: 'Use a published build for your system, or build from source. Run eCapture with root privileges or the required Linux capabilities, then make a TLS request in another terminal.',
-    startNote: 'The default text mode writes captured events to stdout. Operational logs use stderr; --logaddr configures their separate destination.',
+    startBody: 'Run eCapture on a supported Linux host. Once the probe attaches, use an OpenSSL-linked curl in the second terminal. The first terminal shows runtime logs and decoded messages.',
     terminalExample: '$ sudo ecapture tls\n\n# In another terminal\n$ curl https://example.com',
     download: 'Download releases',
     guide: 'Read the getting started guide',
@@ -52,14 +50,13 @@ const translations = {
       { system: 'Android', architecture: 'x86_64 / amd64', kernel: '4.18+' },
       { system: 'Android', architecture: 'AArch64 / arm64', kernel: '5.5+' }
     ],
-    platformNote: 'Android/loong64, Windows and macOS are not supported. Check published assets for a LoongArch64 package; its build path has cross-build and user-mode smoke checks, so verify eBPF capture on target hardware.',
+    platformNote: 'Linux LoongArch64 releases include archive and Debian packages. The upstream test suite also exercises OpenSSL and GoTLS on native LoongArch hardware.',
     privileges: 'Minimum privileges',
     loongGuide: 'LoongArch64 build guide'
   },
   zh: {
-    updateLabel: '主仓库 v2.8 · 2026 年 10 月',
-    updateTitle: 'Linux 新增 LoongArch64 架构',
-    updateBody: 'v2.8 代码还为 GnuTLS 增加文本、Keylog、PCAPNG 三种模式，并将捕获事件与程序运行日志分开。',
+    updateLabel: 'v2.12.0 · 2026 年 11 月',
+    updateTitle: '通过订阅接口将捕获记录发送至 eCaptureQ v1.2.0',
     updateLink: '查看主仓库更新记录',
     capabilitiesLabel: '核心能力',
     capabilitiesTitle: '三种模块，同一份清晰。',
@@ -67,8 +64,8 @@ const translations = {
       {
         number: '01',
         title: 'TLS',
-        body: '在库函数边界捕获 OpenSSL、LibreSSL 和 BoringSSL 明文。可指定动态库路径，也可定位静态链接的目标程序。',
-        detail: 'OpenSSL · LibreSSL · BoringSSL'
+        body: '查看 OpenSSL 或 BoringSSL 应用的 HTTPS 请求与响应。如果应用加载的库与系统默认版本不同，可用 --libssl 指定实际库路径。',
+        detail: 'OpenSSL · BoringSSL'
       },
       {
         number: '02',
@@ -79,15 +76,14 @@ const translations = {
       {
         number: '03',
         title: 'GnuTLS',
-        body: '通过适配库版本的探针捕获 GnuTLS 明文与会话密钥。当前模块支持文本、Keylog 和 PCAPNG 三种模式。',
+        body: '检查 Linux 上链接 GnuTLS 的应用。探针依据实际库版本选择匹配的内存布局，获取解密所需的 TLS 会话密钥。',
         detail: 'GnuTLS · text · keylog · pcapng'
       }
     ],
-    capabilitiesNote: '三个模块均支持文本、Keylog 和 PCAPNG 模式。--eventaddr 将捕获事件送往 stdout、文件、TCP 或 WebSocket；程序运行日志由 --logaddr 单独配置。',
+    capabilitiesNote: '三个探针默认结合数据包和 TLS 密钥重建 HTTP 消息。用 --output capture.jsonl 保存结构化记录，用 --pcapfile capture.pcapng 保存数据包和密钥供 Wireshark 分析。',
     startLabel: '快速开始',
     startTitle: '运行一次 TLS 捕获',
-    startBody: '使用已发布的对应架构构建产物，或从源码编译。以 root 或所需 Linux capabilities 启动 eCapture，再从另一终端发起 TLS 请求。',
-    startNote: '默认文本模式将捕获事件写到 stdout，程序日志写到 stderr；--logaddr 用于配置单独的日志目的端。',
+    startBody: '在受支持的 Linux 主机上运行 eCapture。探针就绪后，在另一终端用链接 OpenSSL 的 curl 发起请求，即可在第一个终端看到运行日志和解码后的消息。',
     terminalExample: '$ sudo ecapture tls\n\n# 在另一终端\n$ curl https://example.com',
     download: '下载发行版',
     guide: '阅读快速上手',
@@ -103,7 +99,7 @@ const translations = {
       { system: 'Android', architecture: 'x86_64 / amd64', kernel: '4.18+' },
       { system: 'Android', architecture: 'AArch64 / arm64', kernel: '5.5+' }
     ],
-    platformNote: '暂不支持 Android/loong64、Windows 和 macOS。下载前请核对发行页是否已有 LoongArch64 产物；构建流程包含交叉编译和用户态冒烟检查，eBPF 捕获仍应在目标硬件上验证。',
+    platformNote: 'Linux LoongArch64 提供压缩包和 Debian 软件包。上游测试也在原生 LoongArch 硬件上验证 OpenSSL 和 GoTLS 捕获。',
     privileges: '最小权限要求',
     loongGuide: 'LoongArch64 构建指南'
   }

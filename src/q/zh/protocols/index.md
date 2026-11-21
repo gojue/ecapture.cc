@@ -10,30 +10,30 @@ eCapture 负责采集与解密；eCaptureQ 连接事件服务、关联应用消�
 
 ## 采集条件与模块 {#capture}
 
-完整应用消息使用 eCapture 的 **text 输出与 pcapng 数据源**：
+eCapture v2.12.0 的 `tls`、`gotls` 和 `gnutls` 默认使用 **text 模式与 pcapng 数据源**。下面显式指定该组合，将已解密的消息发送给 Q。
 
 ```sh
 sudo ./ecapture tls -m text --text-source pcapng -i eth0 \
-  --ecaptureq ws://127.0.0.1:28256/
+  --stream-listen ws://127.0.0.1:28256/
 ```
 
-已发布 eCapture **v2.10.0** 包含这些选项，需要正确的网卡和受支持的目标库/程序。这条路径由 **上游** 完成抓包、TLS 解密和消息重组，再向 eCaptureQ 提供事件。eCaptureQ 不直接打开 PCAPNG 文件，不解密 TLS，也不重组 TCP。
+选择测试流量经过的网卡和受支持的 TLS 库或程序。eCapture 在采集主机上解密、重组消息，再通过 TEXT 事件发送给 eCaptureQ。采集器使用 keylog 或 pcapng 模式时，发送的是原生文件字节。[保存原生文件](/q/zh/interface/#native)
 
 | TLS 应用 | 模块与目标选择 |
 | --- | --- |
-| 受支持的 OpenSSL / BoringSSL / LibreSSL 变体 | `tls`；仍需满足库版本与附加条件 |
+| 受支持的 OpenSSL / BoringSSL 变体 | `tls`；仍需满足库版本与附加条件 |
 | Go TLS 可执行文件 | `gotls --elfpath /path/to/go-app` |
-| GnuTLS 应用 | `gnutls --gnutls /path/to/libgnutls.so` |
+| Linux 上的 GnuTLS 应用 | `gnutls --gnutls /path/to/libgnutls.so` |
 
 将可执行文件/库路径、网卡替换为真实采集目标。例如：
 
 ```sh
 sudo ./ecapture gotls --elfpath /path/to/go-app \
   -m text --text-source pcapng -i lo \
-  --ecaptureq ws://127.0.0.1:28256/
+  --stream-listen ws://127.0.0.1:28256/
 ```
 
-仅当流量经过 loopback 时使用 `lo`。Linux、Android 采集仍受 CPU、内核、权限、库版本和模块限制；具体发布版本条件见 [采集端官方 README](https://github.com/gojue/ecapture/blob/v2.10.0/README.md)。Hook 文本路径可能提供片段或原始记录，而非完整协议消息。
+仅当流量经过 loopback 时使用 `lo`。Linux、Android 采集仍受 CPU、内核、权限、库版本和模块限制；具体发布版本条件见 [采集端官方 README](https://github.com/gojue/ecapture/blob/v2.12.0/README.md)。Hook 文本路径可能提供片段或原始记录，而非完整协议消息。
 
 TLS 解密在上游恢复明文；应用协议解析解释这些应用字节；HTTP 正文解压处理选中消息的 gzip 等 `Content-Encoding`。这三项操作彼此不同。
 
@@ -57,7 +57,7 @@ HTTP/3 使用上游 QUIC 解密与消息路径，文档中的采集验证样例�
 
 ## Redis {#redis}
 
-受支持的上游 Redis 路径需要在适用 TLS 模块上，使用 `-m text --text-source pcapng` 并显式选择 `--text-protocol redis`。v2.10.0 文档中的解析器支持固定长度 RESP2/RESP3 消息；有查看器不等于能自动采集任意明文 Redis 端口。
+受支持的上游 Redis 路径需要在适用 TLS 模块上，使用 `-m text --text-source pcapng` 并显式选择 `--text-protocol redis`。解析器支持固定长度 RESP2/RESP3 消息；有查看器不等于能自动采集任意明文 Redis 端口。
 
 在 **命令、响应、原始 RESP** 页检查参数、请求编号和带类型的值，包括字符串、整数、数组、Map、错误和 Null。原始请求与响应字节分别保留，二进制值保留 Hex，避免文本转换破坏内容。
 
@@ -67,7 +67,7 @@ HTTP/3 使用上游 QUIC 解密与消息路径，文档中的采集验证样例�
 
 `mysqld` 探针提供 **查询事件**。在 **SQL 查询** 看已捕获 SQL，**捕获信息** 看原始/捕获长度、截断和实际观察到的 `dispatch_command` 返回值，**原始** 页查看载荷。
 
-这条路径不是完整 MySQL 查询与结果捕获。即使派发返回 `SUCCESS`，也不能证明 SQL 执行成功、事务已提交或获得完整结果集。SQL 截断时只展示查询片段。采集需要受支持的 mysqld 目标与探针配置，参见 [采集端模块文档](https://github.com/gojue/ecapture/blob/v2.10.0/README.md)。
+这条路径不是完整 MySQL 查询与结果捕获。即使派发返回 `SUCCESS`，也不能证明 SQL 执行成功、事务已提交或获得完整结果集。SQL 截断时只展示查询片段。采集需要受支持的 mysqld 目标与探针配置，参见 [采集端模块文档](https://github.com/gojue/ecapture/blob/v2.12.0/README.md)。
 
 ## MQTT {#mqtt}
 
@@ -87,13 +87,11 @@ DATAGRAM 具有独立消息边界，长度可以合法地为零。Reset 不是 H
 
 ## 原始或不完整事件 {#raw}
 
-未映射、格式不完整、增量或原始事件保留可用载荷和元数据供检查。没有专属查看器时，不补造请求/响应。单载荷显示上限为 256 KiB，超限明确标记部分内容；解析与关联也有其他有界限制。
+格式异常或未映射的 TEXT 事件会保留已有载荷与元数据。Q 无法解析 SDK 格式化首行时，可在 RAW 视图中检查原始字节与解析错误。在 v2 中，`length` 是格式化后载荷的字节数，`original_length` 描述 SDK 格式化前的长度，单凭二者的差值无法判断截断。[接收与保留限制](/q/zh/faq/#retention)
 
 ## 进程与 TLS 元数据兼容性 {#tls}
 
-界面读取上游官方事件字段。**已发布 eCapture v2.10.0 只有字段 1–17，使用 Decryptor v1.4.0**，不发布新增官方字段 `process_args`（18）、`process_args_truncated`（19）、`tls`（20）。因此核心消息可能已收到，而这些详情仍为未知。
-
-这些详情需要采集器包含上游元数据变更（提交 `f6c0df58575c` 或后续兼容版本）。源码参考中，参数捕获要求 Decryptor v1.4.2+，TLS 元数据要求 v1.4.3+；参见 [官方兼容性来源记录](https://github.com/gojue/ecaptureQ/blob/v1.0.0/docs/upstream-status.md)。不能把尚未发布的采集端改动当作现有 Release 能力。
+eCaptureQ v1.2.0 读取 eCapture v2.12.0 TEXT 事件中的 Protobuf v2 字段。`process_args` 与 `process_args_truncated` 描述当时捕获的进程命令，可选字段 `tls` 携带已观察到的握手信息。[v2 协议定义](https://github.com/gojue/ecapture/blob/v2.12.0/protobuf/proto/v2/ecaptureq.proto)
 
 数据可用时，连接页展示捕获的进程/PID/argv，以及 TLS 版本、密码套件、SNI、ALPN、组、签名算法。**JA3**、**JA4** 来自首次线上 ClientHello；适用时标记 ECH Outer。协商参数是握手信息，不是实际会话密钥；SNI 不从 HTTP Host 推测，缺失字段不补造。
 

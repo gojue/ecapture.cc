@@ -10,39 +10,31 @@ Choose a package for your operating system and CPU on the [Download page](/q/en/
 
 ## Documentation version and scope {#version}
 
-Package examples and existing synthetic-data screenshots use **eCaptureQ v1.0.0** as their baseline. Web startup commands below use the new authentication implementation's CLI names; see [CLI migration](#cli) for older packages. The Download page reads published releases from the API and may include newer versions. **`1.0.0` in the commands below is an example: substitute the version and filename you actually downloaded.** Read that release's notes before installing another version.
+These instructions cover **eCaptureQ v1.2.0**, released on 21 November 2026. The live examples use **eCapture v2.12.0** on the capture host. Match the package filename to your download. The screenshots are from v1.0.0 and use synthetic data. [Official v1.2.0 release](https://github.com/gojue/ecaptureQ/releases/tag/v1.2.0)
 
-The baseline release was published on 8 November 2026 with 15 application packages and one `SHA256SUMS`; verify them on the [official v1.0.0 release page](https://github.com/gojue/ecaptureQ/releases/tag/v1.0.0). Some process/TLS fields require newer **collector** capabilities; see [protocol compatibility](/q/en/protocols/#tls).
-
-As of **13 November 2026**, the latest official stable release is still v1.0.0. Login, configuration and refresh changes were verified against main commit [`1bb574d`](https://github.com/gojue/ecaptureQ/commit/1bb574da5e1fb98650a3ae604956d9f3ac2329cc); **these features are not included in the v1.0.0 release packages**. Build that source or use a subsequent release containing the changes. The source still says `1.0.0` in `VERSION`, so check the source commit in `BUILD-INFO.json` and the binary's `--help`. See the [matching compilation guide](https://github.com/gojue/ecaptureQ/blob/1bb574da5e1fb98650a3ae604956d9f3ac2329cc/docs/compilation.md).
-
-Older alpha.2 downloads use `desktop` / `server` filenames and the executable `ecaptureq-server`; the v1.0.0 commands below do not apply to those packages. For source builds, use the [official compilation guide](https://github.com/gojue/ecaptureQ/blob/v1.0.0/docs/compilation.md).
+The release includes 17 application packages and a shared `SHA256SUMS`. Get the matching documentation and configuration example from the tagged repository. [Configuration example](https://github.com/gojue/ecaptureQ/blob/v1.2.0/config/sources.example.json) · [Compilation guide](https://github.com/gojue/ecaptureQ/blob/v1.2.0/docs/compilation.md)
 
 ## CLI migration {#cli}
 
-| Purpose | Released v1.0.0 | New source |
+| eCaptureQ option | v1.0.0 | v1.1.0 and v1.2.0 |
 | --- | --- | --- |
 | eCaptureQ Web HTTP listener | `--addr` | `--listen` |
 | eCaptureQ collector endpoint; repeatable | `--ecaptureq` | `--data-source` |
 | Generate a Web password hash | Unavailable | `--hash-password` |
 
-The new source rejects the old option names. Update service scripts accordingly. **The collector's own `ecapture --ecaptureq` option is unchanged** and still opens the event listener. Configuration files continue to use `--sources`.
+On the **collector**, eCapture v2.12.0 replaces `--ecaptureq` with `--stream-listen`. Upgrade the collector and eCaptureQ together. Q v1.2.0 requires the `ecapture.v2` WebSocket subprotocol. Q v1.0.0 and v1.1.0 use the previous protocol. On the **analysis host**, Q v1.2.0 still uses `--data-source` for the collector URL and `--listen` for the Web UI.
 
 ```sh
-# New source: separate Web listener and collector endpoint
+# eCaptureQ v1.2.0 on the analysis host
 ecaptureq-web --listen 127.0.0.1:28257 \
   --data-source ws://127.0.0.1:28256/ --mode live
-
-# Equivalent command for released v1.0.0 (no built-in login)
-ecaptureq-web --addr 127.0.0.1:28257 \
-  --ecaptureq ws://127.0.0.1:28256/ --mode live
 ```
 
 ## Choose a package {#packages}
 
 Desktop files begin with `ecaptureq-`, and Web files begin with `ecaptureq-web-`. `amd64` means x86_64 / x64, and `arm64` means aarch64. macOS packages are universal and contain both Intel and Apple Silicon slices. Verify the downloaded files against `SHA256SUMS` from the same release.
 
-The new source adds **Linux loong64 Web DEB/RPM builds** for LoongArch64. It does not add loong64 Desktop or macOS/Windows loong64 packages. Check the release page for actual downloadable assets; the original 15 v1.0.0 application packages do not include this addition.
+On Linux, amd64 and arm64 have Desktop and Web DEB/RPM packages. LoongArch64 (`loong64`) has Web DEB/RPM packages starting with v1.1.0.
 
 These are eCaptureQ client/service platforms. **eCapture itself runs on supported Linux or Android systems**, subject to kernel, CPU, privileges and module requirements. There is no Android or iOS eCaptureQ client support commitment.
 
@@ -54,17 +46,17 @@ These are eCaptureQ client/service platforms. **eCapture itself runs on supporte
 
 ```sh
 # Ubuntu / Debian, amd64 example
-sudo apt install ./ecaptureq-1.0.0-linux-amd64.deb
+sudo apt install ./ecaptureq-1.2.0-linux-amd64.deb
 
 # Fedora, amd64 example
-sudo dnf install ./ecaptureq-1.0.0-linux-amd64.rpm
+sudo dnf install ./ecaptureq-1.2.0-linux-amd64.rpm
 ```
 
 Use the `arm64` filename on an ARM64 host. Open **eCaptureQ** from the application menu, or run `ecaptureq` in a graphical session. The application opens in **Mock** mode. No collector or separate Web service is needed for the demo.
 
 ### macOS first launch {#macos}
 
-Verify the download against `SHA256SUMS` and inspect `BUILD-INFO.json` in the package. The default macOS build uses **ad-hoc signing and is not notarized**; it does not carry an Apple-verified developer identity. If macOS blocks the first launch, use the application-specific **System Settings → Privacy & Security → Open Anyway** flow after checking the source. See [Apple's instructions](https://support.apple.com/en-us/102445). Managed Macs may restrict this flow.
+Verify the download against `SHA256SUMS` and inspect `eCaptureQ.app/Contents/Resources/Distribution/BUILD-INFO.json`. The default macOS build uses **ad-hoc signing and is not notarized**; it does not carry an Apple-verified developer identity. If macOS blocks the first launch, use the application-specific **System Settings → Privacy & Security → Open Anyway** flow after checking the source. See [Apple's instructions](https://support.apple.com/en-us/102445). Managed Macs may restrict this flow.
 
 ## Run Web {#web}
 
@@ -91,14 +83,14 @@ For a remote service, use the [remote Web access guide](/q/en/data-sources/#web-
 
 ## Other additions {#updates}
 
-These also refer to the new source above; the existing v1.0.0 screenshots do not show every change:
+v1.2.0 adds native KEYLOG and PCAPNG export, automatic collector metadata, and source editing, reconnection and removal. See [native files](/q/en/interface/#native) and [source management](/q/en/data-sources/#add). The following changes shipped in v1.1.0.
 
 - **Extended configuration**: a top-level object replaces the source array and can contain `sources`, `auth`, `headerCenter` and `hiddenDomains`. Migrate older files using the [configuration guide](/q/en/data-sources/#configuration).
 - **Refresh on changes**: Web and Desktop wait for changes through long polling and reload the current page when records change, reducing idle requests. See [refresh behavior](/q/en/interface/#display).
 - **Startup update notification**: the analysis interface checks official GitHub Releases and shows a link when it finds a newer version. It does not install updates; request failures do not interrupt the analysis UI.
 - **Larger payload retention**: the source-level per-payload truncation cap rises from 256 KiB to 256 MiB. This does not mean a default instance accepts 256 MiB messages: WebSocket frames, retention and body decompression have separate limits. See [capacity limits](/q/en/faq/#retention).
 
-Sources: [CLI parser](https://github.com/gojue/ecaptureQ/blob/1bb574da5e1fb98650a3ae604956d9f3ac2329cc/internal/cli/options.go), [release builds](https://github.com/gojue/ecaptureQ/blob/1bb574da5e1fb98650a3ae604956d9f3ac2329cc/.github/workflows/build.yml), [update check](https://github.com/gojue/ecaptureQ/blob/1bb574da5e1fb98650a3ae604956d9f3ac2329cc/frontend/update-check.js), and [payload mapping](https://github.com/gojue/ecaptureQ/blob/1bb574da5e1fb98650a3ae604956d9f3ac2329cc/internal/app/mapper.go).
+Sources: [CLI parser](https://github.com/gojue/ecaptureQ/blob/v1.2.0/internal/cli/options.go), [release builds](https://github.com/gojue/ecaptureQ/blob/v1.2.0/.github/workflows/build.yml), [update check](https://github.com/gojue/ecaptureQ/blob/v1.2.0/frontend/update-check.js), and [payload mapping](https://github.com/gojue/ecaptureQ/blob/v1.2.0/internal/app/mapper.go).
 
 ## Upgrade and next steps {#next}
 

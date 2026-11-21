@@ -5,9 +5,9 @@ const wikiData = require('./wiki.json');
 
 const outputDir = path.join(__dirname, '../docs');
 
-// Devin sometimes returns Chinese titles even for the "en" wiki. Keep the
-// public URLs readable and stable instead of deriving partial ASCII slugs.
+// Keep published URLs stable across translated titles and upstream renames.
 const slugOverrides = {
+    'Output Destinations and Subscriptions': 'event-destinations-and-rotation',
     '简介': 'start',
     '简介概览': 'overview',
     '使用要求': 'requirements',
