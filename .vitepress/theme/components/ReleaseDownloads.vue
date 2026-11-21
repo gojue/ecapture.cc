@@ -18,9 +18,10 @@ const loading = ref(true)
 const releaseId = (tag: string) => 'release-' + tag.replace(/[^a-zA-Z0-9_-]/g, '-')
 const date = (value: string) => new Date(value).toLocaleDateString(zh.value ? 'zh-CN' : 'en-US')
 const escapeHtml = (text: string) => text.replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]!))
-// Release descriptions are remote Markdown: render text, never raw HTML.
 const renderer = new marked.Renderer()
-renderer.html = ({ text }) => escapeHtml(text)
+// Marked can group the opening details tag and the entire summary in one HTML token.
+// Escape remote HTML, then restore only the native disclosure markup.
+renderer.html = ({ text }) => escapeHtml(text).replace(/&lt;(\/?(?:details|summary)|details open)&gt;/gi, '<$1>')
 renderer.link = function ({ href, tokens }) {
   const safe = sanitizeUrl(href)
   const text = this.parser.parseInline(tokens)
