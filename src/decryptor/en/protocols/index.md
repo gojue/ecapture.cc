@@ -26,6 +26,16 @@ TCP and QUIC integration tests exercise these modes with recorded traffic. The f
 
 ## Choose compatible options {#options}
 
+Choose the data granularity your consumer needs before selecting an output mode. These are the four choices for TLS/QUIC. DTLS datagram output and the layering rules for `TLSUpgrade` are described below.
+
+```mermaid
+flowchart LR
+    Need["Data the consumer needs"] --> Default["Complete HTTP / WebSocket messages<br/>Use default options"]
+    Need --> HTTP["HTTP headers, body chunks and completion<br/>HTTPEvents: true<br/>May add SSE / HTTP/2 gRPC events"]
+    Need --> Raw["Decrypted bytes to interpret yourself<br/>RawChunks: true<br/>Stream chunks / QUIC datagrams"]
+    Need --> Explicit["DNS / MQTT / Redis messages<br/>Set ApplicationProtocol explicitly<br/>dot, doh, doq, mqtt, redis"]
+```
+
 - Select one output mode per call. `RawChunks` and `HTTPEvents` are mutually exclusive. An explicit `ApplicationProtocol` conflicts with either and with a nonzero `MaxDecodedBodyBytes`. It selects the parser for that call, independent of port.
 - With `HTTPEvents`, `MaxDecodedBodyBytes: 8 << 20` enables single-layer gzip expansion up to 8 MiB per message. A zero limit preserves content-coded body bytes. When gzip expansion is active, offsets count decoded bytes. Other encodings pass through.
 - `TLSUpgrade` selects a TCP negotiation before the target TLS session. Supported values are `smtp`, `imap`, `pop3`, `ldap`, `postgres`, `mysql`, `connect` and `https-connect`. For example, combine `TLSUpgrade: "smtp"` with `RawChunks: true` to receive negotiation and upgraded application bytes. The negotiation event has `Protocol="starttls"` and `kind="negotiation_chunk"`. Use `tls_depth` to distinguish layers. `https-connect` supports one nested TLS session and requires keys for each encrypted layer.

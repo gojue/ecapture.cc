@@ -7,6 +7,9 @@
 :is(.mermaid, .mermaid-lightbox-content) svg .cluster rect { fill:var(--ec-surface) !important; stroke:var(--ec-border) !important; }
 :is(.mermaid, .mermaid-lightbox-content) svg :is(.nodeLabel, .cluster-label, .edgeLabel) p,
 :is(.mermaid, .mermaid-lightbox-content) svg text { fill:var(--ec-ink) !important; color:var(--ec-ink) !important; }
+:is(.mermaid, .mermaid-lightbox-content) svg .note { fill:var(--ec-surface-raised) !important; stroke:var(--ec-wire) !important; }
+:is(.mermaid, .mermaid-lightbox-content) svg .noteText,
+:is(.mermaid, .mermaid-lightbox-content) svg .noteText tspan { fill:var(--ec-ink) !important; color:var(--ec-ink) !important; }
 :is(.mermaid, .mermaid-lightbox-content) svg .edgeLabel p,
 :is(.mermaid, .mermaid-lightbox-content) svg .labelBkg { background:var(--ec-surface) !important; }
 :is(.mermaid, .mermaid-lightbox-content) svg .flowchart-link { stroke:var(--ec-accent) !important; }

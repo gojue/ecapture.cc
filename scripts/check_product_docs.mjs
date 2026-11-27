@@ -11,11 +11,11 @@ const read = relative => fs.readFileSync(path.join(root, relative), 'utf8');
 const exists = relative => fs.existsSync(path.join(root, relative));
 const products = [
   { prefix: 'q', name: 'eCaptureQ', manifest: 'productPages', slugs: ['', 'quick-start', 'data-sources', 'authentication', 'interface', 'protocols', 'download', 'install', 'faq'] },
-  { prefix: 'decryptor', name: 'eCapture Decryptor', manifest: 'decryptorPages', slugs: ['', 'quick-start', 'api', 'streaming', 'protocols', 'native'] },
+  { prefix: 'decryptor', name: 'Decryptor', manifest: 'decryptorPages', slugs: ['', 'quick-start', 'api', 'streaming', 'protocols', 'native'] },
 ];
 const locales = ['en', 'zh'];
 const articlePath = (product, locale, slug) => `/${product.prefix}/${locale}/${slug ? slug + '/' : ''}`;
-const primaryLabels = zh => ['eCapture', 'eCaptureQ', 'eCapture Decryptor', zh ? '下载' : 'Download', zh ? '作者博客' : 'Blog'];
+const primaryLabels = zh => ['eCapture', 'eCaptureQ', 'Decryptor', zh ? '下载' : 'Download', zh ? '作者博客' : 'Blog'];
 const routes = ['/', '/zh/', '/en/overview/', '/zh/overview/', '/en/download/', '/zh/download/',
   ...products.flatMap(product => [`/${product.prefix}/`, ...locales.flatMap(locale => product.slugs.map(slug => articlePath(product, locale, slug)))])];
 const sourceOnly = process.argv.includes('--source-only');

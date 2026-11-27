@@ -71,6 +71,28 @@ func main() {
 }
 ```
 
+The two goroutines cooperate in this order. Consume the channel while decryption runs: waiting until the SDK returns would block the first send on this unbuffered channel.
+
+```mermaid
+sequenceDiagram
+    participant Main as Main goroutine
+    participant Worker as Caller-owned worker
+    participant SDK as SDK
+    Main->>Worker: Start goroutine
+    Worker->>SDK: DecryptPcapFile(nil, capture, packets)
+    SDK->>SDK: Scan DSBs, rewind, then read packets
+    loop Each decoded event
+        SDK->>Main: Send event on packets
+        Main->>Main: Consume in range and print first line
+    end
+    SDK-->>Worker: Return err after draining connections
+    Worker->>Main: close(packets)
+    Worker->>Main: Send err on result
+    Main->>Main: Finish range and check result
+```
+
+The two-pass read applies to the seekable pcapng file in this example. Non-seekable input is read in arrival order. The caller closes the output channel after either success or failure. [File entry points and lifecycle](../api/#entry-points)
+
 ## Verify the exchange {#verify}
 
 ```sh

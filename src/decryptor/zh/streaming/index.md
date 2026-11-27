@@ -53,6 +53,32 @@ func Forward(ctx context.Context, input io.ReadCloser, out chan<- *types.Decrypt
 
 DSB 可以晚于它能解密的包到达，甚至出现在最后一个网络包之后。需要保持输入开启，直到这个密钥块写完。在流仍开启时，匹配密钥的到达即可触发缓冲的 QUIC 包重新解密。正常 EOF 会排空可处理的数据包和工作协程的输出。
 
+以下以缺少应用流量密钥的 QUIC 连接为例，展示密钥在等待期限内到达的正常路径。密钥通知触发重试，无需再收到一个网络包或等到 EOF。
+
+```mermaid
+sequenceDiagram
+    participant Producer as pcapng 生产端
+    participant SDK as 流式 SDK
+    participant Sink as 消费者 emit
+    Producer->>SDK: 节头块、接口块、握手与数据包
+    SDK->>SDK: 识别连接，有界缓存等待密钥的包
+    Note over Producer,SDK: 输入保持开启，密钥等待期限继续计时
+    Producer->>SDK: 迟到的完整 DSB
+    SDK->>SDK: 导入密钥，通知 QUIC 工作协程重试
+    SDK->>Sink: emit(已解码事件)
+    Sink-->>SDK: 返回 nil，继续串行交付
+    Note over SDK,Sink: 回调处理慢会形成背压
+    Producer->>SDK: 结束字节流，产生 EOF
+    SDK->>SDK: 排空可处理的数据与连接
+    opt 仍有待交付事件
+        SDK->>Sink: emit(剩余事件)
+        Sink-->>SDK: 返回 nil
+    end
+    Note over SDK,Sink: 等所有回调结束后，流式调用才返回
+```
+
+若 context 取消或 `emit` 返回错误，SDK 会关闭输入以中断读取，再等待工作协程和回调退出。已经阻塞的回调仍需自行响应取消。连接密钥等待超时与整次流调用取消是不同的结果，见[返回值说明](#completion)。[密钥通知实现](https://github.com/gojue/ecapture_decryptor/blob/v1.4.4/crypto/keylog.go) · [QUIC 重试实现](https://github.com/gojue/ecapture_decryptor/blob/v1.4.4/transport/quic_decryptor.go)
+
 v1.4.4 的流式入口会保留工作协程仍在引用的密钥。最后一个引用释放后，先前已接入、尚在识别连接身份的工作协程仍可能暂时保护这份密钥。后来的新连接若复用已回收的身份，需要再次提供密钥。尚未与连接关联的密钥从首次导入开始计算保留时间，窗口长度取 `IdleTimeout`。文件入口则在整次调用期间保留已加载密钥。
 
 | Go 选项 | 默认值 | 对集成的影响 |

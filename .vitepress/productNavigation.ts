@@ -7,7 +7,7 @@ type PageEntry = readonly [slug: string, en: string, zh: string]
 const products = {
   collector: { name: 'eCapture', repo: 'ecapture' },
   q: { name: 'eCaptureQ', repo: 'ecaptureQ' },
-  decryptor: { name: 'eCapture Decryptor', repo: 'ecapture_decryptor' },
+  decryptor: { name: 'Decryptor', repo: 'ecapture_decryptor' },
 } as const
 
 export function productForPath(path: string) {

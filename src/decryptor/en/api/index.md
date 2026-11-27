@@ -21,6 +21,23 @@ Classic pcap needs external keys. The file API merges external and embedded keys
 
 For callback output, a slow `emit` slows the decoder. A callback error or context cancellation causes the SDK to close the input to unblock reading. Make the callback return when its own work is canceled. See the [streaming guide](../streaming/) and the [stream implementation](https://github.com/gojue/ecapture_decryptor/blob/v1.4.4/pcapng_stream.go).
 
+## Event data model {#data-model}
+
+One connection generation can produce many `DecryptedPacket` events. This diagram groups event fields by purpose and shows their in-memory relationships. `ConnectionID()` comes from the internal connection key, including its generation; store it as an opaque string.
+
+```mermaid
+flowchart LR
+    Connection["Connection instance<br/>ConnectionKey + Generation"] -->|One to many| Packet["DecryptedPacket"]
+    Packet --> Identity["Correlation and classification<br/>ConnectionID / Transport / Protocol<br/>Direction / Timestamp"]
+    Packet --> Context["Capture context<br/>SrcIP, SrcPort / DstIP, DstPort<br/>PID / PName / ProcessArgs"]
+    Packet --> Payload["Current event payload<br/>Data · byte slice<br/>DataLength · byte count"]
+    Packet --> Metadata["Metadata · depends on protocol and mode<br/>kind / stream_id / offset, etc.<br/>Optional tls handshake observations"]
+```
+
+Metadata such as `kind`, `stream_id` and `offset` appears only where applicable. For example, incremental HTTP events are typically grouped by connection, stream and direction; raw QUIC streams also need offsets to reconstruct bytes. `ConnectionID()` alone cannot pair every request and response. [Correlation rules](../protocols/#limits) · [Connection key definition](https://github.com/gojue/ecapture_decryptor/blob/v1.4.4/types/interfaces.go)
+
+`Data` has the JSON tag `json:"-"`, so encoding an event directly omits its payload. The `ConnectionID()` method does not automatically become a JSON field either. To persist both, add them explicitly to an output structure as in the example below. [Event structure](https://github.com/gojue/ecapture_decryptor/blob/v1.4.4/types/packet.go)
+
 ## Read a DecryptedPacket {#events}
 
 One event may describe a message, a piece of a body, or a state change. Select the output mode first, then interpret `Protocol` and any `Metadata["kind"]` for that mode. A zero-length `Data` is valid on events such as HTTP trailers or an empty datagram. [Protocol and output matrix](../protocols/#matrix)

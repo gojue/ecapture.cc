@@ -18,6 +18,50 @@ lang: zh-CN
 
 Go 接口返回 `*types.DecryptedPacket`。一条 HTTP 响应可能横跨多个网络包，SDK 默认交付重组后的消息。启用增量 HTTP 事件后，调用方可以分别收到消息头、正文片段和结束事件。请按下游处理逻辑选择输出形式。[API 与事件字段](/decryptor/zh/api/) · [协议与输出模式](/decryptor/zh/protocols/)
 
+## 分层架构 {#architecture}
+
+SDK 在调用方进程内完成读取、连接管理、解密和解析。下图沿主处理链展示 v1.4.4 的源码职责，各层都在同一进程中运行。
+
+```mermaid
+flowchart TB
+    Caller["Go 程序 / C、C++ 封装"]
+    subgraph SDK["eCapture Decryptor SDK"]
+        Entry["接入层<br/>api.go / pcapng_stream.go<br/>读取抓包与密钥"]
+        Engine["连接层 · DecryptorEngine<br/>路由、重组与生命周期"]
+        Transport["解密层 · transport/ + crypto/<br/>TLS / QUIC / 显式 DTLS"]
+        Output["输出层 · protocol/ 与传输层<br/>消息、增量事件或原始字节"]
+        Entry --> Engine --> Transport --> Output
+    end
+    Caller --> Entry
+    Output --> Consumer["types.DecryptedPacket<br/>调用方消费、转换或保存"]
+```
+
+`crypto/` 提供 `KeyLogStore`、握手与记录解密、密码套件支持；`types/` 定义各层共享的选项、接口和事件。`capi/` 将 Go 文件接口包装为 C ABI；JSON/HAR 等导出由相应封装、示例或调用方完成。[接入与连接管理](https://github.com/gojue/ecapture_decryptor/blob/v1.4.4/api.go) · [解密器工厂](https://github.com/gojue/ecapture_decryptor/blob/v1.4.4/factory.go) · [公共接口](https://github.com/gojue/ecapture_decryptor/blob/v1.4.4/types/interfaces.go)
+
+## 数据如何变成事件 {#data-flow}
+
+抓包携带网络数据与捕获元信息，密钥日志提供会话密钥。两路数据在解密阶段汇合：经典 pcap 使用外部密钥，pcapng 还可通过 DSB 提供密钥。图中的外部日志适用于接受该参数的 Go reader/file 入口；pcapng 回调入口仅从流中读取 DSB。
+
+```mermaid
+flowchart TB
+    Capture["pcap / pcapng"] --> Reader["读取网络包与捕获元信息"]
+    Capture -. "pcapng 内嵌 DSB" .-> Keys["会话密钥 · KeyLogStore"]
+    Keylog["外部 NSS 密钥日志"] -.-> Keys
+    Reader --> Route["归入双向连接实例"]
+    Route --> TCP["TCP 序号重组与去重<br/>TLS 记录解密"]
+    Route --> QUIC["UDP · 默认 QUIC<br/>包解密、CRYPTO / STREAM 重组"]
+    Route --> DTLS["UDP · 显式 DTLS<br/>逐条认证应用记录"]
+    Keys -.-> TCP
+    Keys -.-> QUIC
+    Keys -.-> DTLS
+    TCP --> Mode["按选项解析应用消息<br/>或输出原始字节事件"]
+    QUIC --> Mode
+    Mode --> Event["DecryptedPacket 事件"]
+    DTLS -->|独立数据报| Event
+```
+
+多个网络包可能合成一条应用消息，同一条消息也可能拆成多个增量事件，因此不要把输出事件数当成抓包数量。进程信息和握手元数据会随事件提供，前提是捕获中存在相应信息。[事件数据模型](/decryptor/zh/api/#data-model) · [输出模式](/decryptor/zh/protocols/#options) · [迟到密钥流程](/decryptor/zh/streaming/#lifecycle)
+
 ## 与 eCapture、eCaptureQ 配合使用 {#ecosystem}
 
 eCapture v2.12.0 内置了这一版本的 SDK。使用基于网络包的文本模式时，采集器在采集主机上把包和密钥交给 SDK。你也可以先用 eCapture 保存 pcapng，再交给单独的 Go 或 C 程序离线读取。分析已有测试抓包无需启动采集器，也无需 eBPF 权限。[采集模式](/zh/3-capture-modes/) · [采集器使用的 SDK 版本](https://github.com/gojue/ecapture/blob/v2.12.0/go.mod)

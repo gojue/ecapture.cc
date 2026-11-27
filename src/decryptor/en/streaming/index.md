@@ -53,6 +53,32 @@ On normal completion, have the producer close its pipe writer or finish its netw
 
 A DSB can arrive after the packets it unlocks, even after the final network packet. Keep the input open long enough to deliver that block. With an open stream, buffered QUIC packets can be retried when matching keys arrive. Normal EOF drains available packets and worker output.
 
+This example follows a QUIC connection missing application traffic secrets, with keys arriving before its deadline. The key notification triggers retries without another network packet or EOF.
+
+```mermaid
+sequenceDiagram
+    participant Producer as pcapng producer
+    participant SDK as Streaming SDK
+    participant Sink as Consumer emit
+    Producer->>SDK: Section, interface, handshake and packet blocks
+    SDK->>SDK: Identify connection, buffer packets within limits
+    Note over Producer,SDK: Input stays open as the key deadline keeps running
+    Producer->>SDK: Complete late DSB
+    SDK->>SDK: Import keys, notify QUIC worker to retry
+    SDK->>Sink: emit(decoded event)
+    Sink-->>SDK: Return nil to continue serial delivery
+    Note over SDK,Sink: A slow callback applies backpressure
+    Producer->>SDK: End byte stream with EOF
+    SDK->>SDK: Drain available data and connections
+    opt Events still pending
+        SDK->>Sink: emit(remaining event)
+        Sink-->>SDK: Return nil
+    end
+    Note over SDK,Sink: The stream call returns after all callbacks finish
+```
+
+If the context is canceled or `emit` fails, the SDK closes the input to interrupt reading, then waits for workers and callbacks to exit. An already blocked callback must respond to cancellation itself. A connection key timeout differs from cancellation of the whole stream call; see [return values](#completion). [Key notifications](https://github.com/gojue/ecapture_decryptor/blob/v1.4.4/crypto/keylog.go) · [QUIC retries](https://github.com/gojue/ecapture_decryptor/blob/v1.4.4/transport/quic_decryptor.go)
+
 In v1.4.4, streaming calls retain keys while workers still reference them. After the last reference is released, earlier workers still discovering their connection identity can temporarily protect those keys. A later connection that reuses a retired identity needs its keys supplied again. Unassociated keys have a retention window measured from first import, using `IdleTimeout`. File calls retain loaded keys for the duration of the call.
 
 | Go option | Default | What to account for |

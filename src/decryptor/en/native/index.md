@@ -69,6 +69,20 @@ Save the upstream HTTP/1.0 loopback fixture in the working directory, then run t
 
 ## Input, output and errors {#contracts}
 
+On success, `DecryptPcapToFile` collects the full result before creating the output file. The diagram shows the decryption success and failure branches. File creation or JSON encoding failures also return a nonzero status and populate the error buffer.
+
+```mermaid
+flowchart TB
+    Call["C / C++ calls DecryptPcapToFile"] --> Input["Open capture and optional key log"]
+    Input --> Decode["Call the Go file decoder<br/>Drain the channel into an in-memory collection"]
+    Decode --> Done{"Decryption succeeded?"}
+    Done -->|Yes| JSON["Create or truncate output file<br/>Encode JSON array, omitting Data payload"]
+    JSON --> Success["Write succeeded: return 0"]
+    Done -->|No| Error["Populate errorBuf, return nonzero status"]
+```
+
+This JSON array is written after decryption completes. To process payload bytes event by event, use the [Go event API](../api/#events); for continuous input, use the [Go streaming callback](../streaming/#consumer).
+
 | Entry point | Behavior in v1.4.4 |
 | --- | --- |
 | `DecryptPcapToFile` | Accepts a capture path, an optional key log and the literal format `"json"`. Holds events in memory, then writes one JSON array. A return value of zero means the call completed. Read the caller-owned error buffer on failure. |

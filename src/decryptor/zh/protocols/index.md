@@ -26,6 +26,16 @@ TCP 与 QUIC 集成测试使用捕获文件检验这些输出。夹具说明列�
 
 ## 组合选项 {#options}
 
+先决定下游需要什么粒度的数据，再选择输出模式。下图列出 TLS/QUIC 的四种选择；DTLS 的独立数据报输出和 `TLSUpgrade` 的分层规则见下方说明。
+
+```mermaid
+flowchart LR
+    Need["下游需要的数据"] --> Default["完整 HTTP / WebSocket 消息<br/>使用默认选项"]
+    Need --> HTTP["HTTP 头、正文片段、结束状态<br/>HTTPEvents: true<br/>可附加 SSE / HTTP/2 gRPC 事件"]
+    Need --> Raw["自行解释解密后的字节<br/>RawChunks: true<br/>流片段 / QUIC 数据报"]
+    Need --> Explicit["DNS / MQTT / Redis 消息<br/>显式设置 ApplicationProtocol<br/>dot、doh、doq、mqtt、redis"]
+```
+
 - 每次调用选择一种输出模式。`RawChunks` 与 `HTTPEvents` 互斥。显式指定 `ApplicationProtocol` 时，不能同时启用两者中的任何一个，也不能设置非零的 `MaxDecodedBodyBytes`。所选解析器对该次调用生效，与端口无关。
 - 启用 `HTTPEvents` 后，`MaxDecodedBodyBytes: 8 << 20` 会展开单层 gzip，每条消息的解压上限为 8 MiB。设为零时保留内容编码后的正文字节。启用 gzip 展开时偏移量按解压后的字节数计算，其他编码按原样交付。
 - `TLSUpgrade` 指定目标 TLS 会话之前的 TCP 协商，允许 `smtp`、`imap`、`pop3`、`ldap`、`postgres`、`mysql`、`connect`、`https-connect`。例如，用 `TLSUpgrade: "smtp"` 搭配 `RawChunks: true` 可读取协商字节以及升级后的应用字节。协商事件带 `Protocol="starttls"` 与 `kind="negotiation_chunk"`，用 `tls_depth` 区分不同层。`https-connect` 支持一层内嵌 TLS，各加密层都需要各自的密钥。

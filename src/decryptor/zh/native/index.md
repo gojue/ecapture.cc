@@ -69,6 +69,20 @@ cc -I"$decryptor_sdk/include" decode.c "$decryptor_sdk/lib/libecapture_decryptor
 
 ## 输入、输出与错误处理 {#contracts}
 
+`DecryptPcapToFile` 的成功路径会先收集完整结果，再创建输出文件。下图展示解密成功与失败的分支；文件创建或 JSON 写入失败同样会返回非零状态并填写错误缓冲区。
+
+```mermaid
+flowchart TB
+    Call["C / C++ 调用 DecryptPcapToFile"] --> Input["打开抓包与可选密钥日志"]
+    Input --> Decode["调用 Go 文件解密器<br/>并发消费通道，将事件收集到内存"]
+    Decode --> Done{"解密返回成功？"}
+    Done -->|是| JSON["创建或清空输出文件<br/>编码为 JSON 数组，省略 Data 正文"]
+    JSON --> Success["写入成功：返回 0"]
+    Done -->|否| Error["填写 errorBuf，返回非零状态"]
+```
+
+这里的 JSON 数组在解密完成后才写出。需要逐条处理正文的程序，可使用 [Go 事件接口](../api/#events)；需要持续接收数据，可使用 [Go 流式回调](../streaming/#consumer)。
+
 | 入口 | v1.4.4 的行为 |
 | --- | --- |
 | `DecryptPcapToFile` | 接收抓包路径、可选的密钥日志路径和格式字符串 `"json"`。先在内存中收集事件，再写入一个 JSON 数组。返回零表示调用完成；失败时读取调用方提供的错误缓冲区。 |

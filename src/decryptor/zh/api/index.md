@@ -21,6 +21,23 @@ lang: zh-CN
 
 回调模式下，`emit` 处理慢会减慢解密。回调报错或 context 被取消时，SDK 会关闭输入，使阻塞的读取返回。若回调本身等待外部操作，该操作也应响应取消并及时返回。[流式接入指南](../streaming/) · [流式入口实现](https://github.com/gojue/ecapture_decryptor/blob/v1.4.4/pcapng_stream.go)
 
+## 事件数据模型 {#data-model}
+
+一个连接实例可以产生多条 `DecryptedPacket`。下图按用途组织事件字段，表示内存中的数据关系。`ConnectionID()` 来自内部连接键，包含连接代次；调用方应把它作为不透明字符串保存。
+
+```mermaid
+flowchart LR
+    Connection["连接实例<br/>ConnectionKey + Generation"] -->|一对多| Packet["DecryptedPacket"]
+    Packet --> Identity["关联与分类<br/>ConnectionID / Transport / Protocol<br/>Direction / Timestamp"]
+    Packet --> Context["捕获上下文<br/>SrcIP、SrcPort / DstIP、DstPort<br/>PID / PName / ProcessArgs"]
+    Packet --> Payload["当前事件载荷<br/>Data · 字节数组<br/>DataLength · 字节数"]
+    Packet --> Metadata["Metadata · 按协议和模式变化<br/>kind / stream_id / offset 等<br/>可选 tls 握手信息"]
+```
+
+只有事件适用时才会出现 `kind`、`stream_id`、`offset` 等元数据。例如，HTTP 增量事件通常按连接、流和方向归组；原始 QUIC 流还需按偏移拼接。不要仅凭 `ConnectionID()` 配对所有请求与响应。[关联规则](../protocols/#limits) · [连接键定义](https://github.com/gojue/ecapture_decryptor/blob/v1.4.4/types/interfaces.go)
+
+`Data` 的 JSON 标签为 `json:"-"`，直接编码事件会省略载荷，`ConnectionID()` 也不会自动成为 JSON 字段。需要保存两者时，应像下方示例那样显式加入输出结构。[事件结构定义](https://github.com/gojue/ecapture_decryptor/blob/v1.4.4/types/packet.go)
+
 ## 读取 DecryptedPacket {#events}
 
 一条事件可以表示一条消息、一段正文或一次状态变更。先确定输出模式，再按 `Protocol` 和该模式可能提供的 `Metadata["kind"]` 解释数据。HTTP trailers、空数据报等事件的 `Data` 长度都可以为零。[协议与输出对照表](../protocols/#matrix)

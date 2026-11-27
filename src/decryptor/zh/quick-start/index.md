@@ -71,6 +71,28 @@ func main() {
 }
 ```
 
+程序中的两个 goroutine 按下面的顺序协作。消费通道必须与解密同时进行；如果等 SDK 返回后才读取，无缓冲通道的第一次发送就会阻塞。
+
+```mermaid
+sequenceDiagram
+    participant Main as 主 goroutine
+    participant Worker as 调用方的解密 goroutine
+    participant SDK as SDK
+    Main->>Worker: 启动 goroutine
+    Worker->>SDK: DecryptPcapFile(nil, capture, packets)
+    SDK->>SDK: 扫描文件内 DSB，回绕后读取包
+    loop 每条已解码事件
+        SDK->>Main: packets 通道发送事件
+        Main->>Main: range 消费并打印首行
+    end
+    SDK-->>Worker: 连接排空后返回 err
+    Worker->>Main: close(packets)
+    Worker->>Main: result 通道发送 err
+    Main->>Main: range 结束，检查 result
+```
+
+图中的两遍读取针对本例可 seek 的 pcapng 文件。不可 seek 的输入按到达顺序读取；无论返回是否有错误，关闭输出通道的责任都在调用方。[文件入口与生命周期](../api/#entry-points)
+
 ## 验证请求与响应 {#verify}
 
 ```sh
