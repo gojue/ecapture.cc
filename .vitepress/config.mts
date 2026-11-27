@@ -27,7 +27,7 @@ function docLocale(locale: 'en' | 'zh', link: string) {
     },
     footer: {
       license: { text: zh ? 'MIT 许可证' : 'MIT License', link: 'https://opensource.org/licenses/MIT' },
-      copyright: `Copyright © 2024-${new Date().getFullYear()} CFC4N, Powered by Vue.js`,
+      copyright: 'Copyright © 2022',
     },
     nav: siteNav(locale),
     sidebar,
@@ -145,6 +145,7 @@ export default withMermaid(defineConfigWithTheme<ThemeConfig>({
   vite: {
     resolve: {
       alias: [
+        { find: './VPFooter.vue', replacement: path.resolve(__dirname, 'theme/components/DocFooter.vue') },
         // Keep the pinned theme and its normal menus; add a split product link.
         { find: './VPNavBarMenuGroup.vue', replacement: path.resolve(__dirname, 'theme/components/ProductNavGroup.vue') },
         { find: './VPNavScreenMenuGroup.vue', replacement: path.resolve(__dirname, 'theme/components/ProductMobileGroup.vue') },

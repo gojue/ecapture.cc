@@ -2,12 +2,12 @@
 import { useData } from 'vitepress'
 import { VTLink } from '@vue/theme'
 
-const { theme, frontmatter, page } = useData()
+const { theme, frontmatter, page, lang } = useData()
 </script>
 
 <template>
   <footer
-    v-if="!frontmatter.page && !page.isNotFound && frontmatter.footer !== false && theme.footer"
+    v-if="!page.isNotFound && frontmatter.footer !== false && theme.footer"
     class="VPFooter ec-doc-footer"
   >
     <p v-if="theme.footer.license" class="license">
@@ -16,7 +16,13 @@ const { theme, frontmatter, page } = useData()
         theme.footer.license.text
       }}</VTLink>{{ theme.i18n?.footerLicense?.after ?? '.' }}
     </p>
-    <p v-if="theme.footer.copyright" class="copyright">{{ theme.footer.copyright }}</p>
+    <p v-if="theme.footer.copyright" class="copyright">
+      {{ theme.footer.copyright }}
+      <VTLink class="link" href="https://gojue.cc" no-icon>gojue</VTLink>
+    </p>
+    <p class="credits">
+      {{ lang.startsWith('zh') ? '由 CFC4N 维护' : 'Maintained by CFC4N' }} · Powered by Vue.js
+    </p>
   </footer>
 </template>
 

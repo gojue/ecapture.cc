@@ -14,7 +14,7 @@ import { setupMermaidZoom } from './composables/mermaidZoom'
 
 export default Object.assign({}, VPTheme, {
   Layout: () => {
-    const { lang } = useData()
+    const { lang, frontmatter } = useData()
     return h('div', { class: 'ec-site' }, [
       h(VPTheme.Layout as Component, null, {
         'navbar-title': () => h(NavTitleBar),
@@ -23,7 +23,8 @@ export default Object.assign({}, VPTheme, {
         'sidebar-top': () => h('p', { class: 'ec-eyebrow ec-sidebar-label' }, lang.value.startsWith('zh') ? '使用文档' : 'DOCUMENTATION'),
         'sidebar-bottom': () => h(SidebarChapters),
       }),
-      h(DocFooter),
+      // Page layouts render the shared footer through the VPFooter alias.
+      !frontmatter.value.page ? h(DocFooter) : null,
       h(HeaderActions),
       h(PointerFeedback),
     ])
