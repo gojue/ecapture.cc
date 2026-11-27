@@ -46,7 +46,7 @@ Create `sources.local.json`. **Replace the hash placeholder with the complete ge
 }
 ```
 
-This example is for local HTTP testing, so it explicitly uses `secureCookie: false`. On Linux/macOS, restrict file permissions with `chmod 600 sources.local.json`; use equivalent file permissions on Windows. The service user needs read access, plus write access if new sources should be saved from the UI.
+This example is for local HTTP testing, so it explicitly uses `secureCookie: false`. On Linux/macOS, restrict file permissions with `chmod 600 sources.local.json`; use equivalent file permissions on Windows. The service account needs read access to the configuration. To save source changes from the UI, it also needs permission to create a temporary file in the same directory and rename it over the configuration file.
 
 ```sh
 ecaptureq-web --listen 127.0.0.1:28257 --sources ./sources.local.json
@@ -55,7 +55,7 @@ ecaptureq-web --listen 127.0.0.1:28257 --sources ./sources.local.json
 1. Keep the service running and open [http://127.0.0.1:28257/](http://127.0.0.1:28257/) on the same machine. An anonymous visit redirects to the login page.
 2. Enter the configured username and the **plaintext password used to generate the hash**, not the hash itself.
 3. After login, the analysis interface opens. This configuration has no sources and initially offers Mock mode. Follow [Quick Start](/q/en/quick-start/#connect) to add a source and switch to Live.
-4. A **Log out** button appears at the top right. Logging out returns to the login page; anonymous requests to protected APIs return `401`.
+4. A **Sign out** button appears at the top right. Logging out returns to the login page; anonymous requests to protected APIs return `401`.
 
 | Field | Requirement |
 | --- | --- |
@@ -86,7 +86,7 @@ Cookies use `HttpOnly`, `SameSite=Strict` and a Path matching `--base-path`. The
 
 Sessions expire **12 hours** after login. Refreshing and long polling do not extend this lifetime. After expiry, APIs return `401`, and the page stops refreshing and redirects to login. Each instance supports up to **128 sessions**. Restarting the service invalidates all sessions.
 
-**Log out** revokes the current session and ends its long polls. Tabs sharing that cookie also lose access; independent sessions in other browsers remain valid. Logout does not clear the service's live cache or stop the collector.
+**Sign out** revokes the current session and ends its long polls. Tabs sharing that cookie also lose access; independent sessions in other browsers remain valid. Logout does not clear the service's live cache or stop the collector.
 
 To change or recover a forgotten password, run `--hash-password` on the service host, replace `passwordHash` in the configuration and restart Web. Update `username` at the same time if needed. A restart invalidates all login sessions and **also clears in-memory live records and logs**; export important records first. There is no self-service password recovery page.
 

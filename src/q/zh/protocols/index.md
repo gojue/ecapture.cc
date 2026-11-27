@@ -89,10 +89,12 @@ DATAGRAM 具有独立消息边界，长度可以合法地为零。Reset 不是 H
 
 格式异常或未映射的 TEXT 事件会保留已有载荷与元数据。Q 无法解析 SDK 格式化首行时，可在 RAW 视图中检查原始字节与解析错误。在 v2 中，`length` 是格式化后载荷的字节数，`original_length` 描述 SDK 格式化前的长度，单凭二者的差值无法判断截断。[接收与保留限制](/q/zh/faq/#retention)
 
+**如果来源已连接，消息却显示为 RAW，并提示 `invalid SDK event header`，请先核对采集器构建版本。** eCaptureQ v1.2.0 能解析 eCapture v2.12.0 的 SDK 文本首行。后续的采集器源码在首行加入了 `pid` 和 `pname`，Q v1.2.0 会将受影响的消息保留为 RAW。需要解码 HTTP 时可配套使用两个正式版；若在测试新版采集器源码，请搭配已兼容两种首行的 Q 源码构建。[v1.2.0 之后的 Q 兼容变更](https://github.com/gojue/ecaptureQ/commit/d222da759bf645f81087137a8a24623e5b6a75af)
+
 ## 进程与 TLS 元数据兼容性 {#tls}
 
 eCaptureQ v1.2.0 读取 eCapture v2.12.0 TEXT 事件中的 Protobuf v2 字段。`process_args` 与 `process_args_truncated` 描述当时捕获的进程命令，可选字段 `tls` 携带已观察到的握手信息。[v2 协议定义](https://github.com/gojue/ecapture/blob/v2.12.0/protobuf/proto/v2/ecaptureq.proto)
 
 数据可用时，连接页展示捕获的进程/PID/argv，以及 TLS 版本、密码套件、SNI、ALPN、组、签名算法。**JA3**、**JA4** 来自首次线上 ClientHello；适用时标记 ECH Outer。协商参数是握手信息，不是实际会话密钥；SNI 不从 HTTP Host 推测，缺失字段不补造。
 
-较旧路径可能给出 PID 0 或 `decryptor`，表示归属未知。eCaptureQ 不会读取 Web 服务主机的进程来猜测远端归属。按 [界面指南](/q/zh/interface/#connection) 查看可用字段与缺失提示。
+PID 为 0 表示采集端未提供有效 PID。若事件同时使用占位进程名 `decryptor`，Q 会将其归入该来源的未知进程。连接页显示采集器实际提供的进程身份。[界面指南](/q/zh/interface/#connection)

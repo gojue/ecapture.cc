@@ -6,11 +6,35 @@ import type { Config as ThemeConfig } from '@vue/theme'
 import baseConfig from '@vue/theme/config'
 import { headerPlugin } from './headerMdPlugin'
 import { sourceReferencesPlugin } from './sourceReferencesPlugin'
-import { siteNav, sidebar } from './productNavigation'
+import { productForPath, siteNav, sidebar } from './productNavigation'
 
 const chineseSearch = {
   button: { buttonText: '搜索', buttonAriaLabel: '搜索文档' },
   modal: { displayDetails: '显示详细结果', resetButtonTitle: '清除搜索', backButtonTitle: '关闭搜索', noResultsText: '没有找到相关结果：', footer: { selectText: '选择', selectKeyAriaLabel: '回车', navigateText: '移动', navigateUpKeyAriaLabel: '上箭头', navigateDownKeyAriaLabel: '下箭头', closeText: '关闭', closeKeyAriaLabel: 'Esc' } },
+}
+
+function docLocale(locale: 'en' | 'zh', link: string) {
+  const zh = locale === 'zh'
+  const themeConfig: ThemeConfig = {
+    i18n: zh ? {
+      search: '搜索文档', toc: '本页目录', ariaToC: '本文正文的锚点目录',
+      menu: '章节导航', previous: '上一篇', next: '下一篇', returnToTop: '返回顶部',
+      ariaSkipToContent: '跳转到正文', ariaSidebarNav: '侧栏导航', ariaMobileNav: '主导航', ariaMainNav: '主导航',
+      footerLicense: { before: '本站采用 ', after: '。' },
+    } : {
+      search: 'Search docs', toc: 'On this page', ariaToC: 'Anchors in this article',
+      footerLicense: { before: 'This website is licensed under the ', after: '.' },
+    },
+    footer: {
+      license: { text: zh ? 'MIT 许可证' : 'MIT License', link: 'https://opensource.org/licenses/MIT' },
+      copyright: `Copyright © 2024-${new Date().getFullYear()} CFC4N, Powered by Vue.js`,
+    },
+    nav: siteNav(locale),
+    sidebar,
+    socialLinks: [{ icon: 'github', link: 'https://github.com/gojue/ecapture' }],
+  }
+  if (zh) themeConfig.editLink = { repo: 'gojue/ecapture.cc#master', text: '在 GitHub 上编辑此页' }
+  return { label: zh ? '简体中文' : 'English', lang: zh ? 'zh-CN' : 'en-US', link, themeConfig }
 }
 
 export default withMermaid(defineConfigWithTheme<ThemeConfig>({
@@ -57,9 +81,8 @@ export default withMermaid(defineConfigWithTheme<ThemeConfig>({
     // Our outline handles encoded Chinese anchors and the 76px header offset.
     pageData.frontmatter.ecOutline = pageData.frontmatter.outline ?? 'deep';
     pageData.frontmatter.outline = false;
-    if (pageData.relativePath.startsWith('q/')) {
-      pageData.titleTemplate = ':title | eCaptureQ';
-    }
+    const product = productForPath('/' + pageData.relativePath)
+    if (product.name !== 'eCapture') pageData.titleTemplate = `:title | ${product.name}`
   },
   head: [
     [
@@ -80,47 +103,12 @@ export default withMermaid(defineConfigWithTheme<ThemeConfig>({
   ],
 
   locales: {
-    root: {
-      label: 'English',
-      lang: 'en-US',
-      themeConfig: {
-        i18n: { search: 'Search docs', toc: 'On this page', ariaToC: 'Anchors in this article' },
-        nav: siteNav('en'),
-        sidebar,
-        socialLinks: [{ icon: 'github', link: 'https://github.com/gojue/ecapture' }],
-      },
-    },
-    'q/en': {
-      label: 'English', lang: 'en-US', link: '/q/en/',
-      themeConfig: {
-        i18n: { search: 'Search docs', toc: 'On this page', ariaToC: 'Anchors in this article' },
-        nav: siteNav('en'),
-        sidebar,
-        socialLinks: [{ icon: 'github', link: 'https://github.com/gojue/ecapture' }],
-      },
-    },
-    'q/zh': {
-      label: '简体中文', lang: 'zh-CN', link: '/q/zh/',
-      themeConfig: {
-        i18n: { search: '搜索文档', toc: '本页目录', ariaToC: '本文正文的锚点目录', menu: '章节导航', previous: '上一篇', next: '下一篇', returnToTop: '返回顶部', ariaSkipToContent: '跳转到正文', ariaSidebarNav: '侧栏导航', ariaMobileNav: '主导航', ariaMainNav: '主导航' },
-        editLink: { repo: 'gojue/ecapture.cc#master', text: '在 GitHub 上编辑此页' },
-        nav: siteNav('zh'),
-        sidebar,
-        socialLinks: [{ icon: 'github', link: 'https://github.com/gojue/ecapture' }],
-      },
-    },
-    zh: {
-      label: '简体中文',
-      lang: 'zh-CN',
-      link: '/zh/',
-      themeConfig: {
-        i18n: { search: '搜索文档', toc: '本页目录', ariaToC: '本文正文的锚点目录', menu: '章节导航', previous: '上一篇', next: '下一篇', returnToTop: '返回顶部', ariaSkipToContent: '跳转到正文', ariaSidebarNav: '侧栏导航', ariaMobileNav: '主导航', ariaMainNav: '主导航' },
-        editLink: { repo: 'gojue/ecapture.cc#master', text: '在 GitHub 上编辑此页' },
-        nav: siteNav('zh'),
-        sidebar,
-        socialLinks: [{ icon: 'github', link: 'https://github.com/gojue/ecapture' }],
-      },
-    }
+    root: docLocale('en', '/'),
+    zh: docLocale('zh', '/zh/'),
+    'q/en': docLocale('en', '/q/en/'),
+    'q/zh': docLocale('zh', '/q/zh/'),
+    'decryptor/en': docLocale('en', '/decryptor/en/'),
+    'decryptor/zh': docLocale('zh', '/decryptor/zh/'),
   },
 
   themeConfig: {
@@ -132,6 +120,7 @@ export default withMermaid(defineConfigWithTheme<ThemeConfig>({
         locales: {
           zh: { translations: chineseSearch },
           'q/zh': { translations: chineseSearch },
+          'decryptor/zh': { translations: chineseSearch },
         },
       },
     },
@@ -140,13 +129,6 @@ export default withMermaid(defineConfigWithTheme<ThemeConfig>({
       text: 'Edit this page on GitHub',
     },
 
-    footer: {
-      license: {
-        text: 'MIT License',
-        link: 'https://opensource.org/licenses/MIT'
-      },
-      copyright: `Copyright © 2024-${new Date().getFullYear()} CFC4N, Powered by Vue.js`,
-    }
   },
   //
   markdown: {

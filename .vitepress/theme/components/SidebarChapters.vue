@@ -1,13 +1,13 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute } from 'vitepress'
-import { isProductPath } from './localePath'
-const route=useRoute()
-const product = computed(() => isProductPath(route.path))
+import { productForPath } from '../../productNavigation'
+const route = useRoute()
+const product = computed(() => productForPath(route.path))
 </script>
 <template>
   <div class="ec-other-chapters">
-    <a class="ec-repository" :href="product ? 'https://github.com/gojue/ecaptureQ' : 'https://github.com/gojue/ecapture'" target="_blank" rel="noopener noreferrer">{{ product ? 'eCaptureQ' : 'eCapture' }} GitHub <span aria-hidden="true">↗</span></a>
+    <a class="ec-repository" :href="`https://github.com/gojue/${product.repo}`" target="_blank" rel="noopener noreferrer">{{ product.name }} GitHub <span aria-hidden="true">↗</span></a>
   </div>
 </template>
 <style scoped>

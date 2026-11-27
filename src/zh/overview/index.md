@@ -26,11 +26,13 @@ eCapture 观察受支持的 TLS 库与 Go 应用，无需安装自定义 CA，�
 
 **eCapture v2.12.0** 的三个核心探针默认使用文本模式和 `pcapng` 数据源。采集器结合单个网卡上的数据包与 TLS 密钥，重建 HTTP/1.x 和 HTTP/2 消息。消息与运行日志默认显示在标准输出。测试本机回环流量时指定 `-i lo`。如需边看终端边保存结构化记录，可加上 `--output stdout --output capture.jsonl`。
 
-离线分析时，`-m pcapng --pcapfile capture.pcapng` 将数据包与 TLS 密钥一并保存，可直接在 Wireshark 中打开。如果已经单独抓包，使用 `-m keylog --keylogfile capture.keys` 保存配套的密钥即可。[比较三种捕获模式](/zh/3-capture-modes/)。
+离线分析时，`-m pcapng --pcapfile capture.pcapng` 将数据包与 TLS 密钥一并保存，可直接在 Wireshark 中打开。如果已经单独抓包，使用 `-m keylog --keylogfile capture.keys` 保存配套的密钥即可。要在自己的 Go 程序中读取抓包，请参阅 [Decryptor SDK 快速开始](/decryptor/zh/quick-start/)。[比较三种捕获模式](/zh/3-capture-modes/)。
 
 ## 命令行工具还是图形界面？ {#relationship}
 
-**eCapture 在采集端负责捕获与解密，eCaptureQ 提供图形化分析界面。** 要连接 eCaptureQ v1.2.0，在 v2.12.0 采集端启用 `--stream-listen`，Q 会通过 `ecapture.v2` WebSocket 子协议订阅。文本模式适合搜索、关联已解码的消息，keylog 或 pcapng 模式则可导出对应格式的文件。
+**eCapture 在采集端负责捕获与解密，eCaptureQ 提供图形化分析界面。** 两者在同一台机器时，启动 eCapture v2.12.0 时加上 `--stream-listen ws://127.0.0.1:28256/`，并在 eCaptureQ v1.2.0 中将该地址添加为数据源。使用 Web 版时，由 Q 服务连接采集器；浏览器默认通过 `http://127.0.0.1:28257/` 打开 Q 界面。[连接设置](/q/zh/data-sources/)
+
+要搜索已解码的消息，使用文本模式。使用 `-m keylog` 或 `-m pcapng` 时，Q 可将订阅后收到的原生数据保存成文件。若要记录完整测试会话，请在握手前连接 Q。[原生文件导出](/q/zh/interface/#native)
 
 | | eCapture | eCaptureQ |
 | --- | --- | --- |

@@ -53,7 +53,7 @@ Both editions share the same analysis interface, support multiple sources, and r
 
 ## Additions and version scope {#updates}
 
-**eCaptureQ v1.2.0** connects to **eCapture v2.12.0** over Protobuf v2. Text streams populate the message list. For collectors in keylog or pcapng mode, open **Native files** to save the received bytes. From v1.1.0, Web also supports optional sign-in. [Upgrade instructions](/q/en/install/#cli) · [Native files](/q/en/interface/#native) · [Web Authentication](/q/en/authentication/)
+**eCaptureQ v1.2.0** connects to **eCapture v2.12.0** over Protobuf v2. Text streams populate the message list. For collectors in keylog or pcapng mode, open the source panel to export the received native files. From v1.1.0, Web also supports optional sign-in. [Upgrade instructions](/q/en/install/#cli) · [Native files](/q/en/interface/#native) · [Web Authentication](/q/en/authentication/)
 
 ## Keep going {#next}
 

@@ -18,7 +18,9 @@
 | Android | x86_64 / amd64 | 4.18+ |
 | Android | AArch64 / arm64 | 5.5+ |
 
-加载探针需要 root 或[指定的 Linux capabilities](https://github.com/gojue/ecapture/blob/v2.12.0/docs/minimum-privileges.md)。Linux LoongArch64 提供压缩包与 Debian 软件包，并在原生硬件上运行 OpenSSL 和 GoTLS 端到端测试。[发行产物](https://github.com/gojue/ecapture/releases) · [LoongArch64 构建与测试范围](https://github.com/gojue/ecapture/blob/v2.12.0/docs/loong64-support.md)
+可使用 root 运行，或按采集模式授予所需的 Linux capabilities。默认文本模式和原生 pcapng 模式都会在网卡上挂载 TC 探针，因此都需要 `CAP_NET_ADMIN`。[各内核版本与采集模式的权限要求](src/zh/1-getting-started/1.1-requirements-and-installation.md#内核特性与权限)
+
+Linux LoongArch64 提供压缩包与 Debian 软件包，并在原生硬件上运行 OpenSSL 和 GoTLS 端到端测试。[发行产物](https://github.com/gojue/ecapture/releases) · [LoongArch64 构建与测试范围](https://github.com/gojue/ecapture/blob/v2.12.0/docs/loong64-support.md)
 
 ## 本站内容在哪里
 
@@ -27,10 +29,11 @@
 | 中英文首页 | `src/index.md`、`src/zh/index.md`、`.vitepress/theme/components/` |
 | 导航、主题与 SEO | `.vitepress/config.mts`、`.vitepress/theme/`、`.vitepress/navigation.json` |
 | 中英文用户指南 | `src/en/`、`src/zh/` |
+| eCaptureQ 用户指南与 Decryptor SDK 开发者指南 | `src/q/{en,zh}/`、`src/decryptor/{en,zh}/` |
 | Wiki 导入 | `scripts/wiki.json`、`scripts/generate_docs.js`、`scripts/migrate_docs.js` |
 | 共用图片 | `src/public/assets/` |
 
-六个双语 Wiki 章节由 `scripts/wiki.json` 生成。修订时同步更新快照与发布的 Markdown，以便下次导入时保留修改。迁移脚本会恢复中英文产品概览、下载页、中文首页和 `src/zh/usage/`。英文首页与 `src/q/` 中的 eCaptureQ 文档单独维护。
+六个双语 Wiki 章节由 `scripts/wiki.json` 生成。修订时同步更新快照与发布的 Markdown，以便下次导入时保留修改。迁移脚本会恢复采集器的中英文概览、下载页、中文首页和 `src/zh/usage/`。英文首页、eCaptureQ 用户指南和 Decryptor SDK 开发者指南均单独维护。
 
 需要导入**已核实且最新**的 Wiki 快照时，运行 `bash scripts/update_docs.sh --no-dev`，审查正文与导航差异，再构建站点。仓库内现存快照可能落后于当前章节，运行会重建目录的迁移脚本前应先检查页面计划。
 

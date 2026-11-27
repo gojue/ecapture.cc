@@ -16,7 +16,7 @@ Install **eCapture v2.12.0** on the Linux capture host and **eCaptureQ v1.2.0** 
 ./ecapture tls --help
 ```
 
-The interface and a compatible Decryptor are required for the full-message path below. A successful eCaptureQ connection cannot add fields or protocol support that the collector does not supply. See [protocol requirements](/q/en/protocols/#capture) and the [upstream compatibility record](https://github.com/gojue/ecaptureQ/blob/v1.2.0/docs/upstream-status.md). eCapture requires a supported Linux/Android kernel and capture privileges; macOS and Windows support here applies to eCaptureQ.
+The eCapture v2.12.0 release includes the live decryption SDK. Select the interface carrying the test traffic on the capture host. Q receives the messages and metadata the collector produces. [Supported capture paths](/q/en/protocols/#capture) · [v2.12.0 dependencies](https://github.com/gojue/ecapture/blob/v2.12.0/go.mod)
 
 ## 2. Start eCapture's event listener {#collector}
 
@@ -60,7 +60,7 @@ On Windows use `.\ecaptureq-web.exe` with the same arguments. Open [http://127.0
 
 For login protection, create an `auth` configuration using [Web Authentication](/q/en/authentication/#configure), add `--sources ./sources.local.json` at startup, and sign in before opening the workspace. Replace the public credentials if you copy the repository’s example configuration. The commands above do not load a configuration and do not enable authentication.
 
-**28256 is the collector event port; 28257 is the Web page port.** Opening the Web page proves browser-to-service connectivity, not service-to-collector connectivity.
+**In this example the collector listens on 28256, and Q serves the Web page on 28257.** Open the source status panel to verify the separate connection from the Q service to the collector.
 
 ## 5. Add a source and switch to Live {#connect}
 

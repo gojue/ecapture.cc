@@ -23,6 +23,8 @@ This page reads **up to the 5 most recent stable releases** from the release API
 
 ## Docker image {#docker}
 
-For a container-based Linux deployment, get the image from [Docker Hub — gojue/ecapture](https://hub.docker.com/r/gojue/ecapture). The collector still needs a supported host kernel and the required capture permissions; see the [Docker setup instructions](https://github.com/gojue/ecapture#docker-image).
+The official v2.12.0 Docker image is built for **linux/amd64** and **linux/arm64**. On **linux/loong64**, choose the release tarball or Debian package below. [Docker Hub — gojue/ecapture](https://hub.docker.com/r/gojue/ecapture) · [Image build platforms](https://github.com/gojue/ecapture/blob/v2.12.0/.github/workflows/release.yml#L194)
+
+The container uses the host kernel and needs permission to load probes and observe the selected interface. [Docker setup instructions](https://github.com/gojue/ecapture/blob/v2.12.0/README.md#docker-image)
 
 <ReleaseDownloads />

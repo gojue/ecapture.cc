@@ -46,7 +46,7 @@ macOS ZIP 使用 `./ecaptureq-web --hash-password`，Windows PowerShell 使用 `
 }
 ```
 
-本例仅用于本机 HTTP 调试，因此显式设置 `secureCookie: false`。Linux/macOS 可用 `chmod 600 sources.local.json` 限制文件权限；Windows 设置等效的文件访问权限。运行 Web 的用户需能读取文件，若要从界面保存新增来源，还需拥有写入权限。
+本例仅用于本机 HTTP 调试，因此显式设置 `secureCookie: false`。Linux/macOS 可用 `chmod 600 sources.local.json` 限制文件权限；Windows 设置等效的文件访问权限。Web 服务账号需要能读取配置文件。如需在界面保存来源变更，还要允许该账号在同目录创建临时文件，并通过重命名替换原配置。
 
 ```sh
 ecaptureq-web --listen 127.0.0.1:28257 --sources ./sources.local.json

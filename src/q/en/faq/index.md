@@ -34,17 +34,17 @@ Process, protocol, host, category, stars and search combine. Remove one chip at 
 
 If the selected record was evicted, refresh the list; removing a filter cannot restore it. Try the deterministic [Mock exercise](/q/en/interface/#practice) to check the workflow.
 
-Q excludes live HTTP records matching `hiddenDomains` before storage; defaults include GitHub-related domains. **Clear all** cannot reveal those discarded records. See [hidden-domain configuration](/q/en/data-sources/#configuration).
+Q excludes live records with a host matching `hiddenDomains` before storage; defaults include GitHub-related domains. **Clear all** cannot reveal those discarded records. See [hidden-domain configuration](/q/en/data-sources/#configuration).
 
 ## What does “Unpaired” mean? {#unpaired}
 
-The current record has no associated counterpart/final response. A request or response may not have been captured, the connection may have closed, identity may be incomplete, or the counterpart may already be outside retention. It **does not tell you that the server is still working, timed out or failed**, and it is not specific to POST.
+The **Unpaired** filter selects records marked `pending`. For an HTTP request or Redis command, Q is still missing a matching reply. It may have missed the reply during capture or lacked the identifiers to pair it. A standalone HTTP response with a status code can appear outside this filter. To determine how the server handled the request, check the captured reply or server logs.
 
 Messages are scoped to their source, reconnect generation and connection identity; HTTP/2 and HTTP/3 also need Stream ID. A late response cannot resurrect an evicted request. Do not infer a pair merely because two rows are adjacent.
 
 ## Process, duration or TLS information is missing {#metadata}
 
-Missing values stay unknown. Older collectors or modes may omit PID/command, timestamps may lack enough precision for duration, and the TLS handshake may not have been captured. PID 0 or `decryptor` is not the actual application identity. eCaptureQ does not fill gaps from the Web host's processes or from HTTP Host.
+Missing values stay unknown. Older collectors or modes may omit PID/command, timestamps may lack enough precision for duration, and the TLS handshake may not have been captured. PID 0 together with the placeholder name `decryptor` identifies an unattributed event. eCaptureQ does not fill gaps from the Web host's processes or from HTTP Host.
 
 With eCapture v2.12.0, TEXT events can carry captured process arguments and observed TLS handshake fields. Their presence depends on the capture path and the traffic. [Protocol compatibility](/q/en/protocols/#tls)
 
@@ -64,7 +64,7 @@ Stop or restart the collector on its own host. The arguments shown in Q are a sn
 
 The defaults are **65,536 records** and **192 MiB of counted record JSON**. The oldest records are evicted when either limit is reached. The byte count is not the application's total process memory (RSS). The command-line options `--max-records` and `--max-memory-mib` adjust these bounds.
 
-Live pages contain at most 200 summaries; details load on demand. A record may disappear before its detail or export request. `evicted` counts records removed by retention; `dropped` counts invalid/oversized records rejected by the UI service. Neither is a kernel or collector packet-loss counter. A star does not protect a record.
+A Live page contains up to 200 summaries. Details load on demand, so a record may disappear before you open or export it. `evicted` counts records removed to make room. `dropped` counts records that cannot be stored, including a record whose JSON alone exceeds the memory budget. A malformed Protobuf message or oversized WebSocket message increments the source’s `malformed` counter and ends that connection. These counters describe Q’s receiver and cache. [Receiver and store implementation](https://github.com/gojue/ecaptureQ/blob/v1.2.0/internal/app/live.go)
 
 v1.1.0 raised the per-payload truncation cap to **256 MiB**, from 256 KiB in v1.0.0. Incoming WebSocket messages still have a separate cap: **8 MiB** by default, adjustable to 1–64 MiB with `--max-frame-mib`. Records also remain subject to the retention budget above. Body decompression still has a **2 MiB** per-layer limit. Raising the payload cap does not bypass these limits; see [version scope](/q/en/install/#version).
 

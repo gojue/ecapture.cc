@@ -124,12 +124,12 @@ You can add these fields alongside `sources`:
 | --- | --- |
 | `auth` | [Web Authentication](/q/en/authentication/) settings; omitted or `null` means no login requirement |
 | `headerCenter` | Rich HTML in the center of the header; empty uses the default text. Include only content trusted by the operator |
-| `hiddenDomains` | Domain suffixes to exclude from the live HTTP record cache. Omitted or empty uses the defaults |
+| `hiddenDomains` | Discard live records whose mapped host matches a listed suffix. Omitted or empty uses the defaults |
 | `native` | Native file storage. Set `directory` (parent directory), `maxBytes` and `maxSessions`. See [native file export](/q/en/interface/#native) |
 
 For example, add `"headerCenter": "Test environment"` and `"hiddenDomains": ["example.com"]` to the top-level object alongside `sources`. Use bare domain suffixes without schemes, ports or paths. Matching is case-insensitive and includes the domain itself and its subdomains. Defaults include GitHub domains such as `github.com`, `githubusercontent.com` and `ghcr.io`; see the [complete source list](https://github.com/gojue/ecaptureQ/blob/v1.2.0/internal/app/hidden_domains.go).
 
-**Matching live records are discarded before entering the cache**, rather than merely hidden on the current page. Clearing search filters cannot restore them. An empty array `[]` does not disable exclusions. Restart the application after editing the file; the new settings apply to subsequent receiving, and the restart clears in-memory records.
+**Matching live records are discarded before entering the cache**, rather than merely hidden on the current page. Clearing search filters cannot restore them. Native KEYLOG and PCAPNG exports contain the bytes supplied by the collector regardless of this setting. An empty array `[]` does not disable exclusions. Restart the application after editing the file; the new settings apply to subsequent receiving, and the restart clears in-memory records.
 
 Saving new sources from the UI preserves these fields. Desktop also preserves `auth` without enabling Web login. Copying the newer example configuration brings its public initial credentials, header and hidden domains with it. Adapt these to your environment and follow [login setup](/q/en/authentication/#configure).
 

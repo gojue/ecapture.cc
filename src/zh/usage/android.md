@@ -1,6 +1,6 @@
 # 在 Android 测试设备上查看 HTTPS 请求
 
-下面以自己维护的测试应用为例。应用使用系统的 Conscrypt/BoringSSL 发起 HTTPS 请求，eCapture v2.12.0 在设备上解码，结果可直接在 adb 终端查看。上游 Android 端到端测试覆盖 Android 13–16（API 33–36）的系统库。[Android 测试范围](https://github.com/gojue/ecapture/blob/v2.12.0/test/e2e/README.md#android)
+下面以自己维护的测试应用为例。应用使用系统 Conscrypt/BoringSSL 发起 HTTPS 请求，eCapture v2.12.0 在设备上解码，结果可在 adb 终端查看。上游对 Android 13–16（API 33–36）系统库的测试分别验证了 hook 文本输出、独立密钥以及回环接口上 TLS 1.2 和 1.3 的 pcapng 解密。下例使用默认的 pcapng 文本数据源查看 Wi-Fi 请求。[Android 测试范围](https://github.com/gojue/ecapture/blob/v2.12.0/test/e2e/README.md#android) · [测试用例](https://github.com/gojue/ecapture/blob/v2.12.0/test/e2e/android/android_tls_e2e_test.sh)
 
 ## 确认设备与安装包
 
@@ -10,6 +10,7 @@
 adb shell getprop ro.product.cpu.abi
 adb shell uname -r
 adb root
+adb wait-for-device
 adb shell id
 ```
 
@@ -43,7 +44,7 @@ ip route
 
 - 确认客户端使用系统 Conscrypt。采集器会查找 Conscrypt APEX 和系统库路径。应用自带 BoringSSL 时，需核实该库是否受支持，并用 `--libssl` 指定实际加载的文件。
 - 核对测试连接是否经过选定网卡。上述 TCP 过滤器只适用于基于 TCP 的 HTTPS 请求。复用旧连接时，让测试客户端重新建立连接，以便同时捕获握手、密钥和请求。
-- 如需用 Wireshark 复核此次测试，可在同一条文本模式命令中额外指定 `--pcapfile /data/local/tmp/demo.pcapng`。停止采集后，在开发机上执行 `adb pull /data/local/tmp/demo.pcapng`。文件内含数据包及可用的 TLS 解密密钥。
+- 如需用 Wireshark 复核，在命令的 `'tcp port 443'` 前加上 `--pcapfile /data/local/tmp/demo.pcapng`。停止采集后，在开发机上执行 `adb pull /data/local/tmp/demo.pcapng`。文件内含数据包及可用的 TLS 密钥。同一网卡上归属未知、符合网络过滤条件的包也可能写入；核对时请选择测试服务对应的连接。[抓包与进程筛选](/zh/3-capture-modes/3.4-pcapng-mode)
 
 [OpenSSL 与 BoringSSL 探针](/zh/2-core-tls-modules/2.1-tls-capture-openssl-and-boringssl) · [Wireshark 解密流程](/zh/3-capture-modes/3.6-wireshark-decryption-workflows)
 

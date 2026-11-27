@@ -22,7 +22,7 @@ sudo ecapture gotls --elfpath /app/grpc-server -i lo \
 
 ## 在 Wireshark 验证
 
-1. 完成一次调用并停止采集。打开相应的 `.pcapng`，用 `capinfos grpc.pcapng` 也可以检查包数量及解密密钥块（DSB）数量。密钥在握手期间写入，可能出现在数据包之后。
+1. 完成一次调用并停止采集。上例用 `sudo` 新建的文件默认只有 root 可读写。若要用自己的账号打开第一条命令生成的文件，先执行 `sudo chown "$(id -u)" grpc.pcapng`；离线示例的文件名为 `grpc-offline.pcapng`。可用 `capinfos -c -D grpc.pcapng` 查看包数和解密密钥统计，密钥块可能出现在相关数据包之后。[capinfos 选项](https://www.wireshark.org/docs/man-pages/capinfos.html)
 2. 在 Wireshark 使用 `http2` 显示过滤器。找到带有预期 `:path` 的请求头，沿同一 HTTP/2 流检查 DATA 和 trailers，核对 `grpc-status`。如果只看到 TLS，先确认本次连接的握手、数据包和配套密钥均已捕获。
 3. 需要字段名时，在 Wireshark 的 Protobuf 协议首选项中配置服务对应的 `.proto` 搜索路径，并加载所需定义。没有匹配的定义时，仍可检查消息长度、字段编号和原始字节。
 

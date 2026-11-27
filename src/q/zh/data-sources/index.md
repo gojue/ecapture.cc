@@ -124,12 +124,12 @@ ecaptureq --sources ./sources.local.json --mode live
 | --- | --- |
 | `auth` | Web 登录设置；见 [Web 登录认证](/q/zh/authentication/)。省略或 `null` 不启用认证 |
 | `headerCenter` | 页头中央的富文本 HTML 字符串；空值使用默认文案，仅写入维护者信任的内容 |
-| `hiddenDomains` | 将匹配域名后缀的实时 HTTP 记录排除在缓存外；省略或空列表时使用内置默认值 |
+| `hiddenDomains` | 入库前丢弃主机名匹配所列域名后缀的实时记录；省略或空列表时使用内置默认值 |
 | `native` | 原生临时文件存储，可设置父目录 `directory`、字节限额 `maxBytes` 和会话数 `maxSessions`。参见[原生文件导出](/q/zh/interface/#native) |
 
 例如，在配置文件顶层与 `sources` 并列添加 `"headerCenter": "测试环境"`、`"hiddenDomains": ["example.com"]`。域名填写裸后缀，不带协议、端口或路径；匹配不区分大小写，包括该域名本身及子域名。默认列表包含 `github.com`、`githubusercontent.com`、`ghcr.io` 等 GitHub 域名，完整列表见[源码](https://github.com/gojue/ecaptureQ/blob/v1.2.0/internal/app/hidden_domains.go)。
 
-**匹配隐藏域名的实时记录会在进入缓存前被丢弃**，不是仅在当前页面隐藏，清除搜索条件不能恢复。空数组 `[]` 不表示关闭排除。修改配置后重启应用，变化对后续接收生效；重启会清空内存记录。
+**匹配隐藏域名的实时记录会在进入缓存前被丢弃**，不是仅在当前页面隐藏，清除搜索条件不能恢复。原生 KEYLOG 和 PCAPNG 文件仍按采集器发送的字节保存，不经过这个域名筛选。空数组 `[]` 不表示关闭排除。修改配置后重启应用，变化对后续接收生效；重启会清空内存记录。
 
 界面保存新增来源时会保留这些字段，Desktop 也保留 `auth` 但不启用 Web 登录。复制新版示例配置会同时带入公开初始账号、页头与隐藏域名设置；应按自己的环境修改，认证步骤见[启用登录](/q/zh/authentication/#configure)。
 

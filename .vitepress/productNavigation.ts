@@ -1,6 +1,24 @@
 // Hand-maintained product navigation. Wiki migration owns navigation.json only.
 import generated from './navigation.json'
 
+type Locale = 'en' | 'zh'
+type PageEntry = readonly [slug: string, en: string, zh: string]
+
+const products = {
+  collector: { name: 'eCapture', repo: 'ecapture' },
+  q: { name: 'eCaptureQ', repo: 'ecaptureQ' },
+  decryptor: { name: 'eCapture Decryptor', repo: 'ecapture_decryptor' },
+} as const
+
+export function productForPath(path: string) {
+  const prefix = path.split('/')[1]
+  return prefix === 'q' || prefix === 'decryptor' ? products[prefix] : products.collector
+}
+
+export function productMenuId(name: string) {
+  return Object.entries(products).find(([, product]) => product.name === name)?.[0]
+}
+
 export const productPages = [
   ['', 'Overview', '产品概览'],
   ['quick-start', 'Quick Start', '快速开始'],
@@ -13,14 +31,31 @@ export const productPages = [
   ['faq', 'FAQ', '常见问题'],
 ] as const
 
-export function productItems(locale: 'en' | 'zh') {
+export const decryptorPages = [
+  ['', 'Overview', '产品概览'],
+  ['quick-start', 'Go Quick Start', 'Go 快速开始'],
+  ['api', 'Go API and Events', 'Go API 与事件'],
+  ['streaming', 'Streaming Integration', '流式集成'],
+  ['protocols', 'Protocol Support and Options', '协议支持与选项'],
+  ['native', 'C and C++ Integration', 'C 与 C++ 集成'],
+] as const
+
+function pageItems(prefix: string, locale: Locale, pages: readonly PageEntry[]) {
+  return pages.map(([slug, en, zh]) => ({
+    text: locale === 'zh' ? zh : en,
+    link: `/${prefix}/${locale}/${slug ? slug + '/' : ''}`,
+  }))
+}
+
+export function productItems(locale: Locale) {
   return [
-    ...productPages.map(([slug, en, zh]) => ({
-      text: locale === 'zh' ? zh : en,
-      link: `/q/${locale}/${slug ? slug + '/' : ''}`,
-    })),
+    ...pageItems('q', locale, productPages),
     { text: locale === 'zh' ? '在线演示' : 'Online DEMO', link: 'https://ecapture.loongfans.cn/' },
   ]
+}
+
+function decryptorNav(locale: Locale) {
+  return { text: products.decryptor.name, activeMatch: '^decryptor/', items: pageItems('decryptor', locale, decryptorPages) }
 }
 
 export function productNav(locale: 'en' | 'zh') {
@@ -44,11 +79,12 @@ export function downloadItems(locale: 'en' | 'zh') {
   ]
 }
 
-// One manifest drives all four locale configurations and both desktop/mobile menus.
+// Every locale uses the same manifest for its desktop and mobile menus.
 export function siteNav(locale: 'en' | 'zh') {
   return [
     { text: 'eCapture', activeMatch: '^(?:en|zh)/(?!download/)', items: collectorItems(locale) },
     productNav(locale),
+    decryptorNav(locale),
     { text: locale === 'zh' ? '下载' : 'Download', activeMatch: '^(?:q/)?(?:en|zh)/download/', items: downloadItems(locale) },
     { text: locale === 'zh' ? '作者博客' : 'Blog', link: 'https://www.cnxct.com' },
   ]
@@ -69,4 +105,7 @@ export const sidebar = {
   '/q/en/': [{ text: 'eCaptureQ', items: productItems('en').filter(item => item.link !== '/q/en/download/') }],
   '/q/zh/': [{ text: 'eCaptureQ', items: productItems('zh').filter(item => item.link !== '/q/zh/download/') }],
   '/q/': [{ text: 'eCaptureQ', items: productItems('en').filter(item => item.link !== '/q/en/download/') }],
+  '/decryptor/en/': [decryptorNav('en')],
+  '/decryptor/zh/': [decryptorNav('zh')],
+  '/decryptor/': [decryptorNav('en')],
 }

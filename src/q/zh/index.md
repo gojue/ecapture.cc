@@ -39,7 +39,7 @@ import ReleaseBadge from '@theme/components/ReleaseBadge.vue'
 
 ## 新增能力与版本范围 {#updates}
 
-**eCaptureQ v1.2.0** 使用 Protobuf v2 连接 **eCapture v2.12.0**。文本模式下，收到的消息会进入实时列表。采集器采用 keylog 或 pcapng 模式时，可打开**原生文件**保存收到的内容。自 v1.1.0 起，Web 版也支持按需启用登录。[升级说明](/q/zh/install/#cli) · [原生文件](/q/zh/interface/#native) · [Web 登录认证](/q/zh/authentication/)
+**eCaptureQ v1.2.0** 使用 Protobuf v2 连接 **eCapture v2.12.0**。文本模式下，收到的消息会进入实时列表。采集器采用 keylog 或 pcapng 模式时，可在数据源面板中导出收到的原生文件。自 v1.1.0 起，Web 版也支持按需启用登录。[升级说明](/q/zh/install/#cli) · [原生文件](/q/zh/interface/#native) · [Web 登录认证](/q/zh/authentication/)
 
 ## 继续了解 {#next}
 

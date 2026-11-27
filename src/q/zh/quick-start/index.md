@@ -16,7 +16,7 @@ lang: zh-CN
 ./ecapture tls --help
 ```
 
-下方完整消息路径需要这些接口和兼容的 Decryptor。即使 eCaptureQ 连接成功，也不能补充采集端未提供的字段或协议能力。参见 [协议采集条件](/q/zh/protocols/#capture) 与 [上游兼容性记录](https://github.com/gojue/ecaptureQ/blob/v1.2.0/docs/upstream-status.md)。eCapture 需要受支持的 Linux/Android 内核及采集权限；这里的 macOS、Windows 支持指 eCaptureQ。
+eCapture v2.12.0 发布包已经包含实时解密 SDK。采集端需选择测试流量实际经过的网卡，Q 接收采集器输出的消息与元数据。[受支持的采集路径](/q/zh/protocols/#capture) · [v2.12.0 依赖](https://github.com/gojue/ecapture/blob/v2.12.0/go.mod)
 
 ## 2. 启动 eCapture 事件监听 {#collector}
 
@@ -60,7 +60,7 @@ Windows 使用 `.\ecaptureq-web.exe` 并保留相同参数。在同机浏览器�
 
 如需登录保护，先按 [Web 登录认证](/q/zh/authentication/#configure) 创建带 `auth` 的配置，启动时追加 `--sources ./sources.local.json`，再通过登录页进入界面。仓库中的示例配置含公开初始账号，需先替换密码；上述未加载配置的启动方式不启用认证。
 
-**28256 是采集端事件端口，28257 是 Web 页面端口。** 浏览器能打开网页，只证明浏览器与服务连通，不代表服务已经能连接采集端。
+**本例中采集端在 28256 端口接受订阅，Q 通过 28257 端口提供网页。** 打开来源状态面板，可以单独检查 Q 服务与采集器的连接。
 
 ## 5. 添加来源并切换实时模式 {#connect}
 

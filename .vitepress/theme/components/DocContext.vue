@@ -2,19 +2,19 @@
 import DocOutline from './DocOutline.vue'
 import { computed } from 'vue'
 import { useData } from 'vitepress'
-import { sidebar } from '../../productNavigation'
+import { productForPath, sidebar } from '../../productNavigation'
 import { isChinesePath, isProductPath, isDownloadPath } from './localePath'
 const { page } = useData()
+const path = computed(() => '/' + page.value.relativePath)
 const section = computed(() => {
-  const path = '/' + page.value.relativePath
-  const match = Object.entries(sidebar).find(([prefix]) => path.startsWith(prefix))
+  const match = Object.entries(sidebar).find(([prefix]) => path.value.startsWith(prefix))
   return match ? { prefix: match[0], title: match[1][0].text } : null
 })
-const zh = computed(() => isChinesePath('/' + page.value.relativePath))
-const product = computed(() => isProductPath('/' + page.value.relativePath))
-const download = computed(() => isDownloadPath('/' + page.value.relativePath))
+const zh = computed(() => isChinesePath(path.value))
+const product = computed(() => isProductPath(path.value))
+const download = computed(() => isDownloadPath(path.value))
 const sectionTitle = computed(() => download.value
-  ? `${product.value ? 'eCaptureQ' : 'eCapture'} ${zh.value ? '下载' : 'Download'}`
+  ? `${productForPath(path.value).name} ${zh.value ? '下载' : 'Download'}`
   : section.value?.title)
 const inlineOutline = computed(() => product.value || /^(en|zh)\/(?:download|overview)\//.test(page.value.relativePath))
 const eyebrow = computed(() => sectionTitle.value || (zh.value ? '使用文档' : 'DOCUMENTATION'))

@@ -26,11 +26,13 @@ The [core TLS modules](/en/2-core-tls-modules/) guide explains library paths and
 
 In **eCapture v2.12.0**, the three core probes default to text mode with the `pcapng` source. The collector combines packets from one interface with TLS secrets to reconstruct HTTP/1.x and HTTP/2 messages. It prints messages and runtime logs on stdout. Use `-i lo` for a local loopback test. To keep the terminal view and also save structured records, add `--output stdout --output capture.jsonl`.
 
-For offline analysis, `-m pcapng --pcapfile capture.pcapng` saves packets and TLS secrets together for Wireshark. If you already collect packets separately, `-m keylog --keylogfile capture.keys` saves the matching secrets. [Compare capture modes](/en/3-capture-modes/).
+For offline analysis, `-m pcapng --pcapfile capture.pcapng` saves packets and TLS secrets together for Wireshark. If you already collect packets separately, `-m keylog --keylogfile capture.keys` saves the matching secrets. To read the capture in your own Go program, follow the [Decryptor SDK quick start](/decryptor/en/quick-start/). [Compare capture modes](/en/3-capture-modes/).
 
 ## Command line or graphical interface? {#relationship}
 
-**eCapture collects and decrypts on the capture machine. eCaptureQ provides the graphical analysis interface.** To connect eCaptureQ v1.2.0, enable `--stream-listen` on the v2.12.0 collector. Q subscribes using the `ecapture.v2` WebSocket subprotocol. In text mode you can search and correlate decoded messages. In keylog or pcapng mode you can export the native artifact.
+**eCapture collects and decrypts on the capture machine. eCaptureQ provides the graphical analysis interface.** If both run on one host, start eCapture v2.12.0 with `--stream-listen ws://127.0.0.1:28256/` and enter that address as a source in eCaptureQ v1.2.0. With the Web edition, the Q service connects to the collector. The browser opens Q at `http://127.0.0.1:28257/` by default. [Connection settings](/q/en/data-sources/)
+
+Use text mode to search decoded messages. With `-m keylog` or `-m pcapng`, Q can save the native data it receives from the time it subscribes. Connect Q before the test handshake if you need the whole session. [Native file export](/q/en/interface/#native)
 
 | | eCapture | eCaptureQ |
 | --- | --- | --- |

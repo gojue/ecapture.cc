@@ -33,7 +33,7 @@ A selected process, protocol, host, category and search term work **together**. 
 The category buttons above the list refine the scope:
 
 - **Errors / 异常:** HTTP status 400 or higher, explicit failures/protocol errors, and partial capture that needs attention.
-- **Unpaired / 未配对:** records without a correlated final response. This is not a duration or timeout filter.
+- **Unpaired / 未配对** selects records in the `pending` state, such as an HTTP request or Redis command awaiting an observed reply. A standalone HTTP response can have a status code and appear outside this filter.
 - **JSON:** HTTP responses whose content type contains `json`, or non-HTTP text payloads parseable as JSON. This is not a SQL query language.
 
 Use the search field for URL, SQL, Topic, command, process information, Headers or captured content. Search is case-insensitive text matching within retained data, not a new capture request. **Cmd/Ctrl + K inside eCaptureQ** focuses this field.
@@ -93,7 +93,7 @@ Stars disappear on page reload or data-mode change and never protect records fro
 
 ## Export native KEYLOG or PCAPNG files {#native}
 
-When your collector runs in `-m keylog` or `-m pcapng`, open **Native files** to find downloads for each source. The collector still requires its own local `--keylogfile PATH` or `--pcapfile PATH`. With `-m text --text-source pcapng`, Q receives decoded message records for the list.
+When your collector runs in `-m keylog` or `-m pcapng`, open the source status button at the top right. Its **Native files** badge appears when Q has a file to show. Downloads are grouped by source. The collector still requires its own local `--keylogfile PATH` or `--pcapfile PATH`. With `-m text --text-source pcapng`, Q receives decoded message records for the list.
 
 1. Connect Q before generating the traffic you want to inspect. A late PCAPNG subscription starts with new section and interface headers and receives only subsequent packets and secrets.
 2. Select the source and check the format, byte count, connection generation and status. A reconnection or collector configuration reload starts a new file. Older files for that source are listed in its history while retained.

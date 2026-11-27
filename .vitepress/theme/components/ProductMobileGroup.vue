@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, inject, ref, watch } from 'vue'
 import { useData, useRoute } from 'vitepress'
+import { productMenuId } from '../../productNavigation'
 import OriginalGroup from '../../../node_modules/@vue/theme/src/vitepress/components/VPNavScreenMenuGroup.vue'
 import type { MenuItemChild } from '../../../node_modules/@vue/theme/src/core/types/menu'
 const props = defineProps<{ text: string; items: MenuItemChild[] }>()
@@ -9,19 +10,19 @@ const route = useRoute()
 const closeScreen = inject<() => void>('close-screen')
 const open = ref(false)
 const toggle = ref<HTMLButtonElement>()
-const isProduct = computed(() => ['eCapture', 'eCaptureQ'].includes(props.text))
+const productId = computed(() => productMenuId(props.text))
 const isDownloads = computed(() => props.text === 'Download' || props.text === '下载')
-const menuId = computed(() => props.text === 'eCaptureQ' ? 'q-mobile-docs' : isProduct.value ? 'collector-mobile-docs' : 'mobile-downloads')
+const menuId = computed(() => productId.value ? `${productId.value}-mobile-docs` : 'mobile-downloads')
 const label = computed(() => lang.value.startsWith('zh') ? `展开 ${props.text}` : `Open ${props.text}`)
 const links = computed(() => props.items.filter(item => 'link' in item))
 function close() { open.value = false; toggle.value?.focus() }
 watch(() => route.path, () => { open.value = false; closeScreen?.() })
 </script>
 <template>
-  <div v-if="isProduct || isDownloads" class="nav-mobile-group" @keydown.esc.stop="close">
+  <div v-if="productId || isDownloads" class="nav-mobile-group" @keydown.esc.stop="close">
     <div class="nav-mobile-heading">
-      <a v-if="isProduct" :href="links[0]?.link" @click="closeScreen?.()">{{ text }}</a>
-      <button ref="toggle" type="button" :class="{ 'with-label': !isProduct }" :aria-label="label" :aria-expanded="open" :aria-controls="menuId" @click="open = !open"><span v-if="!isProduct">{{ text }}</span><span aria-hidden="true">{{ open ? '−' : '+' }}</span></button>
+      <a v-if="productId" :href="links[0]?.link" @click="closeScreen?.()">{{ text }}</a>
+      <button ref="toggle" type="button" :class="{ 'with-label': !productId }" :aria-label="label" :aria-expanded="open" :aria-controls="menuId" @click="open = !open"><span v-if="!productId">{{ text }}</span><span aria-hidden="true">{{ open ? '−' : '+' }}</span></button>
     </div>
     <div v-show="open" :id="menuId" class="nav-mobile-links">
       <a v-for="link in links" :key="link.link" :href="link.link" @click="closeScreen?.()">{{ link.text }}</a>

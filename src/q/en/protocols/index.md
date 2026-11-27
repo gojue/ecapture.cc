@@ -89,10 +89,12 @@ DATAGRAM is a separate message boundary and can legitimately contain zero bytes.
 
 Malformed or unmapped TEXT events keep their available payload and metadata. If Q cannot parse the SDK-formatted message header, inspect the RAW view and its parse error. With v2, `length` counts the formatted payload bytes and `original_length` describes the SDK value before formatting. Their difference alone does not establish truncation. [Capture and retention limits](/q/en/faq/#retention)
 
+**If a connected source shows RAW with `invalid SDK event header`, check the collector build.** eCaptureQ v1.2.0 understands the SDK text headers in eCapture v2.12.0. A later collector source build adds `pid` and `pname` to that header. Q v1.2.0 retains the affected messages as RAW. Use the two matching releases for decoded HTTP, or, when testing the newer collector source, use a Q build containing support for both headers. [Q compatibility change after v1.2.0](https://github.com/gojue/ecaptureQ/commit/d222da759bf645f81087137a8a24623e5b6a75af)
+
 ## Process and TLS metadata compatibility {#tls}
 
 eCaptureQ v1.2.0 reads the official Protobuf v2 fields from eCapture v2.12.0 TEXT events. `process_args` and `process_args_truncated` describe the observed process command. The optional `tls` object carries handshake metadata when available. [v2 protocol definition](https://github.com/gojue/ecapture/blob/v2.12.0/protobuf/proto/v2/ecaptureq.proto)
 
 When available, the Connection tab shows captured process/PID/argv and TLS version, cipher suite, SNI, ALPN, group and signature algorithm. **JA3** and **JA4** are fingerprints from the first on-wire ClientHello; ECH Outer is labeled when applicable. Negotiated parameters are handshake information, not actual session keys. SNI is not inferred from HTTP Host, and no fields are invented when absent.
 
-Older paths can report PID 0 or `decryptor`; these mean unknown attribution. eCaptureQ does not inspect the Web server's processes to guess the remote owner. Follow the [Interface Guide](/q/en/interface/#connection) to read available fields and missing-value indicators.
+PID 0 means the source did not identify a PID. When the event also supplies the placeholder name `decryptor`, Q groups it as an unknown process for that source. The Connection tab displays the identity available from the collector. [Interface Guide](/q/en/interface/#connection)

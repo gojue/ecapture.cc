@@ -11,15 +11,14 @@ const pagePaths = new Set(
   )
 )
 
-export const isChinesePath = (path: string) => /^\/(?:q\/)?zh(?:\/|$)/.test(path)
-export const isProductPath = (path: string) => /^\/q(?:\/|$)/.test(path)
+const productPrefix = /^\/(q|decryptor)(?:\/(?:en|zh))?(?:\/|$)/
+export const isChinesePath = (path: string) => /^\/(?:(?:q|decryptor)\/)?zh(?:\/|$)/.test(path)
+export const isProductPath = (path: string) => productPrefix.test(path)
 export const isDownloadPath = (path: string) => /^\/(?:q\/)?(?:en|zh)\/download(?:\/|\.html$|$)/.test(path)
 
 export function localePath(path: string, targetLocale: Locale): string {
-  if (isProductPath(path)) {
-    const article = path.replace(/^\/q(?:\/(?:en|zh))?(?:\/|$)/, '')
-    return `/q/${targetLocale}/${article}`
-  }
+  const product = path.match(productPrefix)
+  if (product) return `/${product[1]}/${targetLocale}/${path.slice(product[0].length)}`
   const isChinese = isChinesePath(path)
   if (targetLocale === 'zh' && isChinese) return path
   if (targetLocale === 'en' && !isChinese) return path

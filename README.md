@@ -18,7 +18,9 @@ The Wiki covers **eCapture v2.12.0**. Text mode defaults to the pcapng source. R
 | Android | x86_64 / amd64 | 4.18+ |
 | Android | AArch64 / arm64 | 5.5+ |
 
-Probe loading requires root or the [documented Linux capabilities](https://github.com/gojue/ecapture/blob/v2.12.0/docs/minimum-privileges.md). Linux LoongArch64 has release archives and Debian packages, with native OpenSSL and GoTLS end-to-end tests. [Release assets](https://github.com/gojue/ecapture/releases) · [LoongArch64 build and test coverage](https://github.com/gojue/ecapture/blob/v2.12.0/docs/loong64-support.md)
+Run as root or grant the Linux capabilities required by the capture mode. The default text mode and native pcapng mode both attach a TC probe to a network interface and require `CAP_NET_ADMIN`. [Capabilities by kernel and mode](src/en/1-getting-started/1.1-requirements-and-installation.md#kernel-features-and-privileges)
+
+Linux LoongArch64 has release archives and Debian packages, with native OpenSSL and GoTLS end-to-end tests. [Release assets](https://github.com/gojue/ecapture/releases) · [LoongArch64 build and test coverage](https://github.com/gojue/ecapture/blob/v2.12.0/docs/loong64-support.md)
 
 ## Where to edit
 
@@ -27,10 +29,11 @@ Probe loading requires root or the [documented Linux capabilities](https://githu
 | Homepages | `src/index.md`, `src/zh/index.md`, and `.vitepress/theme/components/` |
 | Navigation, theme, SEO | `.vitepress/config.mts`, `.vitepress/theme/`, `.vitepress/navigation.json` |
 | English and Chinese guide chapters | `src/en/`, `src/zh/` |
+| eCaptureQ user guides and Decryptor SDK developer guides | `src/q/{en,zh}/`, `src/decryptor/{en,zh}/` |
 | Wiki import | `scripts/wiki.json`, `scripts/generate_docs.js`, `scripts/migrate_docs.js` |
 | Shared images | `src/public/assets/` |
 
-The six bilingual Wiki chapters are generated from `scripts/wiki.json`. Edit the snapshot and the published Markdown together so the changes survive the next import. The migration restores both product overviews and download pages, the Chinese homepage and `src/zh/usage/`. The English homepage and the eCaptureQ articles in `src/q/` are maintained separately.
+The six bilingual Wiki chapters are generated from `scripts/wiki.json`. Edit the snapshot and the published Markdown together so the changes survive the next import. The migration restores the collector overviews and download pages, the Chinese homepage and `src/zh/usage/`. The English homepage, eCaptureQ guides and Decryptor SDK guides are maintained separately.
 
 To import a **verified, current** Wiki snapshot, run `bash scripts/update_docs.sh --no-dev`, review the source and navigation diff, then build the site. The checked-in snapshot may lag the current published chapters; inspect its page plan before running the destructive migration.
 

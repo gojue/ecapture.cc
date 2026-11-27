@@ -1,12 +1,12 @@
 # Build, Testing, and Release
 
-The v2.12.0 release pipeline builds architecture-specific Linux and Android binaries on Linux. To verify a release, check that it embeds the expected eBPF objects, exercises them on a real target kernel, and ships the matching executable in each package.
+A v2.12.0 release tag builds Linux and Android packages on Linux and checks the resulting artifacts before publication. Separate E2E workflows build the collector and run it on the kernels and workloads in their test matrices.
 
 ```mermaid
 flowchart LR
     C["eBPF C and Go sources"] --> B["Build for TARGET_ARCH"]
     B --> A["Embedded objects and static PIE"]
-    A --> T["Linux / Android E2E"]
+    C --> T["Build and run Linux / Android E2E"]
     A --> P["Architecture-specific packages"]
     P --> R["Release checksums"]
     P --> D["amd64 and arm64 Docker images"]

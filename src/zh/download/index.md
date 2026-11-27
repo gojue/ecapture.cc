@@ -23,6 +23,8 @@ import DownloadIntro from '@theme/components/DownloadIntro.vue'
 
 ## Docker 镜像 {#docker}
 
-在 Linux 上通过容器部署时，可从 [Docker Hub — gojue/ecapture](https://hub.docker.com/r/gojue/ecapture) 获取镜像。采集器仍需要受支持的宿主机内核和相应的采集权限，具体步骤见 [Docker 部署说明](https://github.com/gojue/ecapture#docker-image)。
+v2.12.0 的官方 Docker 镜像支持 **linux/amd64** 和 **linux/arm64**。在 **linux/loong64** 上，请选用下方的 tar 压缩包或 Debian 软件包。[Docker Hub — gojue/ecapture](https://hub.docker.com/r/gojue/ecapture) · [镜像构建平台](https://github.com/gojue/ecapture/blob/v2.12.0/.github/workflows/release.yml#L194)
+
+容器使用宿主机内核，运行采集器需要加载探针和观测目标接口的权限。[Docker 部署说明](https://github.com/gojue/ecapture/blob/v2.12.0/README.md#docker-image)
 
 <ReleaseDownloads />
