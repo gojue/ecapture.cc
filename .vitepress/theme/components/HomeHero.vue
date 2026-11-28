@@ -40,7 +40,7 @@ const prefix = computed(() => zh.value ? '/zh' : '/en')
 </template>
 <style scoped>
 .ec-home-intro { max-width:1320px; padding:0 36px; margin:0 auto; }
-.ec-hero { display:grid; grid-template-columns:.94fr 1.14fr; align-items:center; gap:22px; padding:54px 0 45px; }
+.ec-hero { display:grid; grid-template-columns:.82fr 1.26fr; align-items:center; gap:22px; padding:38px 0 45px; }
 .hero-eyebrow { font-size:12px; letter-spacing:.12em; margin:0 0 20px; }
 .ec-hero h1 { font-size:clamp(48px,5.2vw,74px); line-height:1.18; font-weight:800; letter-spacing:-.055em; margin:0 0 24px; color:var(--ec-ink); }
 .ec-hero h1 span { color:var(--ec-accent); }
@@ -57,7 +57,7 @@ const prefix = computed(() => zh.value ? '/zh' : '/en')
 .ec-value p { margin:0; font-size:12px; color:var(--ec-muted); }
 :deep(.docs-github-release-tag) { display:inline-block; margin-left:7px; color:var(--ec-muted); font-size:10px; }
 @media(min-width:1440px) { .ec-hero { padding-top:65px; padding-bottom:60px; } }
-@media(max-width:1050px) { .ec-hero { grid-template-columns:1fr 1.15fr; gap:8px; } .ec-hero h1 { font-size:54px; } .hero-description { font-size:14px; } .hero-actions { gap:10px; } .ec-button { padding:10px 17px; font-size:14px; } .ec-value { padding:0 18px; gap:14px; } .ec-value h2 { font-size:16px; } }
+@media(max-width:1050px) { .ec-hero { grid-template-columns:1fr; gap:24px; } .capture-flow { max-width:820px; margin:0 auto; } .ec-hero h1 { font-size:54px; } .hero-description { font-size:14px; } .hero-actions { gap:10px; } .ec-button { padding:10px 17px; font-size:14px; } .ec-value { padding:0 18px; gap:14px; } .ec-value h2 { font-size:16px; } }
 @media(max-width:760px) { .ec-home-intro { padding:0 24px; } .ec-hero { grid-template-columns:1fr; padding:46px 0 30px; gap:12px; } .ec-hero h1 { font-size:58px; } .hero-description { font-size:16px; } .hero-eyebrow { font-size:10px; } .capture-flow { max-width:620px; margin:0 auto; } .ec-value-strip { gap:20px; grid-template-columns:1fr; padding:24px 0; } .ec-value,.ec-value:first-child { padding:0; } .ec-value + .ec-value { border:0; } .ec-value svg { width:33px; height:33px; } .ec-value p { font-size:12px; } }
 @media(max-width:380px) { .ec-home-intro { padding:0 20px; } .ec-hero h1 { font-size:50px; } .hero-description { font-size:14px; } }
 </style>
